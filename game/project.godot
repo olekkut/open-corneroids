@@ -1,0 +1,26 @@
+; Engine configuration file.
+; Open with Godot Engine – .NET 4.7.2 (the standard build can't run C#).
+
+config_version=5
+
+[application]
+
+config/name="Open Corneroids"
+config/description="Clean-room Corneroids reimplementation. Bring your own assets."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+config/use_custom_user_dir=true
+config/custom_user_dir_name="OpenCorneroids"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[dotnet]
+
+project/assembly_name="OpenCorneroids"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
