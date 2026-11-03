@@ -15,6 +15,7 @@ public static class GameInput
     public const string Up = "move_up";
     public const string Down = "move_down";
     public const string Boost = "move_boost";
+    public const string Noclip = "toggle_noclip";
 
     public static void Register()
     {
@@ -25,6 +26,7 @@ public static class GameInput
         Add(Up, Key.Space, Key.E);
         Add(Down, Key.Ctrl, Key.Q);
         Add(Boost, Key.Shift);
+        Add(Noclip, Key.N);
     }
 
     static void Add(string action, params Key[] keys)

@@ -16,3 +16,6 @@ TestResults/
 
 # Godot
 .godot/
+
+# Per-agent isolated build output
+/.artifacts/

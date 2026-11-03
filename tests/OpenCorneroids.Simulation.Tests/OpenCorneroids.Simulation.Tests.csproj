@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\OpenCorneroids.Content\OpenCorneroids.Content.csproj" />
+    <ProjectReference Include="..\..\src\OpenCorneroids.Simulation\OpenCorneroids.Simulation.csproj" />
   </ItemGroup>
 
 </Project>

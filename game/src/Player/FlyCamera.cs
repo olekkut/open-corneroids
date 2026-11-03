@@ -5,16 +5,17 @@ using OpenCorneroids.Game.World;
 namespace OpenCorneroids.Game.Player;
 
 /// <summary>
-/// Free-flying astronaut (no collision yet): mouse look, WASD, Space/E up, Ctrl/Q down, Shift boost.
+/// The astronaut's eyes: mouse look, WASD, Space/E up, Ctrl/Q down, Shift boost, N toggles noclip.
+/// Movement itself (inertia, collision) lives in <see cref="PlayerMotor"/>.
 /// Left click mines the targeted block, right click places the selected one.
 /// </summary>
 public partial class FlyCamera : Camera3D
 {
-    const float Speed = 8f;
-    const float BoostMultiplier = 4f;
     const float MouseSensitivity = 0.0025f;
     const float Reach = 8f;
 
+    /// <summary>Exposed so a save system can persist velocity and noclip.</summary>
+    public PlayerMotor Motor { get; } = new();
     VoxelWorld _world = null!;
     Hud _hud = null!;
     MeshInstance3D _highlight = null!;
@@ -62,6 +63,10 @@ public partial class FlyCamera : Camera3D
                     if (captured) Input.MouseMode = Input.MouseModeEnum.Visible;
                     else ExitRequested?.Invoke();
                 }
+                else if (key.IsAction(GameInput.Noclip))
+                {
+                    Motor.Noclip = !Motor.Noclip;
+                }
                 else if (key.PhysicalKeycode is >= Key.Key1 and <= Key.Key9)
                 {
                     _hud.SelectSlot((int)(key.PhysicalKeycode - Key.Key1));
@@ -76,13 +81,9 @@ public partial class FlyCamera : Camera3D
             Axis(GameInput.Right, GameInput.Left),
             Axis(GameInput.Up, GameInput.Down),
             Axis(GameInput.Back, GameInput.Forward));
-        if (input != Vector3.Zero)
-        {
-            var basis = GlobalTransform.Basis;
-            var move = basis.X * input.X + Vector3.Up * input.Y + basis.Z * input.Z;
-            float speed = Speed * (Input.IsActionPressed(GameInput.Boost) ? BoostMultiplier : 1f);
-            Position += move.Normalized() * speed * (float)delta;
-        }
+        var basis = GlobalTransform.Basis;
+        var thrust = basis.X * input.X + Vector3.Up * input.Y + basis.Z * input.Z;
+        GlobalPosition = Motor.Step(GlobalPosition, thrust, Input.IsActionPressed(GameInput.Boost), (float)delta, _world);
 
         _hasTarget = VoxelRaycast.Cast(_world, GlobalPosition, -GlobalTransform.Basis.Z, Reach, out _target, out _placeAt);
         _highlight.Visible = _hasTarget;
