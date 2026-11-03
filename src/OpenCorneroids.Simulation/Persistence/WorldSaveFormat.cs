@@ -85,12 +85,28 @@ public static class WorldSaveFormat
         });
     }
 
+    /// <summary>
+    /// Every check <see cref="Read"/> makes, cells and checksum included, without allocating the cell grid. Lets a world
+    /// list tell a save whose header reads but whose body is cut off from a healthy one before the player picks it.
+    /// </summary>
+    /// <exception cref="WorldSaveException">The stream is not a readable world save.</exception>
+    public static void Verify(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        Guard(() =>
+        {
+            var meta = ReadMetadata(stream);
+            ReadCells(stream, meta.Size, meta.Palette.Count, fill: false);
+            return true;
+        });
+    }
+
     /// <summary>Header and metadata only; the cell block is not touched, so listing many worlds stays cheap.</summary>
     public static WorldSummary ReadSummary(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
         var meta = Guard(() => ReadMetadata(stream));
-        return new WorldSummary(meta.Name, meta.SavedAt, meta.Itemset, stream is FileStream file ? file.Name : "");
+        return new WorldSummary(meta.Name, meta.SavedAt, meta.Itemset, stream is FileStream file ? file.Name : "") { Creative = meta.Creative };
     }
 
     /// <summary>Turns every way a hostile file can break the decoders into one exception type callers can catch.</summary>
@@ -165,6 +181,8 @@ public static class WorldSaveFormat
         if (!IsFinite(s.Player.Position) || !IsFinite(s.Player.Velocity) || !float.IsFinite(s.Player.Pitch) || !float.IsFinite(s.Player.Yaw))
             return "the player state has a non-finite number";
         if (s.Inventory is null) return "the inventory is missing";
+        if (s.TexturePacks is null) return "the texture pack list is missing";
+        if (s.TexturePacks.Any(id => id is null)) return "a texture pack id is null";
         return null;
     }
 
@@ -214,7 +232,8 @@ public static class WorldSaveFormat
     /// Size 1024 in a few hundred bytes, so allocating the 2 GiB grid before the data has proven itself would let any
     /// garbage file cost that much memory. Inflating is cheap next to that, and real cell blocks are small.
     /// </summary>
-    static ushort[] ReadCells(Stream stream, int size, int paletteCount)
+    /// <param name="fill">False only validates (see <see cref="Verify"/>) and returns an empty array.</param>
+    static ushort[] ReadCells(Stream stream, int size, int paletteCount, bool fill = true)
     {
         var block = ReadCellBlock(stream);
         if (block.Count < ZlibHeaderBytes) throw Damaged("the cell data is missing");
@@ -225,6 +244,7 @@ public static class WorldSaveFormat
 
         long count = (long)size * size * size;
         DecodeRuns(block, count, paletteCount, cells: null);
+        if (!fill) return [];
         var cells = AllocateCells(count, size);
         DecodeRuns(block, count, paletteCount, cells);
         return cells;
@@ -400,6 +420,10 @@ public static class WorldSaveFormat
         public int[]? Palette { get; set; }
         public PlayerDto? Player { get; set; }
         public StackDto?[]? Inventory { get; set; }
+        // Added after version 1 shipped. Optional, so older files (which lack them) still read; a missing value means
+        // survival and no texture packs, which is what those files were.
+        public bool? Creative { get; set; }
+        public string?[]? TexturePacks { get; set; }
 
         public static MetadataDto From(WorldSnapshot s) => new()
         {
@@ -417,6 +441,8 @@ public static class WorldSaveFormat
                 Yaw = s.Player.Yaw,
             },
             Inventory = [.. s.Inventory.Select(stack => stack is null ? null : new StackDto { ItemId = stack.ItemId, Quantity = stack.Quantity })],
+            Creative = s.Creative,
+            TexturePacks = [.. s.TexturePacks],
         };
 
         public WorldSnapshot ToSnapshot()
@@ -442,7 +468,11 @@ public static class WorldSaveFormat
                     player.Yaw ?? throw Missing("player.yaw")),
                 [.. (Inventory ?? throw Missing("inventory")).Select((slot, i) => slot is null ? null : new ItemStack(
                     slot.ItemId ?? throw Missing($"inventory[{i}].itemId"),
-                    slot.Quantity ?? throw Missing($"inventory[{i}].quantity")))]);
+                    slot.Quantity ?? throw Missing($"inventory[{i}].quantity")))])
+            {
+                Creative = Creative ?? false,
+                TexturePacks = [.. (TexturePacks ?? []).Select((id, i) => id ?? throw Damaged($"metadata field 'texturePacks[{i}]' is null"))],
+            };
         }
 
         static Vector3 Vector(float[]? xyz, string field) =>

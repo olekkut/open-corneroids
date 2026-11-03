@@ -15,6 +15,8 @@ public sealed class BlockPalette
     public const ushort Air = 0;
 
     readonly List<Entry> _entries = [default];   // index 0 = air
+    readonly Dictionary<int, ushort> _byItemId = new();
+    readonly Dictionary<int, ushort> _byBlockId = new();
 
     readonly record struct Entry(ItemDef Item, Rect2 Walls, Rect2 Top, Rect2 Bottom, bool Cutout, CellRect IconCell);
 
@@ -34,6 +36,17 @@ public sealed class BlockPalette
         _ => _entries[index].Walls,
     };
 
+    /// <summary>The runtime index of an item's block, or null when the item is not a placeable 1x1x1 block here
+    /// (tools, ingots, multi-block machines, blocks whose texture cells are missing).</summary>
+    public ushort? IndexOf(int itemId) => _byItemId.TryGetValue(itemId, out var index) ? index : null;
+
+    /// <summary>The original itemset blockId of a runtime index; what saves store, since runtime indices depend on
+    /// which blocks this build could texture and would shift whenever that changes.</summary>
+    public int BlockIdOf(ushort index) => Item(index).Block!.BlockId;
+
+    /// <summary>The runtime index for an original blockId, or null when this palette has no such block.</summary>
+    public ushort? IndexOfBlockId(int blockId) => _byBlockId.TryGetValue(blockId, out var index) ? index : null;
+
     public IEnumerable<ushort> Indices => Enumerable.Range(1, Count).Select(i => (ushort)i);
 
     public IEnumerable<ushort> Where(Func<ItemDef, bool> predicate) => Indices.Where(i => predicate(Item(i)));
@@ -49,6 +62,8 @@ public sealed class BlockPalette
             var faces = block.Active;
             if (faces.Faces.Any(f => !grid.Contains(f.Rect) || grid.Classify(f.Rect) == AlphaClass.Empty)) continue;
             bool cutout = faces.Faces.Any(f => grid.Classify(f.Rect) is AlphaClass.Cutout or AlphaClass.Translucent);
+            palette._byItemId[item.ItemId] = (ushort)palette._entries.Count;
+            palette._byBlockId[block.BlockId] = (ushort)palette._entries.Count;
             palette._entries.Add(new Entry(item,
                 textures.Uv(faces.Walls), textures.Uv(faces.Top), textures.Uv(faces.Bottom), cutout, faces.Walls));
         }

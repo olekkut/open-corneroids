@@ -60,9 +60,20 @@ public static class WorldStore
     {
         ArgumentException.ThrowIfNullOrEmpty(directory);
         ArgumentNullException.ThrowIfNull(snapshot);
-        Directory.CreateDirectory(directory);
+        SaveFile(Path.Combine(directory, FileNameFor(snapshot.Name)), snapshot);
+    }
 
-        var path = Path.Combine(directory, FileNameFor(snapshot.Name));
+    /// <summary>
+    /// Like <see cref="Save"/>, but to an exact file, whatever the world is called. A world loaded from a file whose
+    /// name does not match its <see cref="WorldSnapshot.Name"/> (a copied backup, a renamed file) must be saved back
+    /// to that same file; saving by name would overwrite whichever world owns the name.
+    /// </summary>
+    public static void SaveFile(string path, WorldSnapshot snapshot)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        ArgumentNullException.ThrowIfNull(snapshot);
+        if (Path.GetDirectoryName(Path.GetFullPath(path)) is { Length: > 0 } directory) Directory.CreateDirectory(directory);
+
         // Not ending in Extension, so List never sees a half-written file.
         var temp = $"{path}.{Guid.NewGuid():N}.tmp";
         try
@@ -86,6 +97,14 @@ public static class WorldStore
     {
         using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         return WorldSaveFormat.Read(file);
+    }
+
+    /// <summary>See <see cref="WorldSaveFormat.Verify"/>: reads the whole file as <see cref="Load"/> would, keeping nothing.</summary>
+    /// <exception cref="WorldSaveException">The file is not a readable world save.</exception>
+    public static void Verify(string path)
+    {
+        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        WorldSaveFormat.Verify(file);
     }
 
     /// <summary>

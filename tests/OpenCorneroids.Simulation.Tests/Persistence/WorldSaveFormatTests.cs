@@ -111,7 +111,7 @@ public class WorldSaveFormatTests
 
         var summary = WorldSaveFormat.ReadSummary(new MemoryStream(garbageCells));
 
-        Assert.Equal(new WorldSummary(world.Name, world.SavedAt, world.Itemset, ""), summary);
+        Assert.Equal(new WorldSummary(world.Name, world.SavedAt, world.Itemset, "") { Creative = true }, summary);
         Assert.Throws<WorldSaveException>(() => FromBytes(garbageCells));
     }
 
@@ -354,6 +354,34 @@ public class WorldSaveFormatTests
     {
         foreach (var name in new[] { "empty file", "wrong magic", "newer version", "json length over cap", "not json", "missing name", "size zero", "palette without air sentinel" })
             Assert.Throws<WorldSaveException>(() => WorldSaveFormat.ReadSummary(new MemoryStream(Damaged[name]())));
+    }
+
+    [Fact]
+    public void Saves_without_mode_or_texture_packs_read_as_survival_without_packs()
+    {
+        // Version 1 files written before these optional fields existed.
+        var bytes = EditJson(j => { j.Remove("creative"); j.Remove("texturePacks"); });
+        var world = FromBytes(bytes);
+        Assert.False(world.Creative);
+        Assert.Empty(world.TexturePacks);
+        Assert.False(WorldSaveFormat.ReadSummary(new MemoryStream(bytes)).Creative);
+    }
+
+    [Fact]
+    public void Creative_and_texture_packs_are_written_as_optional_json_fields()
+    {
+        var json = JsonNode.Parse(Split(ToBytes(SmallWorld())).Json)!.AsObject();
+        Assert.True((bool?)json["creative"]);
+        Assert.Equal(["SordsTextures", "Pack \"Ω\""], json["texturePacks"]!.AsArray().Select(n => (string?)n));
+    }
+
+    [Fact]
+    public void Null_texture_pack_ids_are_rejected()
+    {
+        var bytes = EditJson(j => j["texturePacks"] = new JsonArray("ok", null));
+        var error = Assert.Throws<WorldSaveException>(() => FromBytes(bytes));
+        Assert.Contains("texturePacks[1]", error.Message);
+        Assert.Throws<ArgumentException>(() => ToBytes(SmallWorld() with { TexturePacks = ["ok", null!] }));
     }
 
     [Fact]

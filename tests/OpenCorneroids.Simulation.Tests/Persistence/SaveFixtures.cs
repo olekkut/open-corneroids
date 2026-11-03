@@ -31,6 +31,8 @@ static class SaveFixtures
             Seed = -987654,
             Player = new PlayerState(new Vector3(0.1f, -1e-7f, 3.4e38f), new Vector3(-2.5f, 0, float.Epsilon), -1.2345678f, 6.2831855f),
             Inventory = [new ItemStack(0, 5), null, new ItemStack(21, 1), null],
+            Creative = true,
+            TexturePacks = ["SordsTextures", "Pack \"Ω\""],
         };
     }
 
@@ -61,6 +63,8 @@ static class SaveFixtures
         Assert.True(expected.Cells.AsSpan().SequenceEqual(actual.Cells), "cells differ");
         Assert.Equal(expected.Player, actual.Player);
         Assert.Equal(expected.Inventory, actual.Inventory);
+        Assert.Equal(expected.Creative, actual.Creative);
+        Assert.Equal(expected.TexturePacks, actual.TexturePacks);
     }
 
     // ---- raw container pieces, for building damaged files by hand ----

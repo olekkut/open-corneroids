@@ -16,6 +16,12 @@ public static class GameInput
     public const string Down = "move_down";
     public const string Boost = "move_boost";
     public const string Noclip = "toggle_noclip";
+    /// <summary>Use the targeted block, e.g. open a crafting station. F, because Space/E/Ctrl/Q are movement.</summary>
+    public const string Interact = "interact";
+    /// <summary>Opens and closes the inventory window.</summary>
+    public const string Inventory = "toggle_inventory";
+    /// <summary>Saves the world (quicksave). F5, as in most PC games.</summary>
+    public const string Save = "save_world";
 
     public static void Register()
     {
@@ -27,6 +33,9 @@ public static class GameInput
         Add(Down, Key.Ctrl, Key.Q);
         Add(Boost, Key.Shift);
         Add(Noclip, Key.N);
+        Add(Interact, Key.F);
+        Add(Inventory, Key.I, Key.Tab);
+        Add(Save, Key.F5);
     }
 
     static void Add(string action, params Key[] keys)

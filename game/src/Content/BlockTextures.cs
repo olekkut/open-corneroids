@@ -76,6 +76,6 @@ public sealed class BlockTextures
         return material;
     }
 
-    static Image ToGodot(RgbaImage image) =>
+    internal static Image ToGodot(RgbaImage image) =>
         Image.CreateFromData(image.Width, image.Height, false, Image.Format.Rgba8, image.Pixels);
 }

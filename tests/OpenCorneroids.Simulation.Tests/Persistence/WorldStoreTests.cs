@@ -1,4 +1,4 @@
-using OpenCorneroids.Simulation.Persistence;
+﻿using OpenCorneroids.Simulation.Persistence;
 using static OpenCorneroids.Simulation.Tests.Persistence.SaveFixtures;
 
 namespace OpenCorneroids.Simulation.Tests.Persistence;
@@ -57,6 +57,32 @@ public sealed class WorldStoreTests : IDisposable
 
         var path = Path.Combine(directory, WorldStore.FileNameFor(world.Name));
         AssertSameWorld(world, WorldStore.Load(path));
+    }
+
+    [Fact]
+    public void SaveFile_writes_to_the_given_file_not_the_one_named_after_the_world()
+    {
+        Directory.CreateDirectory(_root);
+        var world = SmallWorld();
+        WorldStore.Save(_root, world);
+        var original = Path.Combine(_root, WorldStore.FileNameFor(world.Name));
+        var originalBytes = File.ReadAllBytes(original);
+
+        var backup = Path.Combine(_root, "backup copy" + WorldStore.Extension);
+        var changed = world with { Seed = world.Seed + 1 };
+        WorldStore.SaveFile(backup, changed);
+
+        Assert.Equal(originalBytes, File.ReadAllBytes(original));
+        AssertSameWorld(changed, WorldStore.Load(backup));
+        Assert.Equal(2, Directory.GetFiles(_root).Length);
+    }
+
+    [Fact]
+    public void SaveFile_creates_the_folder()
+    {
+        var path = Path.Combine(_root, "deep", "x" + WorldStore.Extension);
+        WorldStore.SaveFile(path, SmallWorld());
+        AssertSameWorld(SmallWorld(), WorldStore.Load(path));
     }
 
     [Fact]
@@ -139,5 +165,22 @@ public sealed class WorldStoreTests : IDisposable
         var path = Path.Combine(_root, "broken.ocworld");
         File.WriteAllBytes(path, ToBytes(SmallWorld())[..40]);
         Assert.Throws<WorldSaveException>(() => WorldStore.Load(path));
+    }
+
+    [Fact]
+    public void Verify_accepts_a_good_save_and_rejects_one_whose_header_reads_but_body_is_cut_off()
+    {
+        Directory.CreateDirectory(_root);
+        WorldStore.Save(_root, SmallWorld() with { Name = "Good" });
+        var good = Path.Combine(_root, "Good.ocworld");
+        WorldStore.Verify(good);
+
+        var bytes = File.ReadAllBytes(good);
+        var half = Path.Combine(_root, "Half.ocworld");
+        File.WriteAllBytes(half, bytes[..(bytes.Length - 3)]);
+
+        // The header still lists, which is why callers need Verify to know the body is gone.
+        Assert.Contains(WorldStore.List(_root), s => s.FilePath == Path.GetFullPath(half));
+        Assert.Throws<WorldSaveException>(() => WorldStore.Verify(half));
     }
 }

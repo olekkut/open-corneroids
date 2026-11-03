@@ -28,6 +28,18 @@ public sealed record WorldSnapshot(
     string Name, DateTimeOffset SavedAt, ItemsetBinding Itemset, int Seed, int Size,
     IReadOnlyList<int> Palette, ushort[] Cells, PlayerState Player, IReadOnlyList<ItemStack?> Inventory)
 {
+    /// <summary>
+    /// Creative rules (free placing, instant mining, no inventory) rather than survival. Optional in the file: saves
+    /// written before it existed have no such field and read as survival, which is what every world was then.
+    /// </summary>
+    public bool Creative { get; init; }
+
+    /// <summary>
+    /// Ids of the texture packs layered over the itemset when the world was played, top layer first, so a reload looks
+    /// the same. Purely cosmetic (the binding decides compatibility); optional in the file, empty for older saves.
+    /// </summary>
+    public IReadOnlyList<string> TexturePacks { get; init; } = [];
+
     /// <summary>Palette index and cell value of air.</summary>
     public const ushort Air = 0;
 
@@ -39,7 +51,11 @@ public sealed record WorldSnapshot(
 
 /// <summary>What a world list needs, read without decompressing the cells.</summary>
 /// <param name="FilePath">Where the summary was read from; empty when it came from a stream that is not a file.</param>
-public sealed record WorldSummary(string Name, DateTimeOffset SavedAt, ItemsetBinding Itemset, string FilePath);
+public sealed record WorldSummary(string Name, DateTimeOffset SavedAt, ItemsetBinding Itemset, string FilePath)
+{
+    /// <summary>See <see cref="WorldSnapshot.Creative"/>; lets a world list label creative worlds.</summary>
+    public bool Creative { get; init; }
+}
 
 /// <summary>A save file is damaged, truncated, hostile or from a newer build. The message is fit to show the player.</summary>
 public sealed class WorldSaveException : Exception

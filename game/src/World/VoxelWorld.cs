@@ -1,5 +1,6 @@
 using Godot;
 using OpenCorneroids.Content.Itemsets;
+using OpenCorneroids.Simulation.Persistence;
 
 namespace OpenCorneroids.Game.World;
 
@@ -61,8 +62,71 @@ public partial class VoxelWorld : Node3D
         return true;
     }
 
+    /// <summary>
+    /// The cells for a save: a palette of ORIGINAL blockIds (entry 0 the air sentinel) and the grid re-indexed into it.
+    /// Only blocks that actually occur get an entry, so the save's palette says exactly which blocks the world needs.
+    /// The grid order is the same as <see cref="WorldSnapshot.CellIndex"/>.
+    /// </summary>
+    public (List<int> Palette, ushort[] Cells) Export()
+    {
+        var palette = new List<int> { WorldSnapshot.AirBlockId };
+        var toSaved = new ushort?[_palette.Count + 1];
+        toSaved[BlockPalette.Air] = WorldSnapshot.Air;
+        var cells = new ushort[_cells.Length];
+        for (int i = 0; i < _cells.Length; i++)
+        {
+            var block = _cells[i];
+            if (toSaved[block] is not { } saved)
+            {
+                saved = (ushort)palette.Count;
+                palette.Add(_palette.BlockIdOf(block));
+                toSaved[block] = saved;
+            }
+            cells[i] = saved;
+        }
+        return (palette, cells);
+    }
+
+    /// <summary>
+    /// Replaces every cell with a saved grid (palette of original blockIds), then rebuilds meshes and lights. BlockIds
+    /// this palette lacks (removed from the itemset, or no longer placeable here) become air, as do cells outside this
+    /// world's bounds when the save is larger. Returns how many solid cells were lost that way.
+    /// </summary>
+    public int Import(IReadOnlyList<int> savedPalette, ushort[] savedCells, int savedSize)
+    {
+        var toRuntime = new ushort[savedPalette.Count];
+        for (int i = 0; i < savedPalette.Count; i++)
+            toRuntime[i] = savedPalette[i] == WorldSnapshot.AirBlockId ? BlockPalette.Air : _palette.IndexOfBlockId(savedPalette[i]) ?? BlockPalette.Air;
+
+        Array.Clear(_cells);
+        int lost = 0;
+        for (int z = 0; z < savedSize; z++)
+        for (int y = 0; y < savedSize; y++)
+        for (int x = 0; x < savedSize; x++)
+        {
+            var saved = savedCells[WorldSnapshot.CellIndex(savedSize, x, y, z)];
+            if (saved == WorldSnapshot.Air) continue;
+            var block = toRuntime[saved];
+            var p = new Vector3I(x, y, z);
+            if (block == BlockPalette.Air || !InBounds(p)) lost++;
+            else _cells[Index(p)] = block;
+        }
+        RebuildAll();
+        return lost;
+    }
+
+    /// <summary>Remeshes every chunk and recreates the lights of light-emitting blocks, which <see cref="SetRaw"/> skips.</summary>
     public void RebuildAll()
     {
+        foreach (var light in _lights.Values) light.QueueFree();
+        _lights.Clear();
+        for (int i = 0; i < _cells.Length; i++)
+        {
+            if (_cells[i] == BlockPalette.Air) continue;
+            int x = i % Size, y = i / Size % Size, z = i / (Size * Size);
+            UpdateLight(new Vector3I(x, y, z), _cells[i]);
+        }
+
         for (int z = 0; z < Chunks; z++)
         for (int y = 0; y < Chunks; y++)
         for (int x = 0; x < Chunks; x++)

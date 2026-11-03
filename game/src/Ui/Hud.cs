@@ -1,96 +1,115 @@
 using Godot;
+using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Game.Content;
-using OpenCorneroids.Game.World;
 
 namespace OpenCorneroids.Game.Ui;
 
-/// <summary>Crosshair, a nine-slot hotbar paging through every placeable block, and status text.</summary>
+/// <summary>
+/// Crosshair with a mining progress bar under it, a nine-slot hotbar, status text and short messages. It only
+/// draws: what the hotbar holds and which slot is selected are decided by the play mode.
+/// </summary>
 public partial class Hud : CanvasLayer
 {
-    const int Slots = 9;
+    public const int HotbarSlots = 9;
     const float SlotSize = 52;
+    static readonly Color InfoColor = new(0.7f, 1f, 0.7f);
+    static readonly Color WarningColor = new(1f, 0.6f, 0.45f);
 
-    BlockPalette _palette = null!;
-    BlockTextures _textures = null!;
-    ushort[] _blocks = [];
-    int _selected;
-    readonly List<(PanelContainer Panel, TextureRect Icon)> _slots = new();
-    readonly StyleBoxFlat _slotStyle = Style(new Color(0, 0, 0, 0.55f), new Color(1, 1, 1, 0.25f), 1);
-    readonly StyleBoxFlat _selectedStyle = Style(new Color(0.1f, 0.1f, 0.1f, 0.75f), new Color(1f, 0.85f, 0.3f), 3);
-    Label _status = null!, _selectedName = null!, _message = null!;
+    ItemIcons _icons = null!;
+    readonly List<ItemSlot> _slots = new();
+    Label _status = null!, _controls = null!, _selectedName = null!, _message = null!;
+    ProgressBar _progress = null!;
     double _messageTime;
 
-    public ushort Selected => _blocks.Length == 0 ? BlockPalette.Air : _blocks[_selected];
-
-    public void Setup(BlockPalette palette, BlockTextures textures, string title)
+    public void Setup(string title, ItemIcons icons)
     {
-        _palette = palette;
-        _textures = textures;
-        _blocks = palette.Indices.ToArray();
+        _icons = icons;
 
         var root = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
         root.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
-        var top = new VBoxContainer { Position = new Vector2(12, 8), MouseFilter = Control.MouseFilterEnum.Ignore };
+        // A dim backing plate: the outline alone is not enough over busy textures (the block showcase, lit walls).
+        var plate = new PanelContainer { Position = new Vector2(6, 4), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var plateStyle = Flat(new Color(0, 0, 0, 0.5f));
+        plateStyle.SetCornerRadiusAll(4);
+        (plateStyle.ContentMarginLeft, plateStyle.ContentMarginRight, plateStyle.ContentMarginTop, plateStyle.ContentMarginBottom) = (8, 8, 3, 4);
+        plate.AddThemeStyleboxOverride("panel", plateStyle);
+        var top = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        top.AddThemeConstantOverride("separation", 0);
         top.AddChild(Text(title, 18));
         top.AddChild(_status = Text("", 14));
-        top.AddChild(Text("WASD move · Space/E up · Ctrl/Q down · Shift boost · LMB mine · RMB place · wheel/1-9 select · Esc mouse, Esc again menu", 13,
-            new Color(1, 1, 1, 0.6f)));
-        root.AddChild(top);
+        top.AddChild(_controls = Text("", 13, new Color(1, 1, 1, 0.8f)));
+        plate.AddChild(top);
+        root.AddChild(plate);
 
         var crosshair = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         crosshair.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         crosshair.AddChild(Text("+", 26));
         root.AddChild(crosshair);
 
+        // Just under the "+", so the eye never leaves the block being drilled.
+        _progress = new ProgressBar
+        {
+            ShowPercentage = false, MinValue = 0, MaxValue = 1, Step = 0,
+            Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _progress.AddThemeStyleboxOverride("background", Flat(new Color(0, 0, 0, 0.6f)));
+        _progress.AddThemeStyleboxOverride("fill", Flat(new Color(1f, 0.8f, 0.3f)));
+        _progress.SetAnchorsPreset(Control.LayoutPreset.Center);
+        (_progress.OffsetLeft, _progress.OffsetTop, _progress.OffsetRight, _progress.OffsetBottom) = (-32, 20, 32, 26);
+        root.AddChild(_progress);
+
         var bottom = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.End, MouseFilter = Control.MouseFilterEnum.Ignore };
         bottom.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        bottom.AddChild(_message = Text("", 16, new Color(0.7f, 1f, 0.7f)));
+        bottom.AddChild(_message = Text("", 16, InfoColor));
         bottom.AddChild(_selectedName = Text("", 18));
         var bar = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
-        for (int i = 0; i < Slots; i++)
+        for (int i = 0; i < HotbarSlots; i++)
         {
-            var panel = new PanelContainer { CustomMinimumSize = new Vector2(SlotSize, SlotSize) };
-            var icon = new TextureRect
-            {
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                TextureFilter = CanvasItem.TextureFilterEnum.Nearest,
-                CustomMinimumSize = new Vector2(SlotSize - 12, SlotSize - 12),
-            };
-            panel.AddChild(icon);
-            bar.AddChild(panel);
-            _slots.Add((panel, icon));
+            var slot = ItemSlot.Create(SlotSize);
+            bar.AddChild(slot);
+            _slots.Add(slot);
         }
         bottom.AddChild(bar);
-        bottom.AddChild(new Control { CustomMinimumSize = new Vector2(0, 14) });
+        bottom.AddChild(new Control { CustomMinimumSize = new Vector2(0, 14), MouseFilter = Control.MouseFilterEnum.Ignore });
         foreach (var label in new[] { _message, _selectedName }) label.HorizontalAlignment = HorizontalAlignment.Center;
+        // Load warnings can be a sentence or two; wrap them instead of running off both screen edges.
+        _message.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         root.AddChild(bottom);
-
-        Refresh();
     }
 
-    public void SelectSlot(int slot)
+    /// <summary>Redraws the hotbar. <paramref name="countText"/> overrides the corner text, e.g. "∞" in creative.</summary>
+    public void ShowHotbar(IReadOnlyList<(ItemDef? Item, int Count)> slots, int selected, string caption, string? countText = null)
     {
-        int page = _selected / Slots * Slots;
-        if (page + slot < _blocks.Length) _selected = page + slot;
-        Refresh();
+        for (int i = 0; i < HotbarSlots; i++)
+        {
+            var (item, count) = i < slots.Count ? slots[i] : (null, 0);
+            _slots[i].Show(item, count, _icons, item is null ? null : countText);
+            _slots[i].SetLook(i == selected ? ItemSlot.Look.Selected : ItemSlot.Look.Normal);
+        }
+        _selectedName.Text = caption;
     }
 
-    public void Cycle(int delta)
+    /// <summary>Mining progress from 0 to 1, or null to hide the bar.</summary>
+    public void ShowProgress(double? fraction)
     {
-        if (_blocks.Length == 0) return;
-        _selected = ((_selected + delta) % _blocks.Length + _blocks.Length) % _blocks.Length;
-        Refresh();
+        _progress.Visible = fraction is not null;
+        if (fraction is { } f) _progress.Value = Math.Clamp(f, 0, 1);
     }
 
     public void SetStatus(string text) => _status.Text = text;
 
-    public void Flash(string text)
+    /// <summary>The key hints line; set by the play mode, since survival has keys creative does not.</summary>
+    public void SetControls(string text) => _controls.Text = text;
+
+    /// <summary>A short message above the hotbar; <paramref name="warning"/> tints it for refusals ("Inventory full").
+    /// Longer <paramref name="seconds"/> suit messages worth reading, such as how a save was loaded.</summary>
+    public void Flash(string text, bool warning = false, double seconds = 2.0)
     {
         _message.Text = text;
-        _messageTime = 2.0;
+        _message.AddThemeColorOverride("font_color", warning ? WarningColor : InfoColor);
+        _messageTime = seconds;
     }
 
     public override void _Process(double delta)
@@ -98,21 +117,8 @@ public partial class Hud : CanvasLayer
         if (_messageTime > 0 && (_messageTime -= delta) <= 0) _message.Text = "";
     }
 
-    void Refresh()
-    {
-        int page = _selected / Slots * Slots;
-        for (int i = 0; i < Slots; i++)
-        {
-            var (panel, icon) = _slots[i];
-            int index = page + i;
-            icon.Texture = index < _blocks.Length ? _textures.Icon(_palette.IconCell(_blocks[index])) : null;
-            panel.AddThemeStyleboxOverride("panel", index == _selected ? _selectedStyle : _slotStyle);
-        }
-        _selectedName.Text = _blocks.Length == 0 ? "" :
-            $"{_palette.Item(Selected).Name}   ({_selected + 1}/{_blocks.Length}, page {page / Slots + 1})";
-    }
-
-    static Label Text(string text, int size, Color? color = null)
+    /// <summary>An outlined label that stays readable over bright rock and black space alike.</summary>
+    public static Label Text(string text, int size, Color? color = null)
     {
         var label = new Label { Text = text, MouseFilter = Control.MouseFilterEnum.Ignore };
         label.AddThemeFontSizeOverride("font_size", size);
@@ -122,11 +128,5 @@ public partial class Hud : CanvasLayer
         return label;
     }
 
-    static StyleBoxFlat Style(Color background, Color border, int borderWidth)
-    {
-        var style = new StyleBoxFlat { BgColor = background, BorderColor = border };
-        style.SetBorderWidthAll(borderWidth);
-        style.SetContentMarginAll(6);
-        return style;
-    }
+    static StyleBoxFlat Flat(Color color) => new() { BgColor = color };
 }
