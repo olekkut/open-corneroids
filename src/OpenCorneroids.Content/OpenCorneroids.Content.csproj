@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Godot-free on purpose: the Godot project references this library (GodotSharp 4.7.2 targets net8.0),
+       and the tests run with plain `dotnet test`. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OpenCorneroids.Content</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OpenCorneroids.Content.Tests" />
+  </ItemGroup>
+
+</Project>

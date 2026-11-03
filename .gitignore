@@ -1,0 +1,18 @@
+# Original game files and community mods (BYOA) must never be committed.
+/byoa/
+
+# Local toolchains and binaries
+/.dotnet/
+/Godot_*/
+*.exe
+
+# .NET build output
+bin/
+obj/
+*.user
+.vs/
+.idea/
+TestResults/
+
+# Godot
+.godot/
