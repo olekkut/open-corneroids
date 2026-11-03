@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Game rules (inventory, crafting, mining, collision, saves), Godot-free so they can be unit-tested.
+       Referenced by the Godot project, so it targets net8.0 like GodotSharp 4.7.2. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>OpenCorneroids.Simulation</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenCorneroids.Content\OpenCorneroids.Content.csproj" />
+    <InternalsVisibleTo Include="OpenCorneroids.Simulation.Tests" />
+  </ItemGroup>
+
+</Project>
