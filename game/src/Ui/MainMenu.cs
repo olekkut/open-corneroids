@@ -22,6 +22,7 @@ public partial class MainMenu : Control
 
     ContentLibrary _library = null!;
     ItemList _itemsets = null!;
+    List<ItemsetEntry> _itemsetOrder = [];
     readonly List<(CheckBox Box, PackInfo Pack)> _texturePacks = new();
     LineEdit _name = null!, _seed = null!;
     CheckBox _creative = null!;
@@ -210,14 +211,15 @@ public partial class MainMenu : Control
 
         _itemsets = new ItemList { SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 150) };
         _itemsets.AddThemeFontSizeOverride("font_size", 15);
-        foreach (var entry in _library.Itemsets)
+        // The base install's itemset first (it is the default choice), then the rest in scan order.
+        _itemsetOrder = _library.Itemsets.OrderBy(e => e.Pack == _library.BaseInstall ? 0 : 1).ToList();
+        foreach (var entry in _itemsetOrder)
         {
             var h = entry.Header;
             var tag = entry.Pack == _library.BaseInstall ? "  (base)" : "";
             _itemsets.AddItem($"{h.Name} - {h.Author}    [{entry.Pack.Id}]{tag}");
         }
-        int preferred = Math.Max(0, _library.Itemsets.ToList().FindIndex(e => e.Pack == _library.BaseInstall));
-        _itemsets.Select(preferred);
+        _itemsets.Select(0);
         _itemsets.ItemActivated += _ => Create();
         parent.AddChild(_itemsets);
 
@@ -272,7 +274,7 @@ public partial class MainMenu : Control
             _newWorldError.Text = $"A saved world already uses the name '{name}' (or one that maps to the same file). Pick another name, or load or delete it on the left.";
             return;
         }
-        var entry = _library.Itemsets[Selected(_itemsets) is var i and >= 0 ? i : 0];
+        var entry = _itemsetOrder[Selected(_itemsets) is var i and >= 0 ? i : 0];
         var packs = _texturePacks.Where(t => t.Box.ButtonPressed).Select(t => t.Pack).ToList();
         NewWorldRequested?.Invoke(new NewWorldSettings(entry, packs, name, WorldSaves.ParseSeed(_seed.Text), _creative.ButtonPressed));
     }
