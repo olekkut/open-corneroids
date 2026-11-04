@@ -37,6 +37,9 @@ public partial class Main : Node
         GameInput.Register();
         // Closing the window must save first; _Notification accepts the quit once that is done.
         GetTree().AutoAcceptQuit = false;
+        // The UI is laid out for 1280x720 and scaled to the window (project.godot, stretch mode canvas_items), so a
+        // much smaller window would shrink the text past reading.
+        DisplayServer.WindowSetMinSize(new Vector2I(960, 540));
 
         _roots = ByoaPaths.FindRoots(_args);
         _library = ContentLibrary.Scan(_roots);

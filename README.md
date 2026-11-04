@@ -20,12 +20,20 @@ Folders are recognised by their contents. See `docs/design/byoa-asset-loading.md
 
 ## Run
 
-Open `game/project.godot` in Godot .NET and press Play, or from the repository root:
+On Windows, double-click `Play.cmd` in the repository root: it builds the game and starts it. It finds Godot .NET in a
+`Godot_v*_mono_win64` folder in the repository, or at the path in the `OPEN_CORNEROIDS_GODOT` environment variable,
+and passes its own arguments to the game (`Play.cmd --creative`).
+
+Or open `game/project.godot` in Godot .NET and press Play, or from the repository root:
 
 ```
 dotnet build game/OpenCorneroids.csproj
 <godot-dotnet-exe> --path game
 ```
+
+The window starts maximized. The interface is laid out for 1280x720 and scaled to fit the window, so it looks the
+same on a laptop, at 1440p or at 4K; wider or taller screens get the extra room. The window can't be made smaller
+than 960x540.
 
 Arguments after `--`:
 
