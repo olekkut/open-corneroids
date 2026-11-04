@@ -7,8 +7,10 @@ using Orientation = OpenCorneroids.Simulation.Shapes.Orientation;
 namespace OpenCorneroids.Game.Player;
 
 /// <summary>Where the selected multi-block would go: what the ghost preview shows and what a right click places.</summary>
+/// <param name="Grid">The grid it would go into (the aimed one); <see cref="Origin"/> and <see cref="Orientation"/>
+/// are in its local cells and axes.</param>
 /// <param name="Problem">Why it can't be placed there, or null when it can.</param>
-public readonly record struct ObjectPlan(ushort Block, BlockShape Shape, Int3 Origin, Orientation Orientation, string? Problem)
+public readonly record struct ObjectPlan(BlockGrid Grid, ushort Block, BlockShape Shape, Int3 Origin, Orientation Orientation, string? Problem)
 {
     public bool Placeable => Problem is null;
 }
@@ -20,18 +22,20 @@ public readonly record struct ObjectPlan(ushort Block, BlockShape Shape, Int3 Or
 /// </summary>
 public abstract class PlayMode
 {
-    protected PlayMode(VoxelWorld world, Hud hud)
+    protected PlayMode(GridSet grids, Hud hud)
     {
-        World = world;
+        Grids = grids;
         Hud = hud;
     }
 
-    protected VoxelWorld World { get; }
+    /// <summary>The world and the ships; mining and placing work the same in each.</summary>
+    protected GridSet Grids { get; }
     protected Hud Hud { get; }
-    protected BlockPalette Palette => World.Palette;
+    protected BlockPalette Palette => Grids.Palette;
 
-    /// <summary>How the next multi-block is turned (R spins, T changes the up axis). Single-cell blocks are never
-    /// turned: the chunk grid has no orientation, and their faces look the same from every side but top and bottom.</summary>
+    /// <summary>How the next multi-block is turned (R spins, T changes the up axis), relative to the axes of the grid it
+    /// goes into, so on a turned ship it turns with the ship. Single-cell blocks are never turned: the chunk grid has
+    /// no orientation, and their faces look the same from every side but top and bottom.</summary>
     public Orientation Orientation { get; set; }
 
     /// <summary>Whether this mode has an inventory to open and crafting stations to use.</summary>
@@ -62,65 +66,67 @@ public abstract class PlayMode
     /// (not while a window is open); <paramref name="target"/> is the aimed block or null.</summary>
     public virtual void Update(double delta, BlockTarget? target, bool drilling) { }
 
-    /// <summary>The secondary button: put the selected block against the solid cell <paramref name="hit"/>, starting in
-    /// the empty cell <paramref name="cell"/> in front of the aimed face.</summary>
-    public abstract void Place(Vector3 eye, Vector3I hit, Vector3I cell);
+    /// <summary>The secondary button: put the selected block against the aimed solid cell, starting in the empty cell
+    /// in front of the aimed face, in the aimed grid.</summary>
+    public abstract void Place(Vector3 eye, Aim aim);
 
     /// <summary>
     /// Where the selected block would go if it is a multi-block, or null (a single-cell block, nothing selected, or no
     /// face aimed at). The footprint is anchored with <see cref="BlockShape.AnchorFor"/>: it starts in front of the
     /// aimed face, grows away from it and is centred across it.
     /// </summary>
-    public ObjectPlan? PlanObject(Vector3 eye, Vector3I hit, Vector3I cell)
+    public ObjectPlan? PlanObject(Vector3 eye, Aim aim)
     {
         var block = SelectedBlock;
         if (block == BlockPalette.Air || Palette.Shape(block) is not { } shape) return null;
-        var normal = (cell - hit).ToInt3();
+        var normal = (aim.Before - aim.Hit).ToInt3();
         // The ray started inside a solid cell: there is no face to place against.
         if (AxisDirections.FromInt3(normal) is null) return null;
-        var origin = shape.AnchorFor(cell.ToInt3(), normal, Orientation);
-        var problem = World.ObjectProblem(block, origin, Orientation);
+        var origin = shape.AnchorFor(aim.Before.ToInt3(), normal, Orientation);
+        var problem = aim.Grid.ObjectProblem(block, origin, Orientation)
+                      ?? Grids.OverlapProblem(aim.Grid, shape.Footprint(origin, Orientation).Select(c => c.ToGodot()));
         if (problem is null)
         {
             var model = shape.ModelCells(origin, Orientation).Select(c => c.ToGodot()).ToHashSet();
-            if (PlayerMotor.BodyOverlaps(eye, model.Contains)) problem = "No room: you are in the way";
+            if (PlayerMotor.BodyOverlaps(aim.Grid, eye, model.Contains)) problem = "No room: you are in the way";
         }
-        return new ObjectPlan(block, shape, origin, Orientation, problem);
+        return new ObjectPlan(aim.Grid, block, shape, origin, Orientation, problem);
     }
 
     /// <summary>
-    /// Places <paramref name="block"/> (a grid block into <paramref name="cell"/>, or a multi-block as
-    /// <see cref="PlanObject"/> has it) once every check has passed and <paramref name="pay"/> agreed, so a refused
-    /// placement never costs an item.
+    /// Places <paramref name="block"/> (a grid block into the aimed empty cell, or a multi-block as
+    /// <see cref="PlanObject"/> has it) in the aimed grid once every check has passed and <paramref name="pay"/> agreed,
+    /// so a refused placement never costs an item.
     /// </summary>
-    protected bool TryPlace(Vector3 eye, Vector3I hit, Vector3I cell, ushort block, Func<bool> pay)
+    protected bool TryPlace(Vector3 eye, Aim aim, ushort block, Func<bool> pay)
     {
         if (!Palette.IsObject(block))
-            return CanPlaceAt(eye, cell) && pay() && World.Set(cell, block);
+            return CanPlaceAt(eye, aim.Grid, aim.Before) && pay() && aim.Grid.Set(aim.Before, block);
 
-        if (PlanObject(eye, hit, cell) is not { } plan) return false;
+        if (PlanObject(eye, aim) is not { } plan) return false;
         if (plan.Problem is { } problem)
         {
             Hud.Flash(problem, warning: true);
             return false;
         }
-        return pay() && World.AddObject(plan.Block, plan.Origin, plan.Orientation) is not null;
+        return pay() && plan.Grid.AddObject(plan.Block, plan.Origin, plan.Orientation) is not null;
     }
 
     /// <summary>
     /// Shared refusals for placing a grid block: outside the world, into a block or an object's footprint (thruster
-    /// exhaust and door travel are reserved even though they are not solid), or into the player's own body. The body
+    /// exhaust and door travel are reserved even though they are not solid) of this grid or of another grid that reaches
+    /// into the cell (a ship beside rock, see <see cref="GridSet.OverlapProblem"/>), or into the player's own body. The body
     /// check covers the whole 0.6 × 1.8 × 0.6 box, not just the eye cell, so a block can't be placed at the player's
     /// feet and leave them embedded. Each refusal says why, since a reserved cell looks like empty space.
     /// </summary>
-    protected bool CanPlaceAt(Vector3 eye, Vector3I cell)
+    protected bool CanPlaceAt(Vector3 eye, BlockGrid grid, Vector3I cell)
     {
-        if (World.ReservedProblem(cell) is { } problem)
+        if ((grid.ReservedProblem(cell) ?? Grids.OverlapProblem(grid, [cell])) is { } problem)
         {
             Hud.Flash(problem, warning: true);
             return false;
         }
-        if (!PlayerMotor.BodyOccupies(eye, cell)) return true;
+        if (!PlayerMotor.BodyOccupies(grid, eye, cell)) return true;
         Hud.Flash("No room: you are in the way", warning: true);
         return false;
     }

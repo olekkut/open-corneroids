@@ -15,7 +15,7 @@ public sealed class SurvivalMode : PlayMode
 {
     public override string Controls =>
         "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · hold LMB drill · RMB place · R/T turn · " +
-        "wheel/1-9 select · F use station/door · I/Tab inventory · Esc mouse, Esc again menu";
+        "wheel/1-9 select · F use station/door/console · I/Tab inventory · Esc mouse, Esc again menu";
 
     readonly Inventory _inventory;
     readonly ItemsetDef _itemset;
@@ -24,7 +24,7 @@ public sealed class SurvivalMode : PlayMode
     double _drillTime;
     bool _drillBlocked;   // the target is fully drilled but its drop did not fit
 
-    public SurvivalMode(VoxelWorld world, Hud hud, Inventory inventory, ItemsetDef itemset) : base(world, hud)
+    public SurvivalMode(GridSet grids, Hud hud, Inventory inventory, ItemsetDef itemset) : base(grids, hud)
     {
         _inventory = inventory;
         _itemset = itemset;
@@ -86,7 +86,7 @@ public sealed class SurvivalMode : PlayMode
             _drillBlocked = false;
         }
 
-        var item = Palette.Item(World.BlockOf(cell));
+        var item = Palette.Item(cell.Grid.BlockOf(cell));
         var block = item.Block!;
         int power = Mining.DrillPower(_inventory, _itemset);
         if (!Mining.CanMine(power, block))
@@ -110,13 +110,13 @@ public sealed class SurvivalMode : PlayMode
             Hud.Flash("Inventory full", warning: true);
             return;
         }
-        World.Break(cell);
+        Grids.Break(cell);
         _inventory.Add(drop.ItemId, drop.Quantity);
         Hud.Flash($"+{drop.Quantity} {NameOf(drop.ItemId)}");
         ResetDrill();
     }
 
-    public override void Place(Vector3 eye, Vector3I hit, Vector3I cell)
+    public override void Place(Vector3 eye, Aim aim)
     {
         if (_inventory.Slots[_selected] is not { } stack)
         {
@@ -134,7 +134,7 @@ public sealed class SurvivalMode : PlayMode
             Hud.Flash($"{item.Name} has no usable textures in this pack, so it can't be placed", warning: true);
             return;
         }
-        TryPlace(eye, hit, cell, block, () => _inventory.TryTakeFromSlot(_selected, 1));
+        TryPlace(eye, aim, block, () => _inventory.TryTakeFromSlot(_selected, 1));
     }
 
     /// <summary>The button is up or the aim is off every block. The bar always goes (it may still show a block

@@ -27,6 +27,24 @@ public static class GameInput
     /// <summary>Saves the world (quicksave). F5, as in most PC games.</summary>
     public const string Save = "save_world";
 
+    // Piloting a ship. Forward, back and strafing reuse the move actions; up and down get their own actions because
+    // Q and E roll the ship instead.
+    /// <summary>Ship up along its own axis (Space).</summary>
+    public const string ShipUp = "ship_up";
+    /// <summary>Ship down along its own axis (Ctrl).</summary>
+    public const string ShipDown = "ship_down";
+    public const string RollLeft = "ship_roll_left";
+    public const string RollRight = "ship_roll_right";
+    /// <summary>Nose up, as moving the mouse up does (arrow keys steer like the mouse, for keyboard pilots).</summary>
+    public const string PitchUp = "ship_pitch_up";
+    public const string PitchDown = "ship_pitch_down";
+    public const string YawLeft = "ship_yaw_left";
+    public const string YawRight = "ship_yaw_right";
+    /// <summary>Inertial dampeners on/off: the flight assistant also cancels drift.</summary>
+    public const string Dampeners = "toggle_dampeners";
+    /// <summary>Pilot's view: from the seat, or chasing the ship from behind.</summary>
+    public const string PilotView = "pilot_view";
+
     public static void Register()
     {
         Add(Forward, Key.W);
@@ -42,6 +60,16 @@ public static class GameInput
         Add(Spin, Key.R);
         Add(TurnUp, Key.T);
         Add(Save, Key.F5);
+        Add(ShipUp, Key.Space);
+        Add(ShipDown, Key.Ctrl);
+        Add(RollLeft, Key.Q);
+        Add(RollRight, Key.E);
+        Add(PitchUp, Key.Up);
+        Add(PitchDown, Key.Down);
+        Add(YawLeft, Key.Left);
+        Add(YawRight, Key.Right);
+        Add(Dampeners, Key.Z);
+        Add(PilotView, Key.V);
     }
 
     static void Add(string action, params Key[] keys)

@@ -97,7 +97,7 @@ public class WorldSaveFormatTests
     {
         var bytes = ToBytes(SmallWorld());
         Assert.Equal("OCWS"u8.ToArray(), bytes[..4]);
-        Assert.Equal(WorldSaveFormat.CurrentVersion, BitConverter.ToUInt16(bytes, 4));
+        Assert.Equal(WorldSaveFormat.ObjectsVersion, BitConverter.ToUInt16(bytes, 4));
         var json = JsonNode.Parse(Split(bytes).Json)!.AsObject();
         Assert.Equal("Kosmos Ω \"quoted\" \\ name", (string?)json["name"]);
         Assert.False(json.ContainsKey("cells"));
@@ -138,6 +138,7 @@ public class WorldSaveFormatTests
             good with { Palette = [-1, 0] },
             good with { Player = good.Player with { Yaw = float.NaN } },
             good with { Player = good.Player with { Position = new Vector3(float.PositiveInfinity, 0, 0) } },
+            good with { Player = good.Player with { Drift = new Vector3(0, float.NaN, 0) } },
             good with { Objects = null! },
             good with { Objects = [null!] },
             good with { Objects = [new PlacedObject(-1, Int3.Zero, 0, 0)] },
@@ -410,7 +411,7 @@ public class WorldSaveFormatTests
         // A build that only knows version 1 ignores the unknown "objects" member and would save the world back without
         // them; the version check makes it say "update the game" instead.
         Assert.Equal(WorldSaveFormat.ObjectsVersion, Split(ToBytes(SmallWorld())).Version);
-        Assert.Equal(WorldSaveFormat.CurrentVersion, WorldSaveFormat.ObjectsVersion);
+        Assert.Equal(WorldSaveFormat.ObjectsVersion + 1, WorldSaveFormat.ShipsVersion);
         // Without objects the file is exactly what version 1 was, so older builds keep reading it.
         Assert.Equal(WorldSaveFormat.BaseVersion, Split(ToBytes(SmallWorld() with { Objects = [] })).Version);
         Assert.Equal(WorldSaveFormat.BaseVersion, Split(Valid).Version);

@@ -8,7 +8,7 @@ namespace OpenCorneroids.Game.World;
 /// <summary>
 /// One placed block that is not in the chunk grid: a door, thruster, gun, big window... Its footprint (the placement
 /// bounds) is reserved against other placements; only its model cells are solid, and for a door those move with
-/// <see cref="Door"/>'s travel. <see cref="VoxelWorld"/> owns these and keeps its occupancy maps in step with them.
+/// <see cref="Door"/>'s travel. A <see cref="BlockGrid"/> owns these and keeps its occupancy maps in step with them.
 /// </summary>
 public sealed class WorldObject
 {
@@ -40,8 +40,12 @@ public sealed class WorldObject
     public DoorState DoorState { get; internal set; }
     /// <summary>False when the model's textures have see-through pixels; such a model never hides a grid face.</summary>
     public bool Opaque { get; }
-    /// <summary>The model's mesh, built at door offset 0 and moved by <see cref="VoxelWorld"/> as the door travels.</summary>
+    /// <summary>The model's mesh, built at door offset 0 and moved by its <see cref="BlockGrid"/> as the door travels.</summary>
     public MeshInstance3D Node { get; }
+
+    /// <summary>Drawn with its active (powered) textures; false shows the unpowered ones. Set through
+    /// <see cref="BlockGrid.SetInactive"/>.</summary>
+    public bool Active { get; internal set; } = true;
 
     /// <summary>Cells the model covers now: solid for collision, ray casts and mining.</summary>
     internal HashSet<Vector3I> ModelCells { get; set; } = [];
@@ -51,7 +55,7 @@ public sealed class WorldObject
     /// <summary>The model's local displacement from door travel; zero for everything that is not a door.</summary>
     public System.Numerics.Vector3 LocalOffset => Door is { } door ? DoorMotion.Offset(DoorState.Open, door) : default;
 
-    /// <summary>World-space box of the visible model, where it is now.</summary>
+    /// <summary>Grid-local box of the visible model, where it is now.</summary>
     public Godot.Aabb ModelBox
     {
         get

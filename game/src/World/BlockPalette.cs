@@ -26,7 +26,8 @@ public sealed class BlockPalette
     readonly Dictionary<int, ushort> _byItemId = new();
     readonly Dictionary<int, ushort> _byBlockId = new();
 
-    readonly record struct Entry(ItemDef Item, Rect2 Walls, Rect2 Top, Rect2 Bottom, bool Cutout, CellRect IconCell, BlockShape? Shape);
+    readonly record struct Entry(ItemDef Item, Rect2 Walls, Rect2 Top, Rect2 Bottom, bool Cutout, CellRect IconCell, BlockShape? Shape,
+        Rect2 InactiveWalls, Rect2 InactiveTop, Rect2 InactiveBottom, bool HasInactive);
 
     public int Count => _entries.Count - 1;
 
@@ -45,12 +46,24 @@ public sealed class BlockPalette
     public bool IsObject(ushort index) => _entries[index].Shape is not null;
 
     /// <param name="face">0 = walls, 1 = top, 2 = bottom.</param>
-    public Rect2 Uv(ushort index, int face) => face switch
+    /// <param name="active">The powered textures (<c>activeTextures</c>), or the unpowered ones (<c>deactiveTextures</c>);
+    /// a block without usable unpowered textures shows its active ones either way.</param>
+    public Rect2 Uv(ushort index, int face, bool active = true) => (face, active) switch
     {
-        1 => _entries[index].Top,
-        2 => _entries[index].Bottom,
-        _ => _entries[index].Walls,
+        (1, true) => _entries[index].Top,
+        (2, true) => _entries[index].Bottom,
+        (_, true) => _entries[index].Walls,
+        (1, false) => _entries[index].InactiveTop,
+        (2, false) => _entries[index].InactiveBottom,
+        _ => _entries[index].InactiveWalls,
     };
+
+    /// <summary>Whether the block has usable unpowered textures that differ from its active ones' source.</summary>
+    public bool HasInactive(ushort index) => _entries[index].HasInactive;
+
+    /// <summary>The block takes part in power networks: its itemset <c>power</c> is set (positive supplies, negative
+    /// consumes, 0 only conducts).</summary>
+    public bool IsPowered(ushort index) => index != Air && _entries[index].Item.Block!.Power is not null;
 
     /// <summary>The runtime index of an item's block, or null when the item is not a placeable block here
     /// (tools, ingots, blocks whose texture cells are missing).</summary>
@@ -88,9 +101,13 @@ public sealed class BlockPalette
                 GD.Print($"{item.Name} (block {block.BlockId}): shape corrected: {string.Join("; ", shape.Problems)}");
             palette._byItemId[item.ItemId] = (ushort)palette._entries.Count;
             palette._byBlockId[block.BlockId] = (ushort)palette._entries.Count;
+            // Unpowered textures only when every one of them is really in the atlas; otherwise the active ones stand in.
+            var inactive = block.Inactive is { } off && off.Faces.All(f => grid.Contains(f.Rect) && grid.Classify(f.Rect) != AlphaClass.Empty)
+                ? off : faces;
             palette._entries.Add(new Entry(item,
                 textures.Uv(faces.Walls), textures.Uv(faces.Top), textures.Uv(faces.Bottom), cutout, faces.Walls,
-                shape.IsSingleCell ? null : shape));
+                shape.IsSingleCell ? null : shape,
+                textures.Uv(inactive.Walls), textures.Uv(inactive.Top), textures.Uv(inactive.Bottom), !ReferenceEquals(inactive, faces)));
         }
         return palette;
     }

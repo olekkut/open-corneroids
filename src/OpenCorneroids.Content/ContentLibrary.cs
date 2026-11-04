@@ -58,6 +58,70 @@ public sealed class ContentLibrary
         return new ContentLibrary(packs, baseInstall, itemsets, diagnostics);
     }
 
+    /// <summary>The key of the base game's own itemset, which repacks ship a copy of beside their own.</summary>
+    public const string VanillaItemsetKey = "DefaultItemset";
+
+    /// <summary>
+    /// The itemset a user names (<c>--itemset=</c>), or null with the reason in <paramref name="problem"/>. Tried in
+    /// order, the first that matches anything decides:
+    /// <list type="number">
+    /// <item>an index into <see cref="Itemsets"/>;</item>
+    /// <item><c>pack/key</c>: the itemset with that key in that pack;</item>
+    /// <item>a pack id: that pack's itemset; a pack that also ships a copy of the vanilla one
+    /// (<see cref="VanillaItemsetKey"/>) beside its own means its own;</item>
+    /// <item>an itemset key (several itemsets sharing it: the one in <see cref="BaseInstall"/>, if it is among them),
+    /// then an itemset name (as the menu shows it).</item>
+    /// </list>
+    /// All comparisons ignore case. Several matches at one step are ambiguous: the problem lists them with their
+    /// indexes and <c>pack/key</c> names.
+    /// </summary>
+    public ItemsetEntry? FindItemset(string choice, out string? problem)
+    {
+        ArgumentNullException.ThrowIfNull(choice);
+        problem = null;
+        choice = choice.Trim();
+        if (int.TryParse(choice, out var index))
+        {
+            if (index >= 0 && index < Itemsets.Count) return Itemsets[index];
+            problem = $"There is no itemset #{index} (there are {Itemsets.Count}, from 0).";
+            return null;
+        }
+
+        static bool Same(string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
+        List<ItemsetEntry> matches = [];
+        int slash = choice.LastIndexOf('/');
+        if (slash > 0)
+            matches = Itemsets.Where(e => Same(e.Pack.Id, choice[..slash]) && Same(e.Header.Key, choice[(slash + 1)..])).ToList();
+        if (matches.Count == 0)
+        {
+            matches = Itemsets.Where(e => Same(e.Pack.Id, choice)).ToList();
+            if (matches.Count > 1 && matches.Any(e => !Same(e.Header.Key, VanillaItemsetKey)))
+                matches.RemoveAll(e => Same(e.Header.Key, VanillaItemsetKey));
+        }
+        if (matches.Count == 0)
+        {
+            matches = Itemsets.Where(e => Same(e.Header.Key, choice)).ToList();
+            // Every repack ships a copy of the vanilla itemset under the vanilla key: that key means the base install's.
+            if (matches.Count > 1 && matches.Where(e => e.Pack == BaseInstall).ToList() is [var fromBase]) return fromBase;
+        }
+        if (matches.Count == 0) matches = Itemsets.Where(e => Same(e.Header.Name, choice)).ToList();
+
+        if (matches.Count == 1) return matches[0];
+        problem = matches.Count == 0
+            ? $"No itemset matches '{choice}': name an index, a pack, a key, a name or pack/key."
+            : $"'{choice}' matches {matches.Count} itemsets: " +
+              string.Join(", ", matches.Select(e => $"#{IndexOf(e)} {e.Pack.Id}/{e.Header.Key} ({e.Header.Name})")) +
+              ". Name one by its index or pack/key.";
+        return null;
+    }
+
+    int IndexOf(ItemsetEntry entry)
+    {
+        for (int i = 0; i < Itemsets.Count; i++)
+            if (ReferenceEquals(Itemsets[i], entry)) return i;
+        return -1;
+    }
+
     public PackInfo? FindPack(string id) => Packs.FirstOrDefault(p => p.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
 
     public LayeredSource CreateView(PackInfo pack, IEnumerable<PackInfo>? texturePacks = null)

@@ -11,13 +11,13 @@ namespace OpenCorneroids.Game.Player;
 public sealed class CreativeMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · LMB mine · RMB place · R/T turn · F door · " +
+        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · LMB mine · RMB place · R/T turn · F door/console · " +
         "wheel/1-9 select · Esc mouse, Esc again menu";
 
     readonly ushort[] _blocks;
     int _selected;
 
-    public CreativeMode(VoxelWorld world, Hud hud) : base(world, hud)
+    public CreativeMode(GridSet grids, Hud hud) : base(grids, hud)
     {
         _blocks = Palette.Indices.ToArray();
         ShowHotbar();
@@ -55,16 +55,16 @@ public sealed class CreativeMode : PlayMode
     public override void PrimaryPressed(BlockTarget? target)
     {
         if (target is not { } t) return;
-        var name = Palette.Item(World.BlockOf(t)).Name;
-        World.Break(t);
+        var name = Palette.Item(t.Grid.BlockOf(t)).Name;
+        Grids.Break(t);
         Hud.Flash($"Mined {name}");
     }
 
-    public override void Place(Vector3 eye, Vector3I hit, Vector3I cell)
+    public override void Place(Vector3 eye, Aim aim)
     {
         var block = SelectedBlock;
         if (block == BlockPalette.Air) return;
-        if (TryPlace(eye, hit, cell, block, () => true)) Hud.Flash($"Placed {Palette.Item(block).Name}");
+        if (TryPlace(eye, aim, block, () => true)) Hud.Flash($"Placed {Palette.Item(block).Name}");
     }
 
     void ShowHotbar()

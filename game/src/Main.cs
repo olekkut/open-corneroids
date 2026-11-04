@@ -4,6 +4,7 @@ using OpenCorneroids.Content.Discovery;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Game.Content;
 using OpenCorneroids.Game.Persistence;
+using OpenCorneroids.Game.Player;
 using OpenCorneroids.Game.Ui;
 using OpenCorneroids.Game.World;
 using OpenCorneroids.Simulation.Persistence;
@@ -21,6 +22,10 @@ public partial class Main : Node
     IReadOnlyList<string> _roots = [];
     Node? _screen;
     int _worldFrames;
+    /// <summary>Game time since the screen started, each frame counted up to <see cref="ShipPhysics.MaxFrame"/>.</summary>
+    double _worldSeconds;
+    /// <summary>The timed screenshot or save is done; quitting may take another frame, which must not do it again.</summary>
+    bool _timedDone;
     bool _hooksApplied;
     ulong _measureStartMs;
     /// <summary>Parsed itemsets by entry, for matching a save's fingerprint; Def is null when the itemset does not parse.</summary>
@@ -47,7 +52,7 @@ public partial class Main : Node
         }
         else if ((_args.Itemset ?? (_args.NewWorld is not null ? "auto" : null)) is { } choice)
         {
-            if (PickItemset(choice) is { } entry)
+            if (PickItemset(choice, out var problem) is { } entry)
             {
                 var packs = _args.TexturePacks.Select(_library.FindPack).OfType<PackInfo>().ToList();
                 var worldName = _args.NewWorld is { Length: > 0 } n ? n : WorldSaves.NextDefaultName();
@@ -55,7 +60,8 @@ public partial class Main : Node
             }
             else
             {
-                ShowMenu($"No itemset matches --itemset={choice}.");
+                GD.Print($"--itemset={choice}: {problem}");
+                ShowMenu($"--itemset={choice}: {problem}");
             }
         }
         else
@@ -66,7 +72,8 @@ public partial class Main : Node
         if (_args.NewWorld is not null || _args.QuitAfterSave)
         {
             var error = world is null ? "no world was started" : world.Save();
-            if (_args.QuitAfterSave)
+            // With --frames the world runs that long first (held controls, a flying ship) and is saved then.
+            if (_args.QuitAfterSave && ((_args.Frames is null && _args.Seconds is null) || world is null))
             {
                 GD.Print(error is not null ? $"Not saved ({error}); quitting"
                     : world!.HoldSaves ? "Not saved (the load is waiting for a confirmation); quitting"
@@ -98,26 +105,52 @@ public partial class Main : Node
         }
     }
 
+    /// <summary>Frame of a <c>--screenshot</c> when <c>--frames</c> does not say.</summary>
+    const int DefaultScreenshotFrame = 240;
+
     public override void _Process(double delta)
     {
-        // --screenshot: let the screen (menu or world) render for a few seconds, save what's on screen, quit.
-        if (_args.ScreenshotPath is not { } path || _args.QuitAfterSave || _screen is null) return;
-        if (++_worldFrames == 60) _measureStartMs = Time.GetTicksMsec();   // skip the loading hitch
-        if (_worldFrames != 240) return;
+        // --screenshot: let the screen (menu or world) render for a few seconds (--frames), save what's on screen, quit.
+        // --quit-after-save with --frames: run the world that long, then save it and quit.
+        bool timed = _args.Frames is not null || _args.Seconds is not null;
+        bool deferredSave = _args.QuitAfterSave && timed;
+        if (_timedDone || _screen is null || (_args.ScreenshotPath is null && !deferredSave) || (_args.QuitAfterSave && !deferredSave)) return;
+        int target = _args.Frames ?? DefaultScreenshotFrame;
+        // Skip the loading hitch: measure from frame 60, or from a quarter of the way for a short run.
+        int measureFrom = _args.Seconds is null ? Math.Min(60, target / 4) : 60;
+        if (++_worldFrames == measureFrom) _measureStartMs = Time.GetTicksMsec();
+        _worldSeconds += Math.Min(Math.Max(0, delta), ShipPhysics.MaxFrame);
+        if (_args.Seconds is { } due ? _worldSeconds < due : _worldFrames != target) return;
         var seconds = (Time.GetTicksMsec() - _measureStartMs) / 1000.0;
-        GD.Print($"Measured {180 / seconds:0} FPS over 180 frames");
-        var error = GetViewport().GetTexture().GetImage().SavePng(path);
-        GD.Print(error == Error.Ok ? $"Screenshot saved to {path}" : $"Screenshot failed: {error}");
+        int measured = _worldFrames - measureFrom;
+        if (seconds > 0 && measured > 0) GD.Print($"Measured {measured / seconds:0} FPS over {measured} frames");
+        var moment = FormattableString.Invariant($"frame {_worldFrames}, {_worldSeconds:0.###} s");
+        _timedDone = true;
+        if (deferredSave)
+        {
+            string? saveError = _screen is WorldView world
+                ? world.HoldSaves ? "the load is waiting for a confirmation" : world.Save()
+                : "no world is running";
+            GD.Print(saveError is null ? $"Saved at {moment}; quitting (--quit-after-save)" : $"Not saved ({saveError}); quitting");
+            GetTree().Quit(saveError is null ? 0 : 1);
+            return;
+        }
+        GD.Print($"Taking the screenshot at {moment}");
+        var error = GetViewport().GetTexture().GetImage().SavePng(_args.ScreenshotPath!);
+        GD.Print(error == Error.Ok ? $"Screenshot saved to {_args.ScreenshotPath}" : $"Screenshot failed: {error}");
         GetTree().Quit();
     }
 
-    ItemsetEntry? PickItemset(string choice)
+    ItemsetEntry? PickItemset(string choice, out string? problem)
     {
+        problem = null;
         if (choice == "auto")
-            return _library.Itemsets.FirstOrDefault(e => e.Pack == _library.BaseInstall) ?? _library.Itemsets.FirstOrDefault();
-        if (int.TryParse(choice, out var index) && index >= 0 && index < _library.Itemsets.Count)
-            return _library.Itemsets[index];
-        return _library.Itemsets.FirstOrDefault(e => e.Header.Key.Equals(choice, StringComparison.OrdinalIgnoreCase));
+        {
+            var entry = _library.Itemsets.FirstOrDefault(e => e.Pack == _library.BaseInstall) ?? _library.Itemsets.FirstOrDefault();
+            if (entry is null) problem = "No itemsets were found.";
+            return entry;
+        }
+        return _library.FindItemset(choice, out problem);
     }
 
     WorldView? StartNewWorld(NewWorldSettings settings)
@@ -127,6 +160,7 @@ public partial class Main : Node
         var world = StartWorld(settings.Itemset, settings.TexturePacks, info, saved: null);
         if (world is null) return null;
         if (_args.Showcase) world.Showcase();
+        if (_args.DemoShip) world.DemoShip();
         // --give describes the first world only; a world picked later from the menu starts plain
         // (item ids there may mean something else entirely).
         if (!_hooksApplied && !world.Creative) world.Give(_args.Give);
@@ -134,20 +168,29 @@ public partial class Main : Node
         return world;
     }
 
-    /// <summary>--open, --orientation, --open-doors, --preview, --place and --focus apply to the first world, new or loaded, so a loaded
-    /// world can be screenshotted the same way.</summary>
+    /// <summary>--open, --orientation, --launch, --turn-ship, --dampeners, --pilot, --hold, --open-doors, --preview, --place, --place-on-ship, --preview-ship and
+    /// --focus apply to the first world, new or loaded, so a loaded world can be screenshotted the same way.</summary>
     void ApplyHooks(WorldView world)
     {
         if (_hooksApplied) return;
         _hooksApplied = true;
         // A screenshot run takes no input: stray mouse or wheel events reaching the window would change the selection
         // or the view, and two runs with the same arguments would differ.
-        if (_args.ScreenshotPath is not null) world.Player.InputLocked = true;
+        if (_args.ScreenshotPath is not null || (_args.QuitAfterSave && (_args.Frames is not null || _args.Seconds is not null))) world.Player.InputLocked = true;
         if (_args.Orientation is { } orientation) world.Player.Mode.Orientation = Simulation.Shapes.Orientation.FromIndex(orientation);
+        if (_args.Launch) world.LaunchConsole();
+        if (_args.TurnShip is { } degrees) world.TurnShips(degrees);
+        if (_args.PlaceOnShip is { } onShip) world.AimAtShip(onShip, place: true);
         if (_args.OpenDoors) world.OpenDoors();
         if (_args.Preview is { } item && world.Preview(item) && _args.Place) world.PlacePreviewed();
         else if (_args.Place) GD.PushWarning("--place: needs a --preview that found a face to aim at");
+        if (_args.PreviewShip is { } shipItem) world.AimAtShip(shipItem, place: false);
         if (_args.Focus is { } focus) world.Focus(focus);
+        // Piloting last: the hooks above aim and place from where the player stands.
+        if (_args.Dampeners is { } dampeners) world.Player.Dampeners = dampeners;
+        if (_args.Pilot is { } view)
+            world.PilotFirstShip(view switch { "chase" => FlyCamera.PilotView.Chase, "fixed" => FlyCamera.PilotView.Fixed, _ => FlyCamera.PilotView.Seat });
+        if (_args.Holds.Count > 0) world.Player.Hold(_args.Holds);
         if (_args.Open is { } window) world.OpenWindow(window);
     }
 
@@ -242,7 +285,9 @@ public partial class Main : Node
         {
             var missing = check.MissingBlockIds.ToHashSet();
             cells = saved.Cells.Count(c => c != WorldSnapshot.Air && missing.Contains(saved.Palette[c])) +
-                    saved.Objects.Count(o => missing.Contains(o.BlockId));
+                    saved.Objects.Count(o => missing.Contains(o.BlockId)) +
+                    saved.Ships.Sum(ship => ship.Cells.Count(c => c != WorldSnapshot.Air && missing.Contains(ship.Palette[c])) +
+                                            ship.Objects.Count(o => missing.Contains(o.BlockId)));
             question.Add($"{check.MissingBlockIds.Count} block type(s) the world uses do not exist in {entry.Header.Name} from " +
                          $"'{entry.Pack.Id}' (blockIds {string.Join(", ", check.MissingBlockIds)}). At least {cells} placed block(s) " +
                          "of those types will become empty space.");
@@ -388,6 +433,7 @@ public partial class Main : Node
         _screen?.QueueFree();
         _screen = screen;
         _worldFrames = 0;
+        _worldSeconds = 0;
         AddChild(screen);
     }
 }

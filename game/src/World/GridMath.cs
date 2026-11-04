@@ -14,6 +14,8 @@ public static class GridMath
     public static Vector3I ToGodot(this Int3 v) => new(v.X, v.Y, v.Z);
     public static Vector3 ToGodot(this Num.Vector3 v) => new(v.X, v.Y, v.Z);
     public static Num.Vector3 ToNumerics(this Vector3 v) => new(v.X, v.Y, v.Z);
+    public static Quaternion ToGodot(this Num.Quaternion q) => new(q.X, q.Y, q.Z, q.W);
+    public static Num.Quaternion ToNumerics(this Quaternion q) => new(q.X, q.Y, q.Z, q.W);
 
     /// <summary>"+Y", "-X"...: how the HUD names an up axis.</summary>
     public static string Name(this AxisDirection d) => d switch

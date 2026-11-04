@@ -11,7 +11,8 @@ public sealed class GameArgs
     /// <summary>An extra BYOA root to scan.</summary>
     public string? ByoaDir { get; private set; }
 
-    /// <summary>Skip the menu: "auto" (the base install's itemset), an itemset key, or a list index.</summary>
+    /// <summary>Skip the menu: "auto" (the base install's itemset), or a list index, pack/key, pack id, itemset key or
+    /// itemset name (see <see cref="OpenCorneroids.Content.ContentLibrary.FindItemset"/>).</summary>
     public string? Itemset { get; private set; }
 
     /// <summary>Texture pack ids to enable when skipping the menu.</summary>
@@ -65,6 +66,39 @@ public sealed class GameArgs
     /// <summary>Open every door once the world is up, and keep them open (no auto-close), for screenshots.</summary>
     public bool OpenDoors { get; private set; }
 
+    /// <summary>Build a small preset ship near the spawn of a new world, from the itemset's own blocks.</summary>
+    public bool DemoShip { get; private set; }
+
+    /// <summary>Press F on a console of the static world (the demo ship's, or the nearest), launching its structure.</summary>
+    public bool Launch { get; private set; }
+
+    /// <summary>Turn every ship by this many degrees about the world's up axis, to test turned ships.</summary>
+    public float? TurnShip { get; private set; }
+
+    /// <summary>Select this item and pin the aim to a face of a ship where it fits, so the ghost shows on the ship.</summary>
+    public int? PreviewShip { get; private set; }
+
+    /// <summary>As <see cref="PreviewShip"/>, then place the block there by the normal rules.</summary>
+    public int? PlaceOnShip { get; private set; }
+
+    /// <summary>Sit at the first ship's console and pilot it, with this view ("seat", "chase", or "fixed": the camera
+    /// stays where it was, for before/after screenshots).</summary>
+    public string? Pilot { get; private set; }
+
+    /// <summary>Inertial dampeners on or off for the pilot (default on).</summary>
+    public bool? Dampeners { get; private set; }
+
+    /// <summary>Controls held down one after another, each for its seconds, as if the keys were pressed
+    /// (<c>--hold=move_forward+ship_yaw_left:2</c>; repeat the argument for a sequence).</summary>
+    public List<(string[] Actions, float Seconds)> Holds { get; } = new();
+
+    /// <summary>Frame at which <c>--screenshot</c> is taken (or, with <c>--quit-after-save</c>, the world saved).</summary>
+    public int? Frames { get; private set; }
+
+    /// <summary>As <see cref="Frames"/>, but after this many seconds of game time (the clock <c>--hold</c> counts in),
+    /// so the moment does not depend on the machine's frame rate. Wins over <see cref="Frames"/>.</summary>
+    public float? Seconds { get; private set; }
+
     public static GameArgs Parse(IEnumerable<string> args)
     {
         var parsed = new GameArgs();
@@ -86,6 +120,45 @@ public sealed class GameArgs
                 case "--quit-after-save": parsed.QuitAfterSave = true; break;
                 case "--open-doors": parsed.OpenDoors = true; break;
                 case "--place": parsed.Place = true; break;
+                case "--demo-ship": parsed.DemoShip = true; break;
+                case "--launch": parsed.Launch = true; break;
+                case "--turn-ship":
+                    if (float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var turn) &&
+                        float.IsFinite(turn))
+                        parsed.TurnShip = turn;
+                    else Godot.GD.PushWarning($"--turn-ship: '{value}' is not a number of degrees");
+                    break;
+                case "--pilot":
+                    var view = value.Length == 0 ? "seat" : value.ToLowerInvariant();
+                    if (view is "seat" or "chase" or "fixed") parsed.Pilot = view;
+                    else Godot.GD.PushWarning($"--pilot: '{value}' is not seat, chase or fixed");
+                    break;
+                case "--dampeners":
+                    if (value.ToLowerInvariant() is "on" or "off") parsed.Dampeners = value.Equals("on", StringComparison.OrdinalIgnoreCase);
+                    else Godot.GD.PushWarning($"--dampeners: '{value}' is not on or off");
+                    break;
+                case "--hold":
+                    if (ParseHold(value) is { } hold) parsed.Holds.Add(hold);
+                    else Godot.GD.PushWarning($"--hold: '{value}' is not action[+action...]:seconds");
+                    break;
+                case "--frames":
+                    if (int.TryParse(value, out var frames) && frames > 0) parsed.Frames = frames;
+                    else Godot.GD.PushWarning($"--frames: '{value}' is not a positive whole number");
+                    break;
+                case "--seconds":
+                    if (float.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var seconds) &&
+                        float.IsFinite(seconds) && seconds > 0)
+                        parsed.Seconds = seconds;
+                    else Godot.GD.PushWarning($"--seconds: '{value}' is not a positive number of seconds");
+                    break;
+                case "--preview-ship":
+                    if (int.TryParse(value, out var previewShip)) parsed.PreviewShip = previewShip;
+                    else Godot.GD.PushWarning($"--preview-ship: '{value}' is not an item id");
+                    break;
+                case "--place-on-ship":
+                    if (int.TryParse(value, out var placeOnShip)) parsed.PlaceOnShip = placeOnShip;
+                    else Godot.GD.PushWarning($"--place-on-ship: '{value}' is not an item id");
+                    break;
                 case "--texture-mapping":
                     if (Enum.TryParse<TextureMapping>(value, ignoreCase: true, out var mapping) && Enum.IsDefined(mapping))
                         parsed.TextureMapping = mapping;
@@ -111,6 +184,18 @@ public sealed class GameArgs
             }
         }
         return parsed;
+    }
+
+    /// <summary>"move_forward+ship_yaw_left:2.5" → ([move_forward, ship_yaw_left], 2.5), or null when malformed.</summary>
+    static (string[], float)? ParseHold(string value)
+    {
+        int colon = value.LastIndexOf(':');
+        if (colon <= 0) return null;
+        var actions = value[..colon].Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (actions.Length == 0 || !float.TryParse(value[(colon + 1)..], System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var seconds) || !float.IsFinite(seconds) || seconds <= 0)
+            return null;
+        return (actions, seconds);
     }
 
     /// <summary>"55:1,10:5" → (55,1), (10,5). A bare id gives one; malformed entries are skipped with a warning.</summary>

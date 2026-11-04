@@ -114,4 +114,68 @@ public class LibraryTests
         Assert.Equal(("Loose", 4, 16), (retextured.BlockAtlas!.ServedBy, retextured.BlockAtlas.Columns, retextured.BlockAtlas.CellPixels));
         Assert.Empty(retextured.Diagnostics.AtLeast(Severity.Warning));
     }
+
+    /// <summary>
+    /// Shaped like the real DarthNox releases: a repack (a game install) shipping a copy of the vanilla itemset beside
+    /// its own, an itemset mod with the same key, and a second install with only the vanilla one.
+    /// </summary>
+    static TempTree BuildNamingRoot()
+    {
+        var tree = new TempTree();
+        static string Itemset(string key, string name) =>
+            MiniItemset.Xml().Replace("<key>MiniItemset</key>", $"<key>{key}</key>").Replace("<name>Mini</name>", $"<name>{name}</name>");
+        tree.Write("games/Repack/Corneroids/Corneroids.exe", "MZ");
+        tree.Write("games/Repack/Corneroids/Content/Blocksets/defaultItemset.xml", Itemset("DefaultItemset", "Default"));
+        tree.Write("games/Repack/Corneroids/Content/Blocksets/ownItemset.xml", Itemset("OwnItemset", "Repack v2"));
+        tree.Write("games/Game/Corneroids/Corneroids.exe", "MZ");
+        tree.Write("games/Game/Corneroids/Content/Blocksets/defaultItemset.xml", Itemset("DefaultItemset", "Default"));
+        tree.Write("mods/OwnItemset/Content/Blocksets/ownItemset.xml", Itemset("OwnItemset", "Own"));
+        return tree;
+    }
+
+    [Theory]
+    [InlineData("OwnItemset", "OwnItemset", "Own")]          // a pack id wins over the key two itemsets share
+    [InlineData("repack", "Repack", "Repack v2")]            // a pack's own itemset, not its vanilla copy
+    [InlineData("Game", "Game", "Default")]                  // a pack with only the vanilla one
+    [InlineData("Repack/DefaultItemset", "Repack", "Default")]
+    [InlineData("Repack v2", "Repack", "Repack v2")]         // the name the menu shows
+    public void An_itemset_is_found_by_pack_key_or_name(string choice, string pack, string name)
+    {
+        using var tree = BuildNamingRoot();
+        var library = ContentLibrary.Scan([tree.Root]);
+
+        var entry = library.FindItemset(choice, out var problem);
+
+        Assert.Null(problem);
+        Assert.Equal((pack, name), (entry?.Pack.Id, entry?.Header.Name));
+    }
+
+    [Fact]
+    public void An_itemset_is_found_by_index_and_an_ambiguous_or_unknown_choice_says_why()
+    {
+        using var tree = BuildNamingRoot();
+        var library = ContentLibrary.Scan([tree.Root]);
+
+        Assert.Same(library.Itemsets[2], library.FindItemset("2", out _));
+        Assert.Null(library.FindItemset("9", out var outOfRange));
+        Assert.Contains("#9", outOfRange);
+        Assert.Null(library.FindItemset("DefaultItemset", out var ambiguous));
+        Assert.Contains("matches 2 itemsets", ambiguous);
+        Assert.Contains("Game/DefaultItemset", ambiguous);
+        Assert.Contains("Repack/DefaultItemset", ambiguous);
+        Assert.Null(library.FindItemset("Nothing", out var unknown));
+        Assert.Contains("No itemset matches", unknown);
+    }
+
+    [Fact]
+    public void A_key_several_packs_share_means_the_base_installs_itemset()
+    {
+        using var tree = BuildNamingRoot();
+        var library = ContentLibrary.Scan([tree.Root], baseInstallId: "Game");
+
+        var entry = library.FindItemset("defaultitemset", out var problem);
+
+        Assert.Null(problem);
+        Assert.Equal("Game", entry?.Pack.Id);
+    }
 }

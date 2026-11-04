@@ -91,6 +91,14 @@ public partial class Hud : CanvasLayer
         _selectedName.Text = caption;
     }
 
+    /// <summary>Whether the selected item's name shows above the hotbar: hidden while piloting, when nothing can be
+    /// built or used from the seat.</summary>
+    public bool SelectionVisible
+    {
+        get => _selectedName.Visible;
+        set => _selectedName.Visible = value;
+    }
+
     /// <summary>Mining progress from 0 to 1, or null to hide the bar.</summary>
     public void ShowProgress(double? fraction)
     {

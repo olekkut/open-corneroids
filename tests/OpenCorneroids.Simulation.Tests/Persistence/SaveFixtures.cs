@@ -30,7 +30,10 @@ static class SaveFixtures
         {
             Name = "Kosmos Ω \"quoted\" \\ name",
             Seed = -987654,
-            Player = new PlayerState(new Vector3(0.1f, -1e-7f, 3.4e38f), new Vector3(-2.5f, 0, float.Epsilon), -1.2345678f, 6.2831855f),
+            Player = new PlayerState(new Vector3(0.1f, -1e-7f, 3.4e38f), new Vector3(-2.5f, 0, float.Epsilon), -1.2345678f, 6.2831855f)
+            {
+                Drift = new Vector3(-2, 0, 1e-6f),
+            },
             Inventory = [new ItemStack(0, 5), null, new ItemStack(21, 1), null],
             Creative = true,
             TexturePacks = ["SordsTextures", "Pack \"Ω\""],
@@ -67,6 +70,34 @@ static class SaveFixtures
         Assert.Equal(expected.Inventory, actual.Inventory);
         Assert.Equal(expected.Creative, actual.Creative);
         Assert.Equal(expected.TexturePacks, actual.TexturePacks);
+        Assert.Equal(expected.Objects, actual.Objects);
+        Assert.Equal(expected.Ships.Count, actual.Ships.Count);
+        for (int i = 0; i < expected.Ships.Count; i++) AssertSameShip(expected.Ships[i], actual.Ships[i]);
+    }
+
+    /// <summary>A small turned, moving ship with random cells over a palette that includes blockId 0, and objects.</summary>
+    public static ShipSnapshot Ship(int size = 4, int seed = 99)
+    {
+        int[] palette = [WorldSnapshot.AirBlockId, 0, 23, 9];
+        var random = new Random(seed);
+        var cells = new ushort[size * size * size];
+        for (int i = 0; i < cells.Length; i++) cells[i] = (ushort)(random.Next(3) == 0 ? random.Next(palette.Length) : 0);
+        return new ShipSnapshot(new Vector3(60.5f, -3.25f, 1e6f), Quaternion.Normalize(new Quaternion(0.1f, -0.7f, 0.2f, 0.6f)),
+            new Vector3(1.5f, 0, -2), new Vector3(0, 0.25f, float.Epsilon), size, palette, cells)
+        {
+            Objects = [new PlacedObject(22, new Int3(0, 1, 2), 9, 0), new PlacedObject(30, new Int3(size - 1, 0, 0), 0, 0.5f)],
+        };
+    }
+
+    public static void AssertSameShip(ShipSnapshot expected, ShipSnapshot actual)
+    {
+        Assert.Equal(expected.Position, actual.Position);
+        Assert.Equal(expected.Rotation, actual.Rotation);
+        Assert.Equal(expected.LinearVelocity, actual.LinearVelocity);
+        Assert.Equal(expected.AngularVelocity, actual.AngularVelocity);
+        Assert.Equal(expected.Size, actual.Size);
+        Assert.Equal(expected.Palette, actual.Palette);
+        Assert.True(expected.Cells.AsSpan().SequenceEqual(actual.Cells), "ship cells differ");
         Assert.Equal(expected.Objects, actual.Objects);
     }
 

@@ -90,6 +90,23 @@ public class ByoaGoldenTests
         Assert.Equal(3, darthNox.Select(s => s.Fingerprint).Distinct().Count());
     }
 
+    [ByoaFact(Vanilla120, V15, V21, DarthNox)]
+    public void The_darthnox_releases_are_found_by_their_pack_names()
+    {
+        Assert.Equal((DarthNox, "DarthNox's Itemset"), Find(DarthNox));
+        Assert.Equal((V21, "CADNR v21"), Find(V21));
+        Assert.Equal((V15, "DarthNox's Itemset"), Find(V15));
+        Assert.Equal((V21, "Default"), Find($"{V21}/DefaultItemset"));
+        Assert.Equal((Vanilla120, "Default"), Find("DefaultItemset"));
+
+        static (string?, string?) Find(string choice)
+        {
+            var entry = Library.FindItemset(choice, out var problem);
+            Assert.Null(problem);
+            return (entry?.Pack.Id, entry?.Header.Name);
+        }
+    }
+
     [ByoaFact(Nav, Vanilla120)]
     public void Nav_uses_its_own_atlases_and_falls_back_to_vanilla_for_the_defaults_it_does_not_ship()
     {

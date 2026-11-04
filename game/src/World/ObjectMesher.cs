@@ -27,15 +27,17 @@ public static class ObjectMesher
     /// <summary>A piece smaller than this fraction of a region is dropped; float noise, not texture.</summary>
     const float MinPiece = 1e-3f;
 
-    /// <summary>The mesh at door offset 0, in world coordinates (the world node sits at the origin).</summary>
-    public static ArrayMesh Build(BlockShape shape, Int3 origin, Orientation o, TextureMapping mapping, BlockTextures textures, Material material)
+    /// <summary>The mesh at door offset 0, in the coordinates of the grid that owns the object (its node is the grid's child).</summary>
+    /// <param name="active">Powered textures, or the block's unpowered (<c>deactiveTextures</c>) ones.</param>
+    public static ArrayMesh Build(BlockShape shape, Int3 origin, Orientation o, TextureMapping mapping, BlockTextures textures, Material material,
+        bool active = true)
     {
         var vertices = new List<Vector3>();
         var normals = new List<Vector3>();
         var uvs = new List<Vector2>();
         var indices = new List<int>();
 
-        foreach (var quad in ShapeQuads.Quads(shape, origin, o, default, mapping))
+        foreach (var quad in ShapeQuads.Quads(shape, origin, o, default, mapping, active))
         {
             Vector3 a = quad.A.ToGodot(), b = quad.B.ToGodot(), d = quad.D.ToGodot();
             var normal = quad.Normal.ToGodot();

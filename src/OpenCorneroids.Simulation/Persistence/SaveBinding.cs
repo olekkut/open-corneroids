@@ -47,23 +47,28 @@ public static class SaveBinding
             $"Itemset '{current.Header.Name}' from '{currentPackId}' has changed since this world was saved (it was from '{saved.PackId}'); every block the world uses still exists, but their properties may differ.");
     }
 
-    /// <summary>Distinct blockIds referenced by at least one cell or placed object, air excluded.</summary>
+    /// <summary>Distinct blockIds referenced by at least one cell or placed object, of the world or any ship, air excluded.</summary>
     public static IReadOnlySet<int> UsedBlockIds(WorldSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        var palette = snapshot.Palette;
+        var used = new HashSet<int>();
+        AddUsed(used, snapshot.Palette, snapshot.Cells, snapshot.Objects, nameof(snapshot));
+        foreach (var ship in snapshot.Ships) AddUsed(used, ship.Palette, ship.Cells, ship.Objects, nameof(snapshot));
+        return used;
+    }
+
+    /// <summary>The blockIds one grid (the world's or a ship's) uses.</summary>
+    static void AddUsed(HashSet<int> used, IReadOnlyList<int> palette, ushort[] cells, IReadOnlyList<PlacedObject> objects, string parameter)
+    {
         var referenced = new bool[palette.Count];
-        foreach (var cell in snapshot.Cells)
+        foreach (var cell in cells)
         {
             if (cell >= referenced.Length)
-                throw new ArgumentException($"Cell value {cell} is outside the {palette.Count}-entry palette.", nameof(snapshot));
+                throw new ArgumentException($"Cell value {cell} is outside the {palette.Count}-entry palette.", parameter);
             referenced[cell] = true;
         }
-
-        var used = new HashSet<int>();
         for (int i = 0; i < referenced.Length; i++)
             if (referenced[i] && palette[i] != WorldSnapshot.AirBlockId) used.Add(palette[i]);
-        foreach (var placed in snapshot.Objects) used.Add(placed.BlockId);
-        return used;
+        foreach (var placed in objects) used.Add(placed.BlockId);
     }
 }

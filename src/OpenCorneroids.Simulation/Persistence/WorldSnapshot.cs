@@ -11,9 +11,18 @@ namespace OpenCorneroids.Simulation.Persistence;
 /// </summary>
 public sealed record ItemsetBinding(string Key, string Name, string PackId, string Fingerprint);
 
+/// <param name="Velocity">The whole velocity, including <see cref="Drift"/>.</param>
 /// <param name="Pitch">Radians.</param>
 /// <param name="Yaw">Radians.</param>
-public sealed record PlayerState(Vector3 Position, Vector3 Velocity, float Pitch, float Yaw);
+public sealed record PlayerState(Vector3 Position, Vector3 Velocity, float Pitch, float Yaw)
+{
+    /// <summary>
+    /// The part of <see cref="Velocity"/> that is momentum the player was given (stepping off a moving ship) and that
+    /// the game does not damp away. Optional in the file: left out when zero, so older files and worlds saved standing
+    /// still read and write as before; an older build that ignores it only loses that momentum.
+    /// </summary>
+    public Vector3 Drift { get; init; }
+}
 
 /// <summary>
 /// A block that is not stored in the cell grid: a multi-cell or turned block (doors, guns, thrusters...), kept whole so
@@ -39,6 +48,26 @@ public sealed record PlacedObject(int BlockId, Int3 Origin, int Orientation, flo
             return $"block {BlockId} at {Origin} reaches outside the {worldSize}-cell world";
         return null;
     }
+}
+
+/// <summary>
+/// One ship: a cubic block grid of its own with a transform, so it can sit anywhere in the world at any angle. Cells and
+/// objects follow the same rules as the world's (<see cref="WorldSnapshot.Palette"/>, <see cref="WorldSnapshot.Cells"/>,
+/// <see cref="PlacedObject"/>), in the ship's LOCAL cell coordinates 0..<see cref="Size"/>−1.
+/// </summary>
+/// <param name="Position">World position of the ship grid's local origin (the minimum corner of local cell 0,0,0).</param>
+/// <param name="Rotation">Unit quaternion turning ship-local directions into world directions.</param>
+/// <param name="LinearVelocity">World space, units per second.</param>
+/// <param name="AngularVelocity">World axes, radians per second.</param>
+/// <param name="Size">Edge length of the ship's cubic local grid.</param>
+/// <param name="Palette">As <see cref="WorldSnapshot.Palette"/>: entry 0 is the air sentinel, the rest ORIGINAL blockIds.</param>
+/// <param name="Cells">Size³ palette indices in <see cref="WorldSnapshot.CellIndex"/> order.</param>
+public sealed record ShipSnapshot(
+    Vector3 Position, Quaternion Rotation, Vector3 LinearVelocity, Vector3 AngularVelocity,
+    int Size, IReadOnlyList<int> Palette, ushort[] Cells)
+{
+    /// <summary>The ship's multi-cell blocks, origins in ship-local cells.</summary>
+    public IReadOnlyList<PlacedObject> Objects { get; init; } = [];
 }
 
 /// <summary>Everything a save file holds, as plain data so the simulation can be rebuilt without Godot.</summary>
@@ -73,6 +102,12 @@ public sealed record WorldSnapshot(
     /// callers keep compiling.
     /// </summary>
     public IReadOnlyList<PlacedObject> Objects { get; init; } = [];
+
+    /// <summary>
+    /// Ships: block grids of their own that are not part of the static world (see <see cref="ShipSnapshot"/>). Optional
+    /// in the file: saves written before ships existed have none.
+    /// </summary>
+    public IReadOnlyList<ShipSnapshot> Ships { get; init; } = [];
 
     /// <summary>Palette index and cell value of air.</summary>
     public const ushort Air = 0;

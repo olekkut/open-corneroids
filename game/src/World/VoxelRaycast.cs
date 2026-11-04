@@ -6,11 +6,19 @@ namespace OpenCorneroids.Game.World;
 public static class VoxelRaycast
 {
     /// <summary>
-    /// Finds the first solid cell (grid block or object model, <see cref="VoxelWorld.IsSolid"/>) within
+    /// Finds the first solid cell (grid block or object model, <see cref="BlockGrid.IsSolid"/>) within
     /// <paramref name="maxDistance"/>. <paramref name="before"/> is the empty
     /// cell the ray came from, where a new block would be placed.
     /// </summary>
-    public static bool Cast(VoxelWorld world, Vector3 origin, Vector3 direction, float maxDistance, out Vector3I hit, out Vector3I before)
+    public static bool Cast(BlockGrid world, Vector3 origin, Vector3 direction, float maxDistance, out Vector3I hit, out Vector3I before) =>
+        Cast(world, origin, direction, maxDistance, out hit, out before, out _);
+
+    /// <summary>
+    /// As above, in the grid's LOCAL coordinates (the caller transforms the ray), also giving how far along the ray the
+    /// hit cell starts (0 when the ray starts inside it), so hits in several grids can be compared.
+    /// </summary>
+    public static bool Cast(BlockGrid world, Vector3 origin, Vector3 direction, float maxDistance, out Vector3I hit, out Vector3I before,
+        out float distance)
     {
         var dir = direction.Normalized();
         var cell = new Vector3I(Mathf.FloorToInt(origin.X), Mathf.FloorToInt(origin.Y), Mathf.FloorToInt(origin.Z));
@@ -28,6 +36,7 @@ public static class VoxelRaycast
             if (world.IsSolid(cell))
             {
                 hit = cell;
+                distance = travelled;
                 return true;
             }
             before = cell;
@@ -36,6 +45,7 @@ public static class VoxelRaycast
             else { cell.Z += step.Z; travelled = tMax.Z; tMax.Z += tDelta.Z; }
         }
         hit = default;
+        distance = float.PositiveInfinity;
         return false;
     }
 

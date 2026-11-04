@@ -4,7 +4,8 @@ namespace OpenCorneroids.Game.World;
 
 /// <summary>
 /// Builds one chunk's mesh: a quad for every block face that touches air or a see-through block. Opaque and
-/// cutout (window) faces go into separate surfaces so they can use different materials.
+/// cutout (window) faces go into separate surfaces so they can use different materials. Blocks the grid marks inactive
+/// (<see cref="BlockGrid.IsInactive"/>, unpowered on a ship) get their unpowered textures.
 /// </summary>
 public static class ChunkMesher
 {
@@ -63,7 +64,7 @@ public static class ChunkMesher
         }
     }
 
-    public static ArrayMesh? Build(VoxelWorld world, Vector3I origin, int size, Material opaque, Material cutout)
+    public static ArrayMesh? Build(BlockGrid world, Vector3I origin, int size, Material opaque, Material cutout)
     {
         var palette = world.Palette;
         var solid = new Surface();
@@ -76,6 +77,7 @@ public static class ChunkMesher
             var block = world.Get(p);
             if (block == BlockPalette.Air) continue;
             bool isCutout = palette.IsCutout(block);
+            bool active = !world.IsInactive(p);
             var center = new Vector3(p.X + 0.5f, p.Y + 0.5f, p.Z + 0.5f);
             foreach (var face in Faces)
             {
@@ -84,7 +86,7 @@ public static class ChunkMesher
                 // Hidden behind an opaque block, between two panes of the same glass, or inside an opaque object model
                 // that fills the neighbouring cell.
                 if (neighbour != BlockPalette.Air ? !palette.IsCutout(neighbour) || neighbour == block : world.HidesFaces(next)) continue;
-                (isCutout ? glass : solid).AddQuad(center + (Vector3)face.Normal * 0.5f, face, palette.Uv(block, face.Uv));
+                (isCutout ? glass : solid).AddQuad(center + (Vector3)face.Normal * 0.5f, face, palette.Uv(block, face.Uv, active));
             }
         }
 

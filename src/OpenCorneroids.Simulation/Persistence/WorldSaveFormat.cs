@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Numerics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Simulation.Shapes;
 
@@ -36,8 +37,13 @@ public static class WorldSaveFormat
     /// keep reading every world that has nothing for them to lose.
     /// </summary>
     public const ushort ObjectsVersion = 2;
+    /// <summary>
+    /// Version 2 plus <see cref="WorldSnapshot.Ships"/>, for the same reason: a version 2 reader would drop the ships.
+    /// Files without ships keep the older versions.
+    /// </summary>
+    public const ushort ShipsVersion = 3;
     /// <summary>The newest version this build reads and writes.</summary>
-    public const ushort CurrentVersion = ObjectsVersion;
+    public const ushort CurrentVersion = ShipsVersion;
     /// <summary>Largest accepted edge length; 1024³ cells is already 2 GiB in memory.</summary>
     public const int MaxSize = 1024;
     /// <summary>Metadata is small (names, palette, inventory); the cap stops a hostile length from allocating gigabytes.</summary>
@@ -54,6 +60,18 @@ public static class WorldSaveFormat
     /// JSON stays well within <see cref="MaxMetadataBytes"/>; tunable.
     /// </summary>
     public const int MaxObjects = 65536;
+    /// <summary>Most <see cref="WorldSnapshot.Ships"/> one world may hold; tunable.</summary>
+    public const int MaxShips = 64;
+    /// <summary>Largest accepted ship grid edge; tunable.</summary>
+    public const int MaxShipSize = 128;
+    /// <summary>
+    /// Cap on the cells of all ships together (eight 128³ grids), checked before any ship grid is allocated, so a
+    /// hostile file can't declare dozens of big ships in a few bytes and cost gigabytes. Tunable.
+    /// </summary>
+    public const long MaxTotalShipCells = 8L * 128 * 128 * 128;
+    /// <summary>How far a saved ship rotation's length may be from 1; float rounding of a normalised quaternion stays
+    /// far below it.</summary>
+    public const float RotationTolerance = 1e-3f;
 
     const int HeaderBytes = 10;
     const int ZlibHeaderBytes = 2;
@@ -94,7 +112,9 @@ public static class WorldSaveFormat
     public static ushort VersionFor(WorldSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        return snapshot.Objects is { Count: > 0 } ? ObjectsVersion : BaseVersion;
+        return snapshot.Ships is { Count: > 0 } ? ShipsVersion
+            : snapshot.Objects is { Count: > 0 } ? ObjectsVersion
+            : BaseVersion;
     }
 
     /// <summary>Reads the stream to its end; anything after the cells is damage, not a place for future data.</summary>
@@ -103,7 +123,7 @@ public static class WorldSaveFormat
         ArgumentNullException.ThrowIfNull(stream);
         return Guard(() =>
         {
-            var meta = ReadMetadata(stream);
+            var meta = ReadMetadata(stream, ShipCells.Fill);
             return meta with { Cells = ReadCells(stream, meta.Size, meta.Palette.Count) };
         });
     }
@@ -118,7 +138,7 @@ public static class WorldSaveFormat
         ArgumentNullException.ThrowIfNull(stream);
         Guard(() =>
         {
-            var meta = ReadMetadata(stream);
+            var meta = ReadMetadata(stream, ShipCells.Verify);
             ReadCells(stream, meta.Size, meta.Palette.Count, fill: false);
             return true;
         });
@@ -128,7 +148,7 @@ public static class WorldSaveFormat
     public static WorldSummary ReadSummary(Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        var meta = Guard(() => ReadMetadata(stream));
+        var meta = Guard(() => ReadMetadata(stream, ShipCells.Skip));
         return new WorldSummary(meta.Name, meta.SavedAt, meta.Itemset, stream is FileStream file ? file.Name : "") { Creative = meta.Creative };
     }
 
@@ -162,8 +182,19 @@ public static class WorldSaveFormat
 
     // ---- metadata ----
 
+    /// <summary>What <see cref="ReadMetadata"/> does with the ships' cells, which live in the metadata.</summary>
+    enum ShipCells
+    {
+        /// <summary>Not decoded; the ships come back with empty cells (world lists).</summary>
+        Skip,
+        /// <summary>Decoded and checked like the world's, without allocating the grids.</summary>
+        Verify,
+        /// <summary>Decoded into the snapshot.</summary>
+        Fill,
+    }
+
     /// <summary>Returns the snapshot with empty <see cref="WorldSnapshot.Cells"/>; the caller fills them in.</summary>
-    static WorldSnapshot ReadMetadata(Stream stream)
+    static WorldSnapshot ReadMetadata(Stream stream, ShipCells shipCells)
     {
         Span<byte> header = stackalloc byte[HeaderBytes];
         stream.ReadExactly(header[..4]);
@@ -183,60 +214,132 @@ public static class WorldSaveFormat
         stream.ReadExactly(json);
 
         var dto = JsonSerializer.Deserialize<MetadataDto>(json, Json) ?? throw Damaged("the metadata is null");
-        var snapshot = dto.ToSnapshot();
-        if (MetadataProblem(snapshot) is { } problem) throw Damaged(problem);
-        return snapshot;
+        var (snapshot, encodedShipCells) = dto.ToSnapshot();
+        if (MetadataProblem(snapshot, checkShipCells: false) is { } problem) throw Damaged(problem);
+        if (shipCells == ShipCells.Skip || snapshot.Ships.Count == 0) return snapshot;
+
+        var ships = new List<ShipSnapshot>(snapshot.Ships.Count);
+        for (int i = 0; i < snapshot.Ships.Count; i++)
+        {
+            var ship = snapshot.Ships[i];
+            byte[] block;
+            try
+            {
+                block = Convert.FromBase64String(encodedShipCells[i]);
+            }
+            catch (FormatException e)
+            {
+                throw new WorldSaveException($"World save is damaged: the cells of ship {i} are not valid base64.", e);
+            }
+            try
+            {
+                var cells = ReadCells(new MemoryStream(block, writable: false), ship.Size, ship.Palette.Count, shipCells == ShipCells.Fill);
+                ships.Add(ship with { Cells = cells });
+            }
+            catch (WorldSaveException e)
+            {
+                // The same checks as the world's cells; the message says which ship.
+                const string prefix = "World save is damaged: ";
+                var detail = e.Message.StartsWith(prefix, StringComparison.Ordinal) ? e.Message[prefix.Length..] : e.Message;
+                throw new WorldSaveException($"{prefix}ship {i}: {detail}", e);
+            }
+        }
+        return snapshot with { Ships = ships };
     }
 
     /// <summary>Shared by write and read so a file this build writes is always one it accepts.</summary>
-    static string? MetadataProblem(WorldSnapshot s)
+    /// <param name="checkShipCells">False while reading, where the ships' cells are decoded (and checked) afterwards.</param>
+    static string? MetadataProblem(WorldSnapshot s, bool checkShipCells = true)
     {
         if (s.Name is null) return "the world has no name";
         if (s.Itemset is null || s.Itemset.Key is null || s.Itemset.Name is null || s.Itemset.PackId is null || s.Itemset.Fingerprint is null)
             return "the itemset binding is incomplete";
         if (s.Size < 1 || s.Size > MaxSize) return $"size {s.Size} is outside 1..{MaxSize}";
-        if (s.Palette is null || s.Palette.Count == 0) return "the palette is empty";
-        if (s.Palette.Count > MaxPaletteEntries) return $"the palette has {s.Palette.Count} entries, over the {MaxPaletteEntries} limit";
-        if (s.Palette[0] != WorldSnapshot.AirBlockId) return $"palette entry 0 is {s.Palette[0]}, not the air sentinel {WorldSnapshot.AirBlockId}";
-        for (int i = 1; i < s.Palette.Count; i++)
-            if (s.Palette[i] < 0) return $"palette entry {i} is the negative blockId {s.Palette[i]}";
+        if (PaletteProblem(s.Palette, "the palette", "palette entry") is { } palette) return palette;
         if (s.Player is null) return "the player state is missing";
-        if (!IsFinite(s.Player.Position) || !IsFinite(s.Player.Velocity) || !float.IsFinite(s.Player.Pitch) || !float.IsFinite(s.Player.Yaw))
+        if (!IsFinite(s.Player.Position) || !IsFinite(s.Player.Velocity) || !IsFinite(s.Player.Drift) || !float.IsFinite(s.Player.Pitch) || !float.IsFinite(s.Player.Yaw))
             return "the player state has a non-finite number";
         if (s.Inventory is null) return "the inventory is missing";
         if (s.TexturePacks is null) return "the texture pack list is missing";
         if (s.TexturePacks.Any(id => id is null)) return "a texture pack id is null";
-        return ObjectsProblem(s);
+        return ObjectsProblem(s.Objects, s.Size, "object", "world", "the world") ?? ShipsProblem(s, checkShipCells);
+    }
+
+    /// <param name="what">"the palette" or "ship 3's palette", for the whole-palette messages.</param>
+    /// <param name="entry">"palette entry" or "ship 3 palette entry", for the per-entry messages.</param>
+    static string? PaletteProblem(IReadOnlyList<int>? palette, string what, string entry)
+    {
+        if (palette is null || palette.Count == 0) return $"{what} is empty";
+        if (palette.Count > MaxPaletteEntries) return $"{what} has {palette.Count} entries, over the {MaxPaletteEntries} limit";
+        if (palette[0] != WorldSnapshot.AirBlockId) return $"{entry} 0 is {palette[0]}, not the air sentinel {WorldSnapshot.AirBlockId}";
+        for (int i = 1; i < palette.Count; i++)
+            if (palette[i] < 0) return $"{entry} {i} is the negative blockId {palette[i]}";
+        return null;
     }
 
     /// <summary>
     /// What can be checked without the itemset. The origin is the footprint's minimum cell, so it must lie inside the
-    /// world; whether the whole footprint fits needs the block's shape (<see cref="PlacedObject.FootprintProblem"/>).
+    /// grid; whether the whole footprint fits needs the block's shape (<see cref="PlacedObject.FootprintProblem"/>).
     /// </summary>
-    static string? ObjectsProblem(WorldSnapshot s)
+    /// <param name="label">How each object is named in a message: "object" or "ship 2 object".</param>
+    /// <param name="grid">"world" or "ship grid", as in "outside the 128-cell world".</param>
+    /// <param name="owner">"the world" or "ship 2", as in "the world has 70000 objects".</param>
+    static string? ObjectsProblem(IReadOnlyList<PlacedObject>? objects, int size, string label, string grid, string owner)
     {
-        if (s.Objects is null) return "the object list is missing";
-        if (s.Objects.Count > MaxObjects) return $"the world has {s.Objects.Count} objects, over the {MaxObjects} limit";
-        for (int i = 0; i < s.Objects.Count; i++)
+        if (objects is null) return $"the {label} list is missing";
+        if (objects.Count > MaxObjects) return $"{owner} has {objects.Count} objects, over the {MaxObjects} limit";
+        for (int i = 0; i < objects.Count; i++)
         {
-            var o = s.Objects[i];
-            if (o is null) return $"object {i} is null";
-            if (o.BlockId < 0) return $"object {i} has the negative blockId {o.BlockId}";
-            if (!Orientation.IsValidIndex(o.Orientation)) return $"object {i} has orientation {o.Orientation}, outside 0..{Orientation.Count - 1}";
+            var o = objects[i];
+            if (o is null) return $"{label} {i} is null";
+            if (o.BlockId < 0) return $"{label} {i} has the negative blockId {o.BlockId}";
+            if (!Orientation.IsValidIndex(o.Orientation)) return $"{label} {i} has orientation {o.Orientation}, outside 0..{Orientation.Count - 1}";
             var p = o.Origin;
-            if (p.X < 0 || p.Y < 0 || p.Z < 0 || p.X >= s.Size || p.Y >= s.Size || p.Z >= s.Size)
-                return $"object {i} has origin {p}, outside the {s.Size}-cell world";
-            if (!float.IsFinite(o.Open) || o.Open < 0 || o.Open > 1) return $"object {i} has open fraction {o.Open}, outside 0..1";
+            if (p.X < 0 || p.Y < 0 || p.Z < 0 || p.X >= size || p.Y >= size || p.Z >= size)
+                return $"{label} {i} has origin {p}, outside the {size}-cell {grid}";
+            if (!float.IsFinite(o.Open) || o.Open < 0 || o.Open > 1) return $"{label} {i} has open fraction {o.Open}, outside 0..1";
         }
         return null;
     }
 
-    static string? CellsProblem(WorldSnapshot s)
+    /// <summary>
+    /// Every ship check that needs no itemset: a finite transform with a unit rotation (within
+    /// <see cref="RotationTolerance"/>), a size in 1..<see cref="MaxShipSize"/>, the count and total-cell caps, a palette
+    /// and objects under the world's rules and, when <paramref name="checkCells"/>, the cells themselves.
+    /// </summary>
+    static string? ShipsProblem(WorldSnapshot s, bool checkCells)
     {
-        long expected = (long)s.Size * s.Size * s.Size;
-        if (s.Cells is null || s.Cells.Length != expected) return $"expected {expected} cells for size {s.Size}, got {s.Cells?.Length ?? 0}";
-        for (int i = 0; i < s.Cells.Length; i++)
-            if (s.Cells[i] >= s.Palette.Count) return $"cell {i} uses palette index {s.Cells[i]}, but the palette has {s.Palette.Count} entries";
+        if (s.Ships is null) return "the ship list is missing";
+        if (s.Ships.Count > MaxShips) return $"the world has {s.Ships.Count} ships, over the {MaxShips} limit";
+        long total = 0;
+        for (int i = 0; i < s.Ships.Count; i++)
+        {
+            var ship = s.Ships[i];
+            if (ship is null) return $"ship {i} is null";
+            if (!IsFinite(ship.Position) || !IsFinite(ship.LinearVelocity) || !IsFinite(ship.AngularVelocity))
+                return $"ship {i} has a non-finite position or velocity";
+            var q = ship.Rotation;
+            if (!float.IsFinite(q.X) || !float.IsFinite(q.Y) || !float.IsFinite(q.Z) || !float.IsFinite(q.W) ||
+                Math.Abs(q.Length() - 1) > RotationTolerance)
+                return $"ship {i} has a rotation that is not a unit quaternion";
+            if (ship.Size < 1 || ship.Size > MaxShipSize) return $"ship {i} has size {ship.Size}, outside 1..{MaxShipSize}";
+            total += (long)ship.Size * ship.Size * ship.Size;
+            if (total > MaxTotalShipCells) return $"the ships have more than {MaxTotalShipCells} cells together, over the limit";
+            if (PaletteProblem(ship.Palette, $"ship {i}'s palette", $"ship {i} palette entry") is { } palette) return palette;
+            if (ObjectsProblem(ship.Objects, ship.Size, $"ship {i} object", "ship grid", $"ship {i}") is { } objects) return objects;
+            if (checkCells && CellsProblem(ship.Cells, ship.Size, ship.Palette) is { } cells) return $"ship {i}: {cells}";
+        }
+        return null;
+    }
+
+    static string? CellsProblem(WorldSnapshot s) => CellsProblem(s.Cells, s.Size, s.Palette);
+
+    static string? CellsProblem(ushort[]? cells, int size, IReadOnlyList<int> palette)
+    {
+        long expected = (long)size * size * size;
+        if (cells is null || cells.Length != expected) return $"expected {expected} cells for size {size}, got {cells?.Length ?? 0}";
+        for (int i = 0; i < cells.Length; i++)
+            if (cells[i] >= palette.Count) return $"cell {i} uses palette index {cells[i]}, but the palette has {palette.Count} entries";
         return null;
     }
 
@@ -471,6 +574,9 @@ public static class WorldSaveFormat
         public string?[]? TexturePacks { get; set; }
         // Added later still, optional for the same reason: a file without it has no objects.
         public ObjectDto?[]? Objects { get; set; }
+        // And ships, the same way: a file without them has none.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ShipDto?[]? Ships { get; set; }
 
         public static MetadataDto From(WorldSnapshot s) => new()
         {
@@ -486,24 +592,24 @@ public static class WorldSaveFormat
                 Velocity = [s.Player.Velocity.X, s.Player.Velocity.Y, s.Player.Velocity.Z],
                 Pitch = s.Player.Pitch,
                 Yaw = s.Player.Yaw,
+                Drift = s.Player.Drift == Vector3.Zero ? null : [s.Player.Drift.X, s.Player.Drift.Y, s.Player.Drift.Z],
             },
             Inventory = [.. s.Inventory.Select(stack => stack is null ? null : new StackDto { ItemId = stack.ItemId, Quantity = stack.Quantity })],
             Creative = s.Creative,
             TexturePacks = [.. s.TexturePacks],
-            Objects = [.. s.Objects.Select(o => new ObjectDto
-            {
-                BlockId = o.BlockId,
-                Origin = [o.Origin.X, o.Origin.Y, o.Origin.Z],
-                Orientation = o.Orientation,
-                Open = o.Open,
-            })],
+            Objects = [.. s.Objects.Select(ObjectDto.From)],
+            // Left out when there are none, so a world without ships is written exactly as older builds wrote it.
+            Ships = s.Ships.Count == 0 ? null : [.. s.Ships.Select(ShipDto.From)],
         };
 
-        public WorldSnapshot ToSnapshot()
+        /// <summary>The snapshot without any cells (the world's and the ships' are decoded separately), plus each ship's
+        /// still encoded cells, in ship order.</summary>
+        public (WorldSnapshot Snapshot, string[] ShipCells) ToSnapshot()
         {
             var itemset = Itemset ?? throw Missing("itemset");
             var player = Player ?? throw Missing("player");
-            return new WorldSnapshot(
+            var ships = Ships ?? [];
+            var snapshot = new WorldSnapshot(
                 Name ?? throw Missing("name"),
                 SavedAt ?? throw Missing("savedAt"),
                 new ItemsetBinding(
@@ -519,27 +625,86 @@ public static class WorldSaveFormat
                     Vector(player.Position, "player.position"),
                     Vector(player.Velocity, "player.velocity"),
                     player.Pitch ?? throw Missing("player.pitch"),
-                    player.Yaw ?? throw Missing("player.yaw")),
+                    player.Yaw ?? throw Missing("player.yaw"))
+                {
+                    Drift = player.Drift is null ? Vector3.Zero : Vector(player.Drift, "player.drift"),
+                },
                 [.. (Inventory ?? throw Missing("inventory")).Select((slot, i) => slot is null ? null : new ItemStack(
                     slot.ItemId ?? throw Missing($"inventory[{i}].itemId"),
                     slot.Quantity ?? throw Missing($"inventory[{i}].quantity")))])
             {
                 Creative = Creative ?? false,
                 TexturePacks = [.. (TexturePacks ?? []).Select((id, i) => id ?? throw Damaged($"metadata field 'texturePacks[{i}]' is null"))],
-                Objects = [.. (Objects ?? []).Select((o, i) => o is null
-                    ? throw Damaged($"metadata field 'objects[{i}]' is null")
-                    : new PlacedObject(
-                        o.BlockId ?? throw Missing($"objects[{i}].blockId"),
-                        o.Origin is [var x, var y, var z] ? new Int3(x, y, z) : throw Damaged($"metadata field 'objects[{i}].origin' is not three integers"),
-                        o.Orientation ?? throw Missing($"objects[{i}].orientation"),
-                        o.Open ?? 0))],
+                Objects = PlacedObjects(Objects, "objects"),
+                Ships = [.. ships.Select((ship, i) => ship is null ? throw Damaged($"metadata field 'ships[{i}]' is null") : ship.ToSnapshot(i))],
+            };
+            return (snapshot, [.. ships.Select((ship, i) => ship!.Cells ?? throw Missing($"ships[{i}].cells"))]);
+        }
+
+        public static List<PlacedObject> PlacedObjects(ObjectDto?[]? objects, string field) =>
+            [.. (objects ?? []).Select((o, i) => o is null
+                ? throw Damaged($"metadata field '{field}[{i}]' is null")
+                : new PlacedObject(
+                    o.BlockId ?? throw Missing($"{field}[{i}].blockId"),
+                    o.Origin is [var x, var y, var z] ? new Int3(x, y, z) : throw Damaged($"metadata field '{field}[{i}].origin' is not three integers"),
+                    o.Orientation ?? throw Missing($"{field}[{i}].orientation"),
+                    o.Open ?? 0))];
+
+        public static Vector3 Vector(float[]? xyz, string field) =>
+            xyz is [var x, var y, var z] ? new Vector3(x, y, z) : throw Damaged($"metadata field '{field}' is not three numbers");
+
+        public static WorldSaveException Missing(string field) => Damaged($"metadata field '{field}' is missing");
+    }
+
+    /// <remarks>
+    /// <c>cells</c> holds the ship's grid in exactly the encoding of the world's cell block (zlib over runs, see the class
+    /// summary) as base64, so the same decoder and the same checks apply. Ships are small next to the world, and keeping
+    /// them in the metadata leaves the container layout as it was. Velocities may be left out (at rest).
+    /// </remarks>
+    sealed class ShipDto
+    {
+        public float[]? Position { get; set; }
+        /// <summary>x, y, z, w.</summary>
+        public float[]? Rotation { get; set; }
+        public float[]? LinearVelocity { get; set; }
+        public float[]? AngularVelocity { get; set; }
+        public int? Size { get; set; }
+        public int[]? Palette { get; set; }
+        public string? Cells { get; set; }
+        public ObjectDto?[]? Objects { get; set; }
+
+        public static ShipDto From(ShipSnapshot ship)
+        {
+            using var cells = CompressCells(ship.Cells);
+            return new()
+            {
+                Position = [ship.Position.X, ship.Position.Y, ship.Position.Z],
+                Rotation = [ship.Rotation.X, ship.Rotation.Y, ship.Rotation.Z, ship.Rotation.W],
+                LinearVelocity = [ship.LinearVelocity.X, ship.LinearVelocity.Y, ship.LinearVelocity.Z],
+                AngularVelocity = [ship.AngularVelocity.X, ship.AngularVelocity.Y, ship.AngularVelocity.Z],
+                Size = ship.Size,
+                Palette = [.. ship.Palette],
+                Cells = Convert.ToBase64String(cells.GetBuffer(), 0, (int)cells.Length),
+                Objects = [.. ship.Objects.Select(ObjectDto.From)],
             };
         }
 
-        static Vector3 Vector(float[]? xyz, string field) =>
-            xyz is [var x, var y, var z] ? new Vector3(x, y, z) : throw Damaged($"metadata field '{field}' is not three numbers");
-
-        static WorldSaveException Missing(string field) => Damaged($"metadata field '{field}' is missing");
+        /// <summary>Without cells; see <see cref="MetadataDto.ToSnapshot"/>.</summary>
+        public ShipSnapshot ToSnapshot(int index)
+        {
+            string field = $"ships[{index}]";
+            return new ShipSnapshot(
+                MetadataDto.Vector(Position, $"{field}.position"),
+                Rotation is [var x, var y, var z, var w] ? new Quaternion(x, y, z, w) : throw Damaged($"metadata field '{field}.rotation' is not four numbers"),
+                LinearVelocity is null ? Vector3.Zero : MetadataDto.Vector(LinearVelocity, $"{field}.linearVelocity"),
+                AngularVelocity is null ? Vector3.Zero : MetadataDto.Vector(AngularVelocity, $"{field}.angularVelocity"),
+                Size ?? throw MetadataDto.Missing($"{field}.size"),
+                Palette ?? throw MetadataDto.Missing($"{field}.palette"),
+                [])
+            {
+                Objects = MetadataDto.PlacedObjects(Objects, $"{field}.objects"),
+            };
+        }
     }
 
     sealed class BindingDto
@@ -556,6 +721,9 @@ public static class WorldSaveFormat
         public float[]? Velocity { get; set; }
         public float? Pitch { get; set; }
         public float? Yaw { get; set; }
+        // Added with ships; optional (zero when missing) and left out when zero.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public float[]? Drift { get; set; }
     }
 
     /// <remarks><c>open</c> may be left out; it is 0 for anything that isn't a door.</remarks>
@@ -565,6 +733,14 @@ public static class WorldSaveFormat
         public int[]? Origin { get; set; }
         public int? Orientation { get; set; }
         public float? Open { get; set; }
+
+        public static ObjectDto From(PlacedObject o) => new()
+        {
+            BlockId = o.BlockId,
+            Origin = [o.Origin.X, o.Origin.Y, o.Origin.Z],
+            Orientation = o.Orientation,
+            Open = o.Open,
+        };
     }
 
     sealed class StackDto
