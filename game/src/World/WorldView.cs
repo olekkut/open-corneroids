@@ -166,7 +166,7 @@ public partial class WorldView : Node3D
         }
         else
         {
-            camera.Rotation = new Vector3(saved.Player.Pitch, saved.Player.Yaw, 0);
+            camera.Rotation = new Vector3(saved.Player.Pitch, saved.Player.Yaw, saved.Player.Roll);
             camera.Motor.Velocity = ToGodot(saved.Player.Velocity);
             camera.Motor.Drift = ToGodot(saved.Player.Drift);
         }
@@ -249,7 +249,7 @@ public partial class WorldView : Node3D
         }
         // Standing up from a ship gives its whole velocity as drift (see FlyCamera.StandUp), so a save made seated does too.
         var drift = Player.PilotShip is null ? Player.Motor.Drift : velocity;
-        var player = new PlayerState(ToNumerics(eye), ToNumerics(velocity), rotation.X, rotation.Y) { Drift = ToNumerics(drift) };
+        var player = new PlayerState(ToNumerics(eye), ToNumerics(velocity), rotation.X, rotation.Y) { Drift = ToNumerics(drift), Roll = rotation.Z };
         IReadOnlyList<ItemStack?> slots = Creative ? [] : Inventory.Slots.ToArray();
         return new WorldSnapshot(Info.Name, DateTimeOffset.Now, Binding, Info.Seed, VoxelWorld.Size, palette, cells, player, slots)
         {

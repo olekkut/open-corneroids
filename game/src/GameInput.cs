@@ -20,6 +20,9 @@ public static class GameInput
     public const string Interact = "interact";
     /// <summary>Opens and closes the inventory window.</summary>
     public const string Inventory = "toggle_inventory";
+    /// <summary>Turns the astronaut back upright (keeping the heading): no roll, and a level view if within reach.</summary>
+    public const string Level = "level_view";
+
     /// <summary>Spins the multi-block about to be placed a quarter turn about its up axis.</summary>
     public const string Spin = "turn_spin";
     /// <summary>Points the up axis of the multi-block about to be placed to the next of the six directions.</summary>
@@ -51,8 +54,9 @@ public static class GameInput
         Add(Back, Key.S);
         Add(Left, Key.A);
         Add(Right, Key.D);
-        Add(Up, Key.Space, Key.E);
-        Add(Down, Key.Ctrl, Key.Q);
+        Add(Up, Key.Space);
+        Add(Down, Key.Ctrl);
+        Add(Level, Key.L);
         Add(Boost, Key.Shift);
         Add(Noclip, Key.N);
         Add(Interact, Key.F);

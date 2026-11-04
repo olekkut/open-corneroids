@@ -11,7 +11,7 @@ namespace OpenCorneroids.Game.Player;
 public sealed class CreativeMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · LMB mine · RMB place · R/T turn · F door/console · " +
+        "WASD move · Space up · Ctrl down · Q/E roll · L level · Shift boost · N noclip · LMB mine · RMB place · R/T turn · F door/console · " +
         "wheel/1-9 select · Esc mouse, Esc again menu";
 
     readonly ushort[] _blocks;

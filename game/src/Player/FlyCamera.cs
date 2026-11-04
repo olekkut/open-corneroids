@@ -8,7 +8,7 @@ using Orientation = OpenCorneroids.Simulation.Shapes.Orientation;
 namespace OpenCorneroids.Game.Player;
 
 /// <summary>
-/// The astronaut's eyes and hands: mouse look, WASD, Space/E up, Ctrl/Q down, Shift boost, N toggles noclip,
+/// The astronaut's eyes and hands: free mouse look, WASD, Space up, Ctrl down, Q/E roll, L level, Shift boost, N toggles noclip,
 /// left button mines, right button places, R/T turn the multi-block to place, F uses the targeted station, door or
 /// console, I/Tab opens the inventory, F5 saves. Aiming, mining and placing work on every grid (the world and the ships)
 /// through <see cref="GridSet"/>. Seated at a ship's console the same keys fly the ship instead (see
@@ -50,6 +50,9 @@ public partial class FlyCamera : Camera3D
     public const float PilotBoost = 2f;
     /// <summary>Turn rate a held key asks for, and the most the mouse may ask for, rad/s. Ours, tunable.</summary>
     public const float PilotTurnRate = 0.9f, MaxTurnRate = 1.8f;
+
+    /// <summary>How fast Q/E roll a standing (floating) astronaut, rad/s. Ours, tunable.</summary>
+    public const float WalkRollRate = 1.6f;
     /// <summary>Time constant smoothing the mouse's turn request, seconds, so a mouse that reports only some frames
     /// still asks for a steady turn.</summary>
     const float MouseSmoothing = 0.08f;
@@ -195,11 +198,11 @@ public partial class FlyCamera : Camera3D
         switch (@event)
         {
             case InputEventMouseMotion motion when captured:
-                var rotation = Rotation;
-                rotation.Y -= motion.Relative.X * MouseSensitivity;
-                rotation.X = Mathf.Clamp(rotation.X - motion.Relative.Y * MouseSensitivity, -1.55f, 1.55f);
-                rotation.Z = 0;
-                Rotation = rotation;
+                // Free turning, as in the original: yaw and pitch about the astronaut's own axes, with no fixed up and
+                // no stop at straight up or down. Q/E roll (see _Process); L levels again.
+                RotateObjectLocal(Vector3.Up, -motion.Relative.X * MouseSensitivity);
+                RotateObjectLocal(Vector3.Right, -motion.Relative.Y * MouseSensitivity);
+                Orthonormalize();
                 break;
             case InputEventMouseButton { Pressed: true } when !captured:
                 // The click that takes the mouse back is not also a mining click.
@@ -230,6 +233,11 @@ public partial class FlyCamera : Camera3D
                 }
                 else if (key.IsAction(GameInput.Noclip))
                     Motor.Noclip = !Motor.Noclip;
+                else if (key.IsAction(GameInput.Level))
+                {
+                    Rotation = LevelRotation(-GlobalTransform.Basis.Z);
+                    _hud.Flash("View levelled");
+                }
                 else if (key.IsAction(GameInput.Inventory))
                     OpenInventory();
                 else if (key.IsAction(GameInput.Interact))
@@ -438,7 +446,8 @@ public partial class FlyCamera : Camera3D
         _seat = null;
         _hud.SelectionVisible = true;
         GlobalPosition = eye;
-        Rotation = LevelRotation(forward);
+        // Facing the way the seat did, roll and all: there is no "level" in space to snap back to (L levels on request).
+        GlobalBasis = new Basis(GlobalBasis.GetRotationQuaternion());
         Motor.Velocity = Motor.Drift = velocity;
         _hud.SetControls(_mode.Controls + "   F5 save");
         _hud.Flash("Standing");
@@ -639,7 +648,15 @@ public partial class FlyCamera : Camera3D
             Axis(GameInput.Up, GameInput.Down),
             Axis(GameInput.Back, GameInput.Forward));
         var basis = GlobalTransform.Basis;
-        var thrust = basis.X * input.X + Vector3.Up * input.Y + basis.Z * input.Z;
+        // Up and down are the astronaut's own, like everything else once the view can roll.
+        var thrust = basis.X * input.X + basis.Y * input.Y + basis.Z * input.Z;
+        float roll = Axis(GameInput.RollLeft, GameInput.RollRight);
+        if (roll != 0)
+        {
+            // Rolling left turns the right side up: a positive turn about the view's back axis.
+            RotateObjectLocal(Vector3.Back, roll * WalkRollRate * (float)delta);
+            Orthonormalize();
+        }
         // Boosting costs suit power in survival, and only while actually thrusting.
         bool boost = Held(GameInput.Boost) && thrust != Vector3.Zero && _mode.TryBoost(delta);
         GlobalPosition = Motor.Step(GlobalPosition, thrust, boost, (float)delta, _grids);

@@ -15,7 +15,7 @@ namespace OpenCorneroids.Game.Player;
 public sealed class SurvivalMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · hold LMB drill · RMB place/use · " +
+        "WASD move · Space up · Ctrl down · Q/E roll · L level · Shift boost · N noclip · hold LMB drill · RMB place/use · " +
         "R/T turn · wheel/1-8 select · F use station/door/console · I/Tab inventory · Esc mouse, Esc again menu";
 
     readonly Inventory _inventory;

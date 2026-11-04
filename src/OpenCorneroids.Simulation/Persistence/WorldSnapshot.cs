@@ -23,6 +23,12 @@ public sealed record PlayerState(Vector3 Position, Vector3 Velocity, float Pitch
     /// still read and write as before; an older build that ignores it only loses that momentum.
     /// </summary>
     public Vector3 Drift { get; init; }
+
+    /// <summary>
+    /// Radians about the view axis, now that the astronaut turns freely. Optional in the file (0 when missing), so older
+    /// saves load level; an older build that ignores it loads the view level.
+    /// </summary>
+    public float Roll { get; init; }
 }
 
 /// <summary>

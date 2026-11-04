@@ -69,6 +69,19 @@ public class ShipSaveFormatTests
     }
 
     [Fact]
+    public void Player_roll_is_optional_and_left_out_when_zero()
+    {
+        var level = World(2, [WorldSnapshot.AirBlockId], new ushort[8]);
+        Assert.False(JsonNode.Parse(Split(ToBytes(level)).Json)!["player"]!.AsObject().ContainsKey("roll"));
+        Assert.Equal(0f, FromBytes(ToBytes(level)).Player.Roll);
+
+        var rolled = level with { Player = level.Player with { Roll = -2.5f } };
+        Assert.Equal(-2.5f, (float)JsonNode.Parse(Split(ToBytes(rolled)).Json)!["player"]!["roll"]!);
+        Assert.Equal(rolled.Player, FromBytes(ToBytes(rolled)).Player);
+        Assert.Throws<ArgumentException>(() => ToBytes(level with { Player = level.Player with { Roll = float.NaN } }));
+    }
+
+    [Fact]
     public void Older_saves_read_with_no_ships()
     {
         var old = SmallWorld();

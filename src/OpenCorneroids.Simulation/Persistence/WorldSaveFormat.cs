@@ -270,7 +270,7 @@ public static class WorldSaveFormat
         if (s.Size < 1 || s.Size > MaxSize) return $"size {s.Size} is outside 1..{MaxSize}";
         if (PaletteProblem(s.Palette, "the palette", "palette entry") is { } palette) return palette;
         if (s.Player is null) return "the player state is missing";
-        if (!IsFinite(s.Player.Position) || !IsFinite(s.Player.Velocity) || !IsFinite(s.Player.Drift) || !float.IsFinite(s.Player.Pitch) || !float.IsFinite(s.Player.Yaw))
+        if (!IsFinite(s.Player.Position) || !IsFinite(s.Player.Velocity) || !IsFinite(s.Player.Drift) || !float.IsFinite(s.Player.Pitch) || !float.IsFinite(s.Player.Yaw) || !float.IsFinite(s.Player.Roll))
             return "the player state has a non-finite number";
         if (s.Inventory is null) return "the inventory is missing";
         if (s.TexturePacks is null) return "the texture pack list is missing";
@@ -638,6 +638,7 @@ public static class WorldSaveFormat
                 Pitch = s.Player.Pitch,
                 Yaw = s.Player.Yaw,
                 Drift = s.Player.Drift == Vector3.Zero ? null : [s.Player.Drift.X, s.Player.Drift.Y, s.Player.Drift.Z],
+                Roll = s.Player.Roll == 0 ? null : s.Player.Roll,
             },
             Inventory = [.. s.Inventory.Select(stack => stack is null ? null : new StackDto { ItemId = stack.ItemId, Quantity = stack.Quantity })],
             Creative = s.Creative,
@@ -683,6 +684,7 @@ public static class WorldSaveFormat
                     player.Yaw ?? throw Missing("player.yaw"))
                 {
                     Drift = player.Drift is null ? Vector3.Zero : Vector(player.Drift, "player.drift"),
+                    Roll = player.Roll ?? 0,
                 },
                 [.. (Inventory ?? throw Missing("inventory")).Select((slot, i) => slot is null ? null : new ItemStack(
                     slot.ItemId ?? throw Missing($"inventory[{i}].itemId"),
@@ -785,6 +787,9 @@ public static class WorldSaveFormat
         // Added with ships; optional (zero when missing) and left out when zero.
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public float[]? Drift { get; set; }
+        // Added with free turning; optional (0 when missing) and left out when 0.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public float? Roll { get; set; }
     }
 
     /// <remarks><c>open</c> may be left out; it is 0 for anything that isn't a door.</remarks>
