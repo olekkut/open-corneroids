@@ -2,6 +2,7 @@ using Godot;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Game.Ui;
 using OpenCorneroids.Game.World;
+using OpenCorneroids.Simulation.Combat;
 using OpenCorneroids.Simulation.Items;
 
 namespace OpenCorneroids.Game.Player;
@@ -20,6 +21,7 @@ public sealed class SurvivalMode : PlayMode
     readonly Inventory _inventory;
     readonly ItemsetDef _itemset;
     readonly Suit _suit;
+    readonly Dictionary<int, Trigger> _triggers = new();   // one reload per weapon
     bool _boostSpent;   // power ran out while boosting; no boost until it is back to BoostResume
     int _selected;
     BlockTarget? _drillTarget;
@@ -110,6 +112,12 @@ public sealed class SurvivalMode : PlayMode
         ShowHotbar();
     }
 
+    public override ItemDef? HeldItem =>
+        _inventory.Slots[_selected] is { } stack && _itemset.ItemsById.TryGetValue(stack.ItemId, out var item) && item.Block is null ? item : null;
+
+    /// <summary>Raised when the held weapon fires, for the first-person kick.</summary>
+    public event Action? Fired;
+
     /// <summary>
     /// Drilling needs continuous aim: progress builds while the button is held on one block and starts over when
     /// the aim moves to another block or the button is let go. The exception is a block that is fully drilled but
@@ -121,6 +129,13 @@ public sealed class SurvivalMode : PlayMode
     public override void Update(double delta, BlockTarget? target, bool drilling)
     {
         _suit.Tick(delta);
+        // A weapon in hand: the primary button shoots instead of drilling.
+        if (HeldItem is { } held && held.Get<WeaponComponent>() is { } weapon)
+        {
+            StopDrilling();
+            if (drilling) Shoot(held, weapon);
+            return;
+        }
         if (!drilling || target is not { } cell)
         {
             StopDrilling();
@@ -161,6 +176,29 @@ public sealed class SurvivalMode : PlayMode
         _inventory.Add(drop.ItemId, drop.Quantity);
         Hud.Flash($"+{drop.Quantity} {NameOf(drop.ItemId)}");
         ResetDrill();
+    }
+
+    /// <summary>
+    /// One shot if the weapon has reloaded and the suit has the power for it (the weapon's <c>powerUsage</c>), along the
+    /// view with the weapon's spread, kicking the player back (<see cref="Weapons.Recoil"/>).
+    /// </summary>
+    void Shoot(ItemDef held, WeaponComponent weapon)
+    {
+        if (Shots is null || !_itemset.Projectiles.TryGetValue(weapon.ProjectileId, out var projectile)) return;
+        double now = Time.GetTicksMsec() / 1000.0;
+        if (!_triggers.TryGetValue(held.ItemId, out var trigger)) _triggers[held.ItemId] = trigger = new Trigger();
+        if (trigger.Wait(now) > 0) return;
+        if (!_suit.TrySpend(Weapons.ShotCost(held)))
+        {
+            Hud.Flash($"Not enough power to fire the {held.Name}", warning: true);
+            return;
+        }
+        trigger.TryFire(now, weapon.ReloadMs);
+        var (eye, forward, velocity) = View;
+        var direction = Weapons.Spread(forward.ToNumerics(), weapon.Spread, Random.Shared.NextDouble(), Random.Shared.NextDouble()).ToGodot();
+        Shots.Fire(projectile, eye + forward * 0.4f, direction, velocity);
+        Push?.Invoke(Weapons.Recoil(direction.ToNumerics(), weapon.Pushback, projectile).ToGodot());
+        Fired?.Invoke();
     }
 
     public override void Place(Vector3 eye, Aim aim)

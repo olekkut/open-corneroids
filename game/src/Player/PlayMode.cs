@@ -1,4 +1,5 @@
 using Godot;
+using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Game.Ui;
 using OpenCorneroids.Game.World;
 using OpenCorneroids.Simulation.Shapes;
@@ -32,6 +33,19 @@ public abstract class PlayMode
     protected GridSet Grids { get; }
     protected Hud Hud { get; }
     protected BlockPalette Palette => Grids.Palette;
+
+    /// <summary>Where shots go; set by the world. Null (no weapons) until then.</summary>
+    public Projectiles? Shots { get; set; }
+
+    /// <summary>The player's eye, view direction and velocity this frame; the camera sets them before
+    /// <see cref="Update"/>, so a mode can fire from where the player looks.</summary>
+    public (Vector3 Eye, Vector3 Forward, Vector3 Velocity) View { get; set; }
+
+    /// <summary>Gives the player a velocity change (a weapon's recoil); set by the camera.</summary>
+    public Action<Vector3>? Push { get; set; }
+
+    /// <summary>The item to draw in the player's hand, or null; survival shows the selected tool or weapon.</summary>
+    public virtual ItemDef? HeldItem => null;
 
     /// <summary>How the next multi-block is turned (R spins, T changes the up axis), relative to the axes of the grid it
     /// goes into, so on a turned ship it turns with the ship. Single-cell blocks are never turned: the chunk grid has

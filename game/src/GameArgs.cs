@@ -56,6 +56,9 @@ public sealed class GameArgs
     /// <summary>Select this item and aim at the asteroid so the placement ghost shows, for screenshots.</summary>
     public int? Preview { get; private set; }
 
+    /// <summary>Select the hotbar slot holding this item (survival), e.g. a weapon for a firing test.</summary>
+    public int? Select { get; private set; }
+
     /// <summary>With <see cref="Preview"/>: place the previewed block there, through the normal placing rules (survival
     /// spends it), so a placed object can be saved and loaded without a mouse.</summary>
     public bool Place { get; private set; }
@@ -172,6 +175,10 @@ public sealed class GameArgs
                 case "--preview":
                     if (int.TryParse(value, out var preview)) parsed.Preview = preview;
                     else Godot.GD.PushWarning($"--preview: '{value}' is not an item id");
+                    break;
+                case "--select":
+                    if (int.TryParse(value, out var select)) parsed.Select = select;
+                    else Godot.GD.PushWarning($"--select: '{value}' is not an item id");
                     break;
                 case "--focus":
                     if (int.TryParse(value, out var focus)) parsed.Focus = focus;

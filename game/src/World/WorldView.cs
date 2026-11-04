@@ -166,11 +166,19 @@ public partial class WorldView : Node3D
             camera.Motor.Velocity = ToGodot(saved.Player.Velocity);
             camera.Motor.Drift = ToGodot(saved.Player.Drift);
         }
+        var shots = new Projectiles { Name = "Projectiles" };
+        AddChild(shots);
+        shots.Setup(Grids, itemset);
+        shots.BlockDestroyed += name => hud.Log($"Shot apart: {name}");
+        mode.Shots = shots;
         camera.Setup(Grids, hud, mode, windows);
         camera.ExitRequested += () => ExitRequested?.Invoke();
         camera.SaveRequested += () => Save();
         camera.MakeCurrent();
         camera.AddChild(SpaceDust.Create());
+        var held = new HeldItem { Name = "HeldItem" };
+        camera.AddChild(held);
+        held.Setup(mode, Icons);
         Player = camera;
         _eye = eye;
         return true;
@@ -435,6 +443,18 @@ public partial class WorldView : Node3D
             refused += grid.OpenAllDoors(cells => PlayerMotor.BodyOverlaps(grid, Player.GlobalPosition, cells));
         }
         if (refused > 0) GD.PushWarning($"--open-doors: {refused} door(s) left shut because the player is in the way");
+    }
+
+    /// <summary>Selects the hotbar slot that holds <paramref name="itemId"/> (<c>--select</c>).</summary>
+    public void SelectItem(int itemId)
+    {
+        for (int i = 0; i < Inventory.HotbarSize; i++)
+        {
+            if (Inventory.Slots[i]?.ItemId != itemId) continue;
+            Player.Mode.Select(i);
+            return;
+        }
+        GD.PushWarning($"--select: item {itemId} is not in the hotbar");
     }
 
     /// <summary>

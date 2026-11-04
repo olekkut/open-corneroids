@@ -189,6 +189,7 @@ public partial class Main : Node
         else if (_args.Place) GD.PushWarning("--place: needs a --preview that found a face to aim at");
         if (_args.PreviewShip is { } shipItem) world.AimAtShip(shipItem, place: false);
         if (_args.Focus is { } focus) world.Focus(focus);
+        if (_args.Select is { } selected) world.SelectItem(selected);
         // Piloting last: the hooks above aim and place from where the player stands.
         if (_args.Dampeners is { } dampeners) world.Player.Dampeners = dampeners;
         if (_args.Pilot is { } view)

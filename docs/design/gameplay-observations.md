@@ -75,5 +75,16 @@ Tunable, and marked so in code.
 - **Asteroid markers:** one per face-connected lump of at least 64 blocks, at its centre, with distance and mass (the
   sum of its blocks' `mass`, shown as tonnes). Found again a few seconds after the world changes. Ships get a white
   marker with their name and mass. A marker hides while the player is inside what it marks.
+- **Weapons:** with a weapon selected the primary button fires instead of drilling: one shot per `reload` ms, costing
+  the weapon's `powerUsage` in suit power (its size: the Heavy Plasma Launcher's is -25), along the view turned by up
+  to `spread` radians. Each shot pushes the shooter back by `pushback` × projectile speed × 0.05 m/s.
+- **Projectiles** fly at their `speed` for their `lifetime`. A shot meeting a surface at less than `ricochetAngle`
+  radians glances off (at most three times); otherwise it hits, and a block breaks once the damage it took reaches its
+  `health` (health 0: the first hit). Shot-apart blocks drop nothing. Damage is not saved. Shots carry the shooter's
+  velocity.
+- **Ship guns** fire along their long axis (local +Y, turned with the block) from `barrelLength` beyond the model's
+  centre, each on its own `reload`. Until console button binding exists, the pilot's primary button fires all of a
+  ship's guns.
+- **Held item:** the selected tool or weapon is drawn in the view, made from its icon pushed out `modelDepth` pixels.
 - **Inventory:** the 8-slot hotbar plus four backpack rows of eight (40 slots). Older saves (36 slots) load unchanged;
   their ninth hotbar slot becomes the first backpack slot.

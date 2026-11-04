@@ -134,6 +134,7 @@ public partial class FlyCamera : Camera3D
         _hud = hud;
         _mode = mode;
         _windows = windows;
+        _mode.Push = kick => Motor.Velocity += kick;
         _highlight = new MeshInstance3D { Mesh = WireCube(), Visible = false, TopLevel = true };
         AddChild(_highlight);
         _ghostWireOk = GhostMaterial(new Color(0.35f, 1f, 0.45f, 0.9f));
@@ -255,6 +256,10 @@ public partial class FlyCamera : Camera3D
                 break;
             case InputEventMouseButton { Pressed: true } when !captured:
                 Input.MouseMode = Input.MouseModeEnum.Captured;
+                break;
+            // Held to fire the ship's guns (see PilotProcess).
+            case InputEventMouseButton { ButtonIndex: MouseButton.Left } fire:
+                _primaryHeld = fire.Pressed;
                 break;
             case InputEventKey { Pressed: true, Echo: false } key:
                 if (key.PhysicalKeycode == Key.Escape || key.IsAction(GameInput.Interact))
@@ -550,6 +555,13 @@ public partial class FlyCamera : Camera3D
         }
     }
 
+    /// <summary>The <c>--hold</c> name for the primary mouse button, which has no input action of its own.</summary>
+    public const string PrimaryHold = "primary";
+
+    /// <summary>The primary button is down: really (with the mouse captured, outside a screenshot run) or by --hold.</summary>
+    bool PrimaryDown => (_primaryHeld && Input.MouseMode == Input.MouseModeEnum.Captured && !_inputLocked) ||
+                        (_holds.Count > 0 && _holds[0].Actions.Contains(PrimaryHold));
+
     /// <summary>
     /// <c>--hold</c>: holds each group of actions for its seconds, one group after another, as if their keys were down
     /// (the screenshot lock ignores the real keyboard, not these). Unknown action names are dropped with a warning.
@@ -561,7 +573,9 @@ public partial class FlyCamera : Camera3D
             var known = new HashSet<string>();
             foreach (var action in actions)
             {
-                if (!InputMap.HasAction(action)) GD.PushWarning($"--hold: there is no action '{action}'");
+                // The primary mouse button has no input action; "primary" holds it (shoot, drill, fire the guns).
+                if (action == PrimaryHold) known.Add(action);
+                else if (!InputMap.HasAction(action)) GD.PushWarning($"--hold: there is no action '{action}'");
                 else
                 {
                     known.Add(action);
@@ -652,7 +666,8 @@ public partial class FlyCamera : Camera3D
 
         bool captured = Input.MouseMode == Input.MouseModeEnum.Captured;
         if (!captured) _primaryHeld = false;
-        _mode.Update(delta, _hasTarget ? _target : null, drilling: _primaryHeld && captured && !windowOpen && !_inputLocked);
+        _mode.View = (GlobalPosition, -GlobalTransform.Basis.Z, Motor.Velocity);
+        _mode.Update(delta, _hasTarget ? _target : null, drilling: PrimaryDown && !windowOpen);
 
         CountFrame(delta);
 
@@ -678,6 +693,9 @@ public partial class FlyCamera : Camera3D
         var ships = _grids.Ships;
         for (int i = 0; i < ships.Count; i++) ships[i].StepDoors((float)delta, _doorBlocked, _doorRefused);
         _mode.Update(delta, null, drilling: false);
+        // The primary button fires every gun on the ship (the "automatic" control; console button binding comes later).
+        if (PrimaryDown && !WindowOpen)
+            _mode.Shots?.FireGuns(ship, Time.GetTicksMsec() / 1000.0);
         CountFrame(delta);
 
         var (supply, demand, satisfaction) = ship.Systems.PowerSummary;

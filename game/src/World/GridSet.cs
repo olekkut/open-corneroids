@@ -75,7 +75,11 @@ public sealed class GridSet
     /// there (<see cref="VoxelRaycast"/>), and the nearest hit wins. Ships whose bounding sphere the ray can't reach
     /// are skipped.
     /// </summary>
-    public bool Raycast(Vector3 origin, Vector3 direction, float maxDistance, out Aim aim)
+    public bool Raycast(Vector3 origin, Vector3 direction, float maxDistance, out Aim aim) =>
+        Raycast(origin, direction, maxDistance, out aim, out _);
+
+    /// <summary>As above, also giving how far along the ray the hit cell starts (0 when the ray starts inside it).</summary>
+    public bool Raycast(Vector3 origin, Vector3 direction, float maxDistance, out Aim aim, out float distance)
     {
         aim = default;
         float best = float.PositiveInfinity;
@@ -84,6 +88,7 @@ public sealed class GridSet
         CastInto(World, origin, dir, maxDistance, ref best, ref aim);
         for (int i = 0; i < _ships.Count; i++)
             if (Reaches(_ships[i], origin, dir, maxDistance)) CastInto(_ships[i], origin, dir, maxDistance, ref best, ref aim);
+        distance = best;
         return best < float.PositiveInfinity;
     }
 
