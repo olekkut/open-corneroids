@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Text;
 using System.Text.Json.Nodes;
 using OpenCorneroids.Simulation.Persistence;
+using OpenCorneroids.Simulation.Shapes;
 using static OpenCorneroids.Simulation.Tests.Persistence.SaveFixtures;
 
 namespace OpenCorneroids.Simulation.Tests.Persistence;
@@ -137,6 +138,16 @@ public class WorldSaveFormatTests
             good with { Palette = [-1, 0] },
             good with { Player = good.Player with { Yaw = float.NaN } },
             good with { Player = good.Player with { Position = new Vector3(float.PositiveInfinity, 0, 0) } },
+            good with { Objects = null! },
+            good with { Objects = [null!] },
+            good with { Objects = [new PlacedObject(-1, Int3.Zero, 0, 0)] },
+            good with { Objects = [new PlacedObject(5, Int3.Zero, 24, 0)] },
+            good with { Objects = [new PlacedObject(5, Int3.Zero, -1, 0)] },
+            good with { Objects = [new PlacedObject(5, new Int3(good.Size, 0, 0), 0, 0)] },
+            good with { Objects = [new PlacedObject(5, new Int3(0, -1, 0), 0, 0)] },
+            good with { Objects = [new PlacedObject(5, Int3.Zero, 0, float.NaN)] },
+            good with { Objects = [new PlacedObject(5, Int3.Zero, 0, 1.5f)] },
+            good with { Objects = [.. Enumerable.Repeat(new PlacedObject(5, Int3.Zero, 0, 0), WorldSaveFormat.MaxObjects + 1)] },
         ];
         foreach (var snapshot in bad)
             Assert.Throws<ArgumentException>(() => WorldSaveFormat.Write(new MemoryStream(), snapshot));
@@ -382,6 +393,90 @@ public class WorldSaveFormatTests
         var error = Assert.Throws<WorldSaveException>(() => FromBytes(bytes));
         Assert.Contains("texturePacks[1]", error.Message);
         Assert.Throws<ArgumentException>(() => ToBytes(SmallWorld() with { TexturePacks = ["ok", null!] }));
+    }
+
+    [Fact]
+    public void Saves_without_objects_read_with_none()
+    {
+        // Version 1 files written before placed objects existed.
+        var bytes = EditJson(j => j.Remove("objects"));
+        Assert.Empty(FromBytes(bytes).Objects);
+        Assert.Empty(FromBytes(Valid).Objects);
+    }
+
+    [Fact]
+    public void Saves_with_objects_are_a_newer_version_so_older_builds_refuse_them_instead_of_dropping_them()
+    {
+        // A build that only knows version 1 ignores the unknown "objects" member and would save the world back without
+        // them; the version check makes it say "update the game" instead.
+        Assert.Equal(WorldSaveFormat.ObjectsVersion, Split(ToBytes(SmallWorld())).Version);
+        Assert.Equal(WorldSaveFormat.CurrentVersion, WorldSaveFormat.ObjectsVersion);
+        // Without objects the file is exactly what version 1 was, so older builds keep reading it.
+        Assert.Equal(WorldSaveFormat.BaseVersion, Split(ToBytes(SmallWorld() with { Objects = [] })).Version);
+        Assert.Equal(WorldSaveFormat.BaseVersion, Split(Valid).Version);
+    }
+
+    [Fact]
+    public void Both_versions_read()
+    {
+        var withObjects = SmallWorld();
+        var (_, json, cells) = Split(ToBytes(withObjects));
+        AssertSameWorld(withObjects, FromBytes(Container(json, cells, version: WorldSaveFormat.ObjectsVersion)));
+        AssertSameWorld(withObjects, FromBytes(Container(json, cells, version: WorldSaveFormat.BaseVersion)));
+        Assert.Empty(FromBytes(Container(ValidJson, ValidCells, version: WorldSaveFormat.BaseVersion)).Objects);
+    }
+
+    [Fact]
+    public void Objects_are_written_as_an_optional_json_list()
+    {
+        var json = JsonNode.Parse(Split(ToBytes(SmallWorld())).Json)!.AsObject();
+        var first = json["objects"]!.AsArray()[0]!.AsObject();
+        Assert.Equal(5, (int?)first["blockId"]);
+        Assert.Equal([1, 2, 3], first["origin"]!.AsArray().Select(n => (int)n!));
+        Assert.Equal(13, (int?)first["orientation"]);
+        Assert.Equal(0.25f, (float?)first["open"]);
+    }
+
+    [Fact]
+    public void Object_open_fraction_may_be_left_out()
+    {
+        var bytes = EditJson(j => j["objects"] = new JsonArray(new JsonObject { ["blockId"] = 5, ["origin"] = new JsonArray(1, 0, 1), ["orientation"] = 4 }));
+        Assert.Equal([new PlacedObject(5, new Int3(1, 0, 1), 4, 0)], FromBytes(bytes).Objects);
+    }
+
+    public static TheoryData<string, string> BadObjects => new()
+    {
+        { """[null]""", "objects[0]" },
+        { """[{"origin":[0,0,0],"orientation":0}]""", "objects[0].blockId" },
+        { """[{"blockId":5,"orientation":0}]""", "objects[0].origin" },
+        { """[{"blockId":5,"origin":[0,0],"orientation":0}]""", "objects[0].origin" },
+        { """[{"blockId":5,"origin":[0,0,0]}]""", "objects[0].orientation" },
+        { """[{"blockId":5,"origin":[0,0,0],"orientation":24}]""", "orientation 24" },
+        { """[{"blockId":5,"origin":[0,0,0],"orientation":-1}]""", "orientation -1" },
+        { """[{"blockId":-3,"origin":[0,0,0],"orientation":0}]""", "negative blockId" },
+        { """[{"blockId":5,"origin":[2,0,0],"orientation":0}]""", "outside the 2-cell world" },
+        { """[{"blockId":5,"origin":[0,0,-1],"orientation":0}]""", "outside the 2-cell world" },
+        { """[{"blockId":5,"origin":[0,0,0],"orientation":0,"open":1.5}]""", "open fraction" },
+        { """[{"blockId":5,"origin":[0,0,0.5],"orientation":0}]""", "not valid JSON" },
+    };
+
+    [Theory]
+    [MemberData(nameof(BadObjects))]
+    public void Bad_objects_are_rejected_by_name(string objects, string expected)
+    {
+        var bytes = EditJson(j => j["objects"] = JsonNode.Parse(objects));
+        var error = Assert.Throws<WorldSaveException>(() => FromBytes(bytes));
+        Assert.Contains(expected, error.Message);
+    }
+
+    [Fact]
+    public void Object_count_over_the_cap_is_rejected_on_read()
+    {
+        var list = new JsonArray();
+        for (int i = 0; i <= WorldSaveFormat.MaxObjects; i++)
+            list.Add(new JsonObject { ["blockId"] = 5, ["origin"] = new JsonArray(0, 0, 0), ["orientation"] = 0 });
+        var error = Assert.Throws<WorldSaveException>(() => FromBytes(EditJson(j => j["objects"] = list)));
+        Assert.Contains("limit", error.Message);
     }
 
     [Fact]

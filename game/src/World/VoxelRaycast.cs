@@ -6,7 +6,8 @@ namespace OpenCorneroids.Game.World;
 public static class VoxelRaycast
 {
     /// <summary>
-    /// Finds the first solid block within <paramref name="maxDistance"/>. <paramref name="before"/> is the empty
+    /// Finds the first solid cell (grid block or object model, <see cref="VoxelWorld.IsSolid"/>) within
+    /// <paramref name="maxDistance"/>. <paramref name="before"/> is the empty
     /// cell the ray came from, where a new block would be placed.
     /// </summary>
     public static bool Cast(VoxelWorld world, Vector3 origin, Vector3 direction, float maxDistance, out Vector3I hit, out Vector3I before)
@@ -24,7 +25,7 @@ public static class VoxelRaycast
         float travelled = 0;
         while (travelled <= maxDistance)
         {
-            if (world.Get(cell) != BlockPalette.Air)
+            if (world.IsSolid(cell))
             {
                 hit = cell;
                 return true;

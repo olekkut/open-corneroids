@@ -4,6 +4,7 @@ using System.Numerics;
 using OpenCorneroids.Content;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Simulation.Persistence;
+using OpenCorneroids.Simulation.Shapes;
 
 namespace OpenCorneroids.Simulation.Tests.Persistence;
 
@@ -33,6 +34,7 @@ static class SaveFixtures
             Inventory = [new ItemStack(0, 5), null, new ItemStack(21, 1), null],
             Creative = true,
             TexturePacks = ["SordsTextures", "Pack \"Ω\""],
+            Objects = [new PlacedObject(5, new Int3(1, 2, 3), 13, 0.25f), new PlacedObject(0, Int3.Zero, 0, 0), new PlacedObject(7, new Int3(4, 4, 4), 23, 1)],
         };
     }
 
@@ -65,6 +67,7 @@ static class SaveFixtures
         Assert.Equal(expected.Inventory, actual.Inventory);
         Assert.Equal(expected.Creative, actual.Creative);
         Assert.Equal(expected.TexturePacks, actual.TexturePacks);
+        Assert.Equal(expected.Objects, actual.Objects);
     }
 
     // ---- raw container pieces, for building damaged files by hand ----

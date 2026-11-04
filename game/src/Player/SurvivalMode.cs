@@ -14,13 +14,13 @@ namespace OpenCorneroids.Game.Player;
 public sealed class SurvivalMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · hold LMB drill · RMB place · wheel/1-9 select · " +
-        "F use station · I/Tab inventory · Esc mouse, Esc again menu";
+        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · hold LMB drill · RMB place · R/T turn · " +
+        "wheel/1-9 select · F use station/door · I/Tab inventory · Esc mouse, Esc again menu";
 
     readonly Inventory _inventory;
     readonly ItemsetDef _itemset;
     int _selected;
-    Vector3I? _drillTarget;
+    BlockTarget? _drillTarget;
     double _drillTime;
     bool _drillBlocked;   // the target is fully drilled but its drop did not fit
 
@@ -35,6 +35,21 @@ public sealed class SurvivalMode : PlayMode
     public override bool HasInventory => true;
 
     public override string Status => $"   drill power {Mining.DrillPower(_inventory, _itemset)}";
+
+    public override ushort SelectedBlock =>
+        _inventory.Slots[_selected] is { } stack && Palette.IndexOf(stack.ItemId) is { } block ? block : BlockPalette.Air;
+
+    public override bool TrySelectBlock(ushort block)
+    {
+        var itemId = Palette.Item(block).ItemId;
+        for (int i = 0; i < Inventory.HotbarSize; i++)
+        {
+            if (_inventory.Slots[i]?.ItemId != itemId) continue;
+            Select(i);
+            return true;
+        }
+        return false;
+    }
 
     public override void Select(int slot)
     {
@@ -54,9 +69,10 @@ public sealed class SurvivalMode : PlayMode
     /// the aim moves to another block or the button is let go. The exception is a block that is fully drilled but
     /// whose drop has nowhere to go: it stays intact and remembers it is done, even across letting go and opening
     /// the inventory, so the player can make room and then finish it with a click instead of drilling it again.
-    /// Aiming the drill at any other block forgets it.
+    /// Aiming the drill at any other block forgets it. A multi-block is one target however the aim moves over it,
+    /// and takes the drill power and time of its own BlockDef, like any block.
     /// </summary>
-    public override void Update(double delta, Vector3I? target, bool drilling)
+    public override void Update(double delta, BlockTarget? target, bool drilling)
     {
         if (!drilling || target is not { } cell)
         {
@@ -70,7 +86,7 @@ public sealed class SurvivalMode : PlayMode
             _drillBlocked = false;
         }
 
-        var item = Palette.Item(World.Get(cell));
+        var item = Palette.Item(World.BlockOf(cell));
         var block = item.Block!;
         int power = Mining.DrillPower(_inventory, _itemset);
         if (!Mining.CanMine(power, block))
@@ -94,13 +110,13 @@ public sealed class SurvivalMode : PlayMode
             Hud.Flash("Inventory full", warning: true);
             return;
         }
-        World.Set(cell, BlockPalette.Air);
+        World.Break(cell);
         _inventory.Add(drop.ItemId, drop.Quantity);
         Hud.Flash($"+{drop.Quantity} {NameOf(drop.ItemId)}");
         ResetDrill();
     }
 
-    public override void Place(Vector3 eye, Vector3I cell)
+    public override void Place(Vector3 eye, Vector3I hit, Vector3I cell)
     {
         if (_inventory.Slots[_selected] is not { } stack)
         {
@@ -114,14 +130,11 @@ public sealed class SurvivalMode : PlayMode
         }
         if (Palette.IndexOf(item.ItemId) is not { } block)
         {
-            // The palette leaves out both multi-cell blocks and 1x1x1 blocks whose face textures are missing.
-            Hud.Flash(item.Block.Size != System.Numerics.Vector3.One || item.Block.VisualSize != System.Numerics.Vector3.One
-                ? $"{item.Name} is larger than one block; placing those isn't supported yet"
-                : $"{item.Name} has no usable textures in this pack, so it can't be placed", warning: true);
+            // The palette leaves out only blocks whose face textures are missing.
+            Hud.Flash($"{item.Name} has no usable textures in this pack, so it can't be placed", warning: true);
             return;
         }
-        if (!CanPlaceAt(eye, cell) || !_inventory.TryTakeFromSlot(_selected, 1)) return;
-        World.Set(cell, block);
+        TryPlace(eye, hit, cell, block, () => _inventory.TryTakeFromSlot(_selected, 1));
     }
 
     /// <summary>The button is up or the aim is off every block. The bar always goes (it may still show a block

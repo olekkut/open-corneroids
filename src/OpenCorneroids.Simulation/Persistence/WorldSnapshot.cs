@@ -1,5 +1,6 @@
 using System.Numerics;
 using OpenCorneroids.Content.Itemsets;
+using OpenCorneroids.Simulation.Shapes;
 
 namespace OpenCorneroids.Simulation.Persistence;
 
@@ -13,6 +14,32 @@ public sealed record ItemsetBinding(string Key, string Name, string PackId, stri
 /// <param name="Pitch">Radians.</param>
 /// <param name="Yaw">Radians.</param>
 public sealed record PlayerState(Vector3 Position, Vector3 Velocity, float Pitch, float Yaw);
+
+/// <summary>
+/// A block that is not stored in the cell grid: a multi-cell or turned block (doors, guns, thrusters...), kept whole so
+/// its orientation and moving parts survive a save.
+/// </summary>
+/// <param name="BlockId">The ORIGINAL itemset blockId, as in the palette.</param>
+/// <param name="Origin">Minimum cell of the footprint; see <see cref="BlockShape"/>.</param>
+/// <param name="Orientation">An <see cref="Shapes.Orientation.Index"/>, 0..23.</param>
+/// <param name="Open">Door open fraction 0..1; 0 for everything else.</param>
+public sealed record PlacedObject(int BlockId, Int3 Origin, int Orientation, float Open)
+{
+    /// <summary>
+    /// Why this object can't sit in a world of edge <paramref name="worldSize"/> with the given shape, or null if it fits.
+    /// The save format can only check the origin, because footprints depend on the itemset; a loader that has the
+    /// itemset calls this for the rest.
+    /// </summary>
+    public string? FootprintProblem(BlockShape shape, int worldSize)
+    {
+        ArgumentNullException.ThrowIfNull(shape);
+        if (!Shapes.Orientation.IsValidIndex(Orientation)) return $"orientation {Orientation} is outside 0..{Shapes.Orientation.Count - 1}";
+        var far = Origin + shape.RotatedSize(Shapes.Orientation.FromIndex(Orientation));
+        if (Origin.X < 0 || Origin.Y < 0 || Origin.Z < 0 || far.X > worldSize || far.Y > worldSize || far.Z > worldSize)
+            return $"block {BlockId} at {Origin} reaches outside the {worldSize}-cell world";
+        return null;
+    }
+}
 
 /// <summary>Everything a save file holds, as plain data so the simulation can be rebuilt without Godot.</summary>
 /// <param name="SavedAt">Supplied by the caller; the library never reads the clock, which keeps saves reproducible in tests.</param>
@@ -39,6 +66,13 @@ public sealed record WorldSnapshot(
     /// the same. Purely cosmetic (the binding decides compatibility); optional in the file, empty for older saves.
     /// </summary>
     public IReadOnlyList<string> TexturePacks { get; init; } = [];
+
+    /// <summary>
+    /// Blocks kept outside the cell grid (see <see cref="PlacedObject"/>). Optional in the file: saves written before
+    /// it existed have none, which is what they held. An init property rather than a constructor parameter so existing
+    /// callers keep compiling.
+    /// </summary>
+    public IReadOnlyList<PlacedObject> Objects { get; init; } = [];
 
     /// <summary>Palette index and cell value of air.</summary>
     public const ushort Air = 0;

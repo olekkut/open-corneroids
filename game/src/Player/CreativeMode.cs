@@ -11,7 +11,8 @@ namespace OpenCorneroids.Game.Player;
 public sealed class CreativeMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · LMB mine · RMB place · wheel/1-9 select · Esc mouse, Esc again menu";
+        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · LMB mine · RMB place · R/T turn · F door · " +
+        "wheel/1-9 select · Esc mouse, Esc again menu";
 
     readonly ushort[] _blocks;
     int _selected;
@@ -24,7 +25,16 @@ public sealed class CreativeMode : PlayMode
 
     public override bool HasInventory => false;
 
-    ushort Selected => _blocks.Length == 0 ? BlockPalette.Air : _blocks[_selected];
+    public override ushort SelectedBlock => _blocks.Length == 0 ? BlockPalette.Air : _blocks[_selected];
+
+    public override bool TrySelectBlock(ushort block)
+    {
+        int index = Array.IndexOf(_blocks, block);
+        if (index < 0) return false;
+        _selected = index;
+        ShowHotbar();
+        return true;
+    }
 
     /// <summary>Number keys pick within the current page of nine.</summary>
     public override void Select(int slot)
@@ -42,18 +52,19 @@ public sealed class CreativeMode : PlayMode
         ShowHotbar();
     }
 
-    public override void PrimaryPressed(Vector3I? target)
+    public override void PrimaryPressed(BlockTarget? target)
     {
-        if (target is not { } cell) return;
-        var name = Palette.Item(World.Get(cell)).Name;
-        World.Set(cell, BlockPalette.Air);
+        if (target is not { } t) return;
+        var name = Palette.Item(World.BlockOf(t)).Name;
+        World.Break(t);
         Hud.Flash($"Mined {name}");
     }
 
-    public override void Place(Vector3 eye, Vector3I cell)
+    public override void Place(Vector3 eye, Vector3I hit, Vector3I cell)
     {
-        if (Selected == BlockPalette.Air || !CanPlaceAt(eye, cell)) return;
-        if (World.Set(cell, Selected)) Hud.Flash($"Placed {Palette.Item(Selected).Name}");
+        var block = SelectedBlock;
+        if (block == BlockPalette.Air) return;
+        if (TryPlace(eye, hit, cell, block, () => true)) Hud.Flash($"Placed {Palette.Item(block).Name}");
     }
 
     void ShowHotbar()
@@ -63,7 +74,7 @@ public sealed class CreativeMode : PlayMode
             .Select(i => i < _blocks.Length ? (Palette.Item(_blocks[i]), 1) : (null, 0))
             .ToList();
         var caption = _blocks.Length == 0 ? "" :
-            $"{Palette.Item(Selected).Name}   ({_selected + 1}/{_blocks.Length}, page {page / Hud.HotbarSlots + 1})";
+            $"{Palette.Item(SelectedBlock).Name}   ({_selected + 1}/{_blocks.Length}, page {page / Hud.HotbarSlots + 1})";
         Hud.ShowHotbar(slots, _selected - page, caption);
     }
 }

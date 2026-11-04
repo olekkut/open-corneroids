@@ -19,8 +19,9 @@ public static class AsteroidGenerator
         var rng = new RandomNumberGenerator { Seed = (ulong)seed };
 
         // If an itemset has no asteroid blocks at all, build from whatever opaque cubes it has.
-        var anyRock = palette.Where(i => i.Get<AsteroidComponent>() is not null).ToList();
-        if (anyRock.Count == 0) anyRock = palette.Indices.Where(i => !palette.IsCutout(i)).Take(3).ToList();
+        // Only single-cell blocks: the generator writes the chunk grid, which holds no multi-blocks.
+        var anyRock = palette.Where(i => i.Get<AsteroidComponent>() is not null).Where(i => !palette.IsObject(i)).ToList();
+        if (anyRock.Count == 0) anyRock = palette.GridIndices.Where(i => !palette.IsCutout(i)).Take(3).ToList();
 
         Rock[] rocks =
         [
@@ -30,9 +31,9 @@ public static class AsteroidGenerator
         ];
         foreach (var rock in rocks)
         {
-            var ofType = palette.Where(i => i.Get<AsteroidComponent>()?.AsteroidType == rock.Type).OrderBy(i => palette.Item(i).ItemId).ToList();
+            var ofType = palette.Where(i => i.Get<AsteroidComponent>()?.AsteroidType == rock.Type).Where(i => !palette.IsObject(i)).OrderBy(i => palette.Item(i).ItemId).ToList();
             if (ofType.Count == 0) ofType = anyRock;
-            var minerals = palette.Where(i => i.Get<MineralComponent>()?.AsteroidType == rock.Type)
+            var minerals = palette.Where(i => i.Get<MineralComponent>()?.AsteroidType == rock.Type).Where(i => !palette.IsObject(i))
                 .Select(i => (Block: i, Weight: Math.Max(1, palette.Item(i).Get<MineralComponent>()!.Rarity))).ToList();
             int totalWeight = minerals.Sum(m => m.Weight);
 

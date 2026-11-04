@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Numerics;
 using System.Text.Json;
 using OpenCorneroids.Content.Itemsets;
+using OpenCorneroids.Simulation.Shapes;
 
 namespace OpenCorneroids.Simulation.Persistence;
 
@@ -26,7 +27,17 @@ namespace OpenCorneroids.Simulation.Persistence;
 /// </remarks>
 public static class WorldSaveFormat
 {
-    public const ushort CurrentVersion = 1;
+    /// <summary>The first format: cells, palette, player, inventory (and the optional fields added while it was current).</summary>
+    public const ushort BaseVersion = 1;
+    /// <summary>
+    /// Version 1 plus <see cref="WorldSnapshot.Objects"/>. A version 1 reader skips unknown JSON members, so it would load
+    /// such a file without its objects and erase them on its next save; the newer version makes it refuse the file
+    /// ("update the game") instead. Files without objects are still written as <see cref="BaseVersion"/>, so older builds
+    /// keep reading every world that has nothing for them to lose.
+    /// </summary>
+    public const ushort ObjectsVersion = 2;
+    /// <summary>The newest version this build reads and writes.</summary>
+    public const ushort CurrentVersion = ObjectsVersion;
     /// <summary>Largest accepted edge length; 1024³ cells is already 2 GiB in memory.</summary>
     public const int MaxSize = 1024;
     /// <summary>Metadata is small (names, palette, inventory); the cap stops a hostile length from allocating gigabytes.</summary>
@@ -38,6 +49,11 @@ public static class WorldSaveFormat
     /// air and compress to kilobytes; tunable.
     /// </summary>
     public const int MaxCellBytes = 1 << 30;
+    /// <summary>
+    /// Most <see cref="WorldSnapshot.Objects"/> one world may hold. Far beyond any real ship, and small enough that the
+    /// JSON stays well within <see cref="MaxMetadataBytes"/>; tunable.
+    /// </summary>
+    public const int MaxObjects = 65536;
 
     const int HeaderBytes = 10;
     const int ZlibHeaderBytes = 2;
@@ -67,11 +83,18 @@ public static class WorldSaveFormat
 
         Span<byte> header = stackalloc byte[HeaderBytes];
         Magic.CopyTo(header);
-        BinaryPrimitives.WriteUInt16LittleEndian(header[4..], CurrentVersion);
+        BinaryPrimitives.WriteUInt16LittleEndian(header[4..], VersionFor(snapshot));
         BinaryPrimitives.WriteInt32LittleEndian(header[6..], metadata.Length);
         stream.Write(header);
         stream.Write(metadata);
         stream.Write(cells.GetBuffer(), 0, (int)cells.Length);
+    }
+
+    /// <summary>The oldest version that can hold everything in <paramref name="snapshot"/>; see <see cref="ObjectsVersion"/>.</summary>
+    public static ushort VersionFor(WorldSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+        return snapshot.Objects is { Count: > 0 } ? ObjectsVersion : BaseVersion;
     }
 
     /// <summary>Reads the stream to its end; anything after the cells is damage, not a place for future data.</summary>
@@ -183,6 +206,28 @@ public static class WorldSaveFormat
         if (s.Inventory is null) return "the inventory is missing";
         if (s.TexturePacks is null) return "the texture pack list is missing";
         if (s.TexturePacks.Any(id => id is null)) return "a texture pack id is null";
+        return ObjectsProblem(s);
+    }
+
+    /// <summary>
+    /// What can be checked without the itemset. The origin is the footprint's minimum cell, so it must lie inside the
+    /// world; whether the whole footprint fits needs the block's shape (<see cref="PlacedObject.FootprintProblem"/>).
+    /// </summary>
+    static string? ObjectsProblem(WorldSnapshot s)
+    {
+        if (s.Objects is null) return "the object list is missing";
+        if (s.Objects.Count > MaxObjects) return $"the world has {s.Objects.Count} objects, over the {MaxObjects} limit";
+        for (int i = 0; i < s.Objects.Count; i++)
+        {
+            var o = s.Objects[i];
+            if (o is null) return $"object {i} is null";
+            if (o.BlockId < 0) return $"object {i} has the negative blockId {o.BlockId}";
+            if (!Orientation.IsValidIndex(o.Orientation)) return $"object {i} has orientation {o.Orientation}, outside 0..{Orientation.Count - 1}";
+            var p = o.Origin;
+            if (p.X < 0 || p.Y < 0 || p.Z < 0 || p.X >= s.Size || p.Y >= s.Size || p.Z >= s.Size)
+                return $"object {i} has origin {p}, outside the {s.Size}-cell world";
+            if (!float.IsFinite(o.Open) || o.Open < 0 || o.Open > 1) return $"object {i} has open fraction {o.Open}, outside 0..1";
+        }
         return null;
     }
 
@@ -424,6 +469,8 @@ public static class WorldSaveFormat
         // survival and no texture packs, which is what those files were.
         public bool? Creative { get; set; }
         public string?[]? TexturePacks { get; set; }
+        // Added later still, optional for the same reason: a file without it has no objects.
+        public ObjectDto?[]? Objects { get; set; }
 
         public static MetadataDto From(WorldSnapshot s) => new()
         {
@@ -443,6 +490,13 @@ public static class WorldSaveFormat
             Inventory = [.. s.Inventory.Select(stack => stack is null ? null : new StackDto { ItemId = stack.ItemId, Quantity = stack.Quantity })],
             Creative = s.Creative,
             TexturePacks = [.. s.TexturePacks],
+            Objects = [.. s.Objects.Select(o => new ObjectDto
+            {
+                BlockId = o.BlockId,
+                Origin = [o.Origin.X, o.Origin.Y, o.Origin.Z],
+                Orientation = o.Orientation,
+                Open = o.Open,
+            })],
         };
 
         public WorldSnapshot ToSnapshot()
@@ -472,6 +526,13 @@ public static class WorldSaveFormat
             {
                 Creative = Creative ?? false,
                 TexturePacks = [.. (TexturePacks ?? []).Select((id, i) => id ?? throw Damaged($"metadata field 'texturePacks[{i}]' is null"))],
+                Objects = [.. (Objects ?? []).Select((o, i) => o is null
+                    ? throw Damaged($"metadata field 'objects[{i}]' is null")
+                    : new PlacedObject(
+                        o.BlockId ?? throw Missing($"objects[{i}].blockId"),
+                        o.Origin is [var x, var y, var z] ? new Int3(x, y, z) : throw Damaged($"metadata field 'objects[{i}].origin' is not three integers"),
+                        o.Orientation ?? throw Missing($"objects[{i}].orientation"),
+                        o.Open ?? 0))],
             };
         }
 
@@ -495,6 +556,15 @@ public static class WorldSaveFormat
         public float[]? Velocity { get; set; }
         public float? Pitch { get; set; }
         public float? Yaw { get; set; }
+    }
+
+    /// <remarks><c>open</c> may be left out; it is 0 for anything that isn't a door.</remarks>
+    sealed class ObjectDto
+    {
+        public int? BlockId { get; set; }
+        public int[]? Origin { get; set; }
+        public int? Orientation { get; set; }
+        public float? Open { get; set; }
     }
 
     sealed class StackDto

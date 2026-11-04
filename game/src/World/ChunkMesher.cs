@@ -79,9 +79,11 @@ public static class ChunkMesher
             var center = new Vector3(p.X + 0.5f, p.Y + 0.5f, p.Z + 0.5f);
             foreach (var face in Faces)
             {
-                var neighbour = world.Get(p + face.Normal);
-                // Hidden behind an opaque block, or between two panes of the same glass.
-                if (neighbour != BlockPalette.Air && (!palette.IsCutout(neighbour) || neighbour == block)) continue;
+                var next = p + face.Normal;
+                var neighbour = world.Get(next);
+                // Hidden behind an opaque block, between two panes of the same glass, or inside an opaque object model
+                // that fills the neighbouring cell.
+                if (neighbour != BlockPalette.Air ? !palette.IsCutout(neighbour) || neighbour == block : world.HidesFaces(next)) continue;
                 (isCutout ? glass : solid).AddQuad(center + (Vector3)face.Normal * 0.5f, face, palette.Uv(block, face.Uv));
             }
         }

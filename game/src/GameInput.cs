@@ -20,6 +20,10 @@ public static class GameInput
     public const string Interact = "interact";
     /// <summary>Opens and closes the inventory window.</summary>
     public const string Inventory = "toggle_inventory";
+    /// <summary>Spins the multi-block about to be placed a quarter turn about its up axis.</summary>
+    public const string Spin = "turn_spin";
+    /// <summary>Points the up axis of the multi-block about to be placed to the next of the six directions.</summary>
+    public const string TurnUp = "turn_up";
     /// <summary>Saves the world (quicksave). F5, as in most PC games.</summary>
     public const string Save = "save_world";
 
@@ -35,6 +39,8 @@ public static class GameInput
         Add(Noclip, Key.N);
         Add(Interact, Key.F);
         Add(Inventory, Key.I, Key.Tab);
+        Add(Spin, Key.R);
+        Add(TurnUp, Key.T);
         Add(Save, Key.F5);
     }
 

@@ -1,4 +1,5 @@
 using OpenCorneroids.Simulation.Persistence;
+using OpenCorneroids.Simulation.Shapes;
 using static OpenCorneroids.Simulation.Tests.Persistence.SaveFixtures;
 
 namespace OpenCorneroids.Simulation.Tests.Persistence;
@@ -75,6 +76,16 @@ public class SaveBindingTests
     public void Used_block_ids_skip_air_and_unreferenced_palette_entries()
     {
         Assert.Equal(new HashSet<int> { 0, 7 }, SaveBinding.UsedBlockIds(Saved()));
+    }
+
+    [Fact]
+    public void Placed_objects_count_as_used_blocks()
+    {
+        var world = Saved() with { Objects = [new PlacedObject(12, Int3.Zero, 0, 0)] };
+        Assert.Equal(new HashSet<int> { 0, 7, 12 }, SaveBinding.UsedBlockIds(world));
+        var result = SaveBinding.Check(world, Itemset("MiniItemset", "ffff0000", 0, 7), "pack-a");
+        Assert.Equal(BindingStatus.Incompatible, result.Status);
+        Assert.Equal([12], result.MissingBlockIds);
     }
 
     [Fact]

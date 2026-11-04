@@ -47,7 +47,7 @@ public static class SaveBinding
             $"Itemset '{current.Header.Name}' from '{currentPackId}' has changed since this world was saved (it was from '{saved.PackId}'); every block the world uses still exists, but their properties may differ.");
     }
 
-    /// <summary>Distinct blockIds referenced by at least one cell, air excluded.</summary>
+    /// <summary>Distinct blockIds referenced by at least one cell or placed object, air excluded.</summary>
     public static IReadOnlySet<int> UsedBlockIds(WorldSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -63,6 +63,7 @@ public static class SaveBinding
         var used = new HashSet<int>();
         for (int i = 0; i < referenced.Length; i++)
             if (referenced[i] && palette[i] != WorldSnapshot.AirBlockId) used.Add(palette[i]);
+        foreach (var placed in snapshot.Objects) used.Add(placed.BlockId);
         return used;
     }
 }

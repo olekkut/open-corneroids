@@ -547,7 +547,11 @@ open-corneroids/
 Answer these by observing the original game running.
 
 1. How a region maps onto faces whose size differs from it, for example the 1-deep sides of a 2×3×1
-   cannon with a 2×3 `walls` region. Stretch or crop? Default to stretch, behind a flag.
+   cannon with a 2×3 `walls` region. Stretch or crop? *Implemented:* stretch by default,
+   `--texture-mapping=tile` repeats the region instead (`Simulation/Shapes/ShapeQuads.cs`); still to be
+   compared with the original. DarthNox also has four ion thrusters whose model (3 cells, placement −2.5)
+   hangs half a cell outside their 7-cell bounds; `BlockShape.Build` pulls it back inside and records a
+   Problem.
 2. The UV orientation of `top`/`bottom` relative to ±Z, and of `walls` on rotated blocks.
 3. What `sprite` on asteroid and mineral blocks drives, and which atlas `buffSpriteCoords` points into
    (it is always (0,0)).

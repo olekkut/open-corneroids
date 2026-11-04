@@ -130,15 +130,24 @@ public partial class Main : Node
         // --give describes the first world only; a world picked later from the menu starts plain
         // (item ids there may mean something else entirely).
         if (!_hooksApplied && !world.Creative) world.Give(_args.Give);
-        ApplyOpenHook(world);
+        ApplyHooks(world);
         return world;
     }
 
-    /// <summary>--open applies to the first world, new or loaded, so a loaded inventory can be screenshotted.</summary>
-    void ApplyOpenHook(WorldView world)
+    /// <summary>--open, --orientation, --open-doors, --preview, --place and --focus apply to the first world, new or loaded, so a loaded
+    /// world can be screenshotted the same way.</summary>
+    void ApplyHooks(WorldView world)
     {
         if (_hooksApplied) return;
         _hooksApplied = true;
+        // A screenshot run takes no input: stray mouse or wheel events reaching the window would change the selection
+        // or the view, and two runs with the same arguments would differ.
+        if (_args.ScreenshotPath is not null) world.Player.InputLocked = true;
+        if (_args.Orientation is { } orientation) world.Player.Mode.Orientation = Simulation.Shapes.Orientation.FromIndex(orientation);
+        if (_args.OpenDoors) world.OpenDoors();
+        if (_args.Preview is { } item && world.Preview(item) && _args.Place) world.PlacePreviewed();
+        else if (_args.Place) GD.PushWarning("--place: needs a --preview that found a face to aim at");
+        if (_args.Focus is { } focus) world.Focus(focus);
         if (_args.Open is { } window) world.OpenWindow(window);
     }
 
@@ -153,12 +162,12 @@ public partial class Main : Node
             return null;
         }
 
-        var world = new WorldView();
+        var world = new WorldView { Mapping = _args.TextureMapping };
         world.ExitRequested += () => LeaveWorld(world);
         Swap(world);
         if (!world.Setup(loaded, info, saved))
         {
-            ShowMenu($"{entry.Header.Name} has no placeable 1x1x1 blocks with textures.");
+            ShowMenu($"{entry.Header.Name} has no placeable single-cell blocks with textures.");
             return null;
         }
         return world;
@@ -232,7 +241,8 @@ public partial class Main : Node
         if (check.Status == BindingStatus.Incompatible)
         {
             var missing = check.MissingBlockIds.ToHashSet();
-            cells = saved.Cells.Count(c => c != WorldSnapshot.Air && missing.Contains(saved.Palette[c]));
+            cells = saved.Cells.Count(c => c != WorldSnapshot.Air && missing.Contains(saved.Palette[c])) +
+                    saved.Objects.Count(o => missing.Contains(o.BlockId));
             question.Add($"{check.MissingBlockIds.Count} block type(s) the world uses do not exist in {entry.Header.Name} from " +
                          $"'{entry.Pack.Id}' (blockIds {string.Join(", ", check.MissingBlockIds)}). At least {cells} placed block(s) " +
                          "of those types will become empty space.");
@@ -273,7 +283,7 @@ public partial class Main : Node
             GD.PushWarning(text);
             world.Flash(text, warning: true, seconds: 10);
         }
-        ApplyOpenHook(world);
+        ApplyHooks(world);
 
         // The palette also drops blocks without a usable texture (e.g. a texture pack that supplied it is gone), and a
         // bigger save loses what lies outside this world. None of that shows in the binding check, so it is asked here,

@@ -83,7 +83,7 @@ public sealed class PlayerMotor
         }
         else
         {
-            bool IsSolid(int x, int y, int z) => world.Get(new Vector3I(x, y, z)) != BlockPalette.Air;
+            bool IsSolid(int x, int y, int z) => world.IsSolid(new Vector3I(x, y, z));
             if (_needsFreeSpot)
             {
                 _needsFreeSpot = false;
@@ -103,9 +103,13 @@ public sealed class PlayerMotor
     /// <summary>True when a block at <paramref name="cell"/> would intersect the body of a player whose eye is
     /// at <paramref name="eye"/>. Meant for block placing: refusing such a placement keeps the player from
     /// being embedded, which <see cref="VoxelCollider.Move"/> lets them leave but never resolves by itself.</summary>
-    public static bool BodyOccupies(Vector3 eye, Vector3I cell) =>
+    public static bool BodyOccupies(Vector3 eye, Vector3I cell) => BodyOverlaps(eye, p => p == cell);
+
+    /// <summary>True when any cell <paramref name="contains"/> accepts intersects the body: placing a multi-block, or a
+    /// door about to move into new cells.</summary>
+    public static bool BodyOverlaps(Vector3 eye, Func<Vector3I, bool> contains) =>
         VoxelCollider.Overlaps(ToNumerics(eye) - new Num.Vector3(0, EyeHeight, 0), HalfExtents,
-            (x, y, z) => x == cell.X && y == cell.Y && z == cell.Z);
+            (x, y, z) => contains(new Vector3I(x, y, z)));
 
     static Num.Vector3 ToNumerics(Vector3 v) => new(v.X, v.Y, v.Z);
 }
