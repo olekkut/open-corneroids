@@ -21,6 +21,9 @@ static class TestItems
     public const int Potion = 40;    // instant, health 25, stack 16
     public const int Overcharge = 41; // timed 20 s, power 10, stack 16
     public const int ArmorBoost = 42; // timed 1 s, armor 10, stack 16
+    public const int Table = 50;     // crafting table station, stack 1
+    public const int Furnace = 51;   // smelter station, stack 1
+    public const int Extractor = 52; // extractor station, stack 1
     public const int Unknown = 999;
 
     public static ItemsetDef Set(IReadOnlyList<BlueprintDef>? blueprints = null, IReadOnlyList<int>? defaultItems = null)
@@ -40,6 +43,9 @@ static class TestItems
             Item(Potion, "consumable", 16, components: [new ConsumableComponent(ConsumableKind.Instant, 0, 25, 0, 0, default)]),
             Item(Overcharge, "consumable", 16, components: [new ConsumableComponent(ConsumableKind.TimedBuff, 0, 0, 10, 20000, default)]),
             Item(ArmorBoost, "consumable", 16, components: [new ConsumableComponent(ConsumableKind.TimedBuff, 10, 0, 0, 1000, default)]),
+            Item(Table, "crafting", 1, components: [new CraftingStationComponent(CraftingStation.CraftingTable)]),
+            Item(Furnace, "crafting", 1, components: [new CraftingStationComponent(CraftingStation.Smelter)]),
+            Item(Extractor, "crafting", 1, components: [new CraftingStationComponent(CraftingStation.Extractor)]),
         ];
         return new ItemsetDef
         {

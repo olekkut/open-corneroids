@@ -41,6 +41,10 @@ public abstract class PlayMode
     /// <see cref="Update"/>, so a mode can fire from where the player looks.</summary>
     public (Vector3 Eye, Vector3 Forward, Vector3 Velocity) View { get; set; }
 
+    /// <summary>How far along the view the aimed block starts (the ray's hit), set with <see cref="View"/>; infinite
+    /// when nothing is aimed at.</summary>
+    public float AimDistance { get; set; } = float.PositiveInfinity;
+
     /// <summary>Gives the player a velocity change (a weapon's recoil); set by the camera.</summary>
     public Action<Vector3>? Push { get; set; }
 

@@ -68,12 +68,15 @@ public sealed class Inventory
     /// the player already has instead of scattering.
     /// </summary>
     /// <returns>How many did not fit (0 when everything was added).</returns>
-    public int Add(int itemId, int count)
+    public int Add(int itemId, int count) => AddFrom(itemId, count, 0);
+
+    /// <summary>As <see cref="Add"/>, using only the slots from <paramref name="firstSlot"/> on (the main inventory).</summary>
+    public int AddFrom(int itemId, int count, int firstSlot)
     {
         if (count <= 0)
             return 0;
         var next = Snapshot();
-        var left = Fill(next, itemId, count);
+        var left = Fill(next, itemId, count, firstSlot);
         Commit(next);
         return left;
     }
@@ -225,21 +228,25 @@ public sealed class Inventory
     /// Removes <paramref name="take"/> and then adds <paramref name="give"/> as one atomic step: if anything is
     /// missing or the additions do not fit into the space the removals free up, nothing changes.
     /// </summary>
-    internal bool TryExchange(IEnumerable<ItemStack> take, IEnumerable<ItemStack> give)
+    /// <param name="firstSlot">Only slots from this one on are taken from and filled (crafting leaves the hotbar alone).</param>
+    internal bool TryExchange(IEnumerable<ItemStack> take, IEnumerable<ItemStack> give, int firstSlot = 0)
     {
         var next = Snapshot();
         foreach (var (itemId, quantity) in Totals(take))
         {
-            if (CountIn(next, itemId) < quantity)
+            if (CountIn(next, itemId, firstSlot) < quantity)
                 return false;
-            Drain(next, itemId, quantity);
+            Drain(next, itemId, quantity, firstSlot);
         }
         foreach (var stack in give)
-            if (stack.Quantity > 0 && Fill(next, stack.ItemId, stack.Quantity) > 0)
+            if (stack.Quantity > 0 && Fill(next, stack.ItemId, stack.Quantity, firstSlot) > 0)
                 return false;
         Commit(next);
         return true;
     }
+
+    /// <summary>The exact total of an item in the slots from <paramref name="firstSlot"/> on.</summary>
+    public long CountFrom(int itemId, int firstSlot) => CountIn(slots, itemId, firstSlot);
 
     /// <summary>Sums quantities per item id, skipping non-positive ones, so duplicate entries are checked together.</summary>
     internal static Dictionary<int, long> Totals(IEnumerable<ItemStack> stacks)
@@ -269,10 +276,10 @@ public sealed class Inventory
             throw new ArgumentOutOfRangeException(name, slot, $"slot must be in 0..{slots.Length - 1}");
     }
 
-    int Fill(ItemStack?[] target, int itemId, int count)
+    int Fill(ItemStack?[] target, int itemId, int count, int firstSlot = 0)
     {
         var max = MaxStackOf(itemId);
-        for (var i = 0; i < target.Length && count > 0; i++)
+        for (var i = Math.Max(0, firstSlot); i < target.Length && count > 0; i++)
         {
             if (target[i] is { } stack && stack.ItemId == itemId && stack.Quantity < max)
             {
@@ -281,7 +288,7 @@ public sealed class Inventory
                 count -= added;
             }
         }
-        for (var i = 0; i < target.Length && count > 0; i++)
+        for (var i = Math.Max(0, firstSlot); i < target.Length && count > 0; i++)
         {
             if (target[i] is null)
             {
@@ -293,19 +300,19 @@ public sealed class Inventory
         return count;
     }
 
-    static long CountIn(ItemStack?[] source, int itemId)
+    static long CountIn(ItemStack?[] source, int itemId, int firstSlot = 0)
     {
         long total = 0;
-        foreach (var stack in source)
-            if (stack?.ItemId == itemId)
-                total += stack.Quantity;
+        for (int i = Math.Max(0, firstSlot); i < source.Length; i++)
+            if (source[i]?.ItemId == itemId)
+                total += source[i]!.Quantity;
         return total;
     }
 
     /// <summary>Caller has checked there is enough.</summary>
-    static void Drain(ItemStack?[] target, int itemId, long count)
+    static void Drain(ItemStack?[] target, int itemId, long count, int firstSlot = 0)
     {
-        for (var i = target.Length - 1; i >= 0 && count > 0; i--)
+        for (var i = target.Length - 1; i >= Math.Max(0, firstSlot) && count > 0; i--)
         {
             if (target[i] is { } stack && stack.ItemId == itemId)
             {

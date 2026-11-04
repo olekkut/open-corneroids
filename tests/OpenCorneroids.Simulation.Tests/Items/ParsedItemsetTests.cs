@@ -82,15 +82,17 @@ public class ParsedItemsetTests
         Assert.Equal(50, inventory.MaxStackOf(0));
         Assert.Equal(5, inventory.MaxStackOf(10));
 
-        // Spawn: drill and one rock; the unknown id 404 is skipped.
+        // Spawn: the drill is endless (beside the inventory), one rock goes in; the unknown id 404 is skipped.
+        Assert.Equal([20], StartingKit.Endless(set));
         Assert.Equal(0, StartingKit.Give(inventory, set));
-        Assert.Equal(["20x1", "0x1"], inventory.Layout().Take(2));
+        Assert.Equal(["0x1", "-"], inventory.Layout().Take(2));
 
-        // Mine: the drill's power 4 beats powerToDrill 1; 0.1 * 8 / 4 = 0.2 s.
+        // Mine with the drill taken from its endless slot: power 4 beats powerToDrill 1 by 3: 0.8 - 0.3 = 0.5 s.
+        inventory.Add(20, 1);
         var rock = set.ItemsById[0];
         var power = Mining.DrillPower(inventory, set);
         Assert.Equal(4, power);
-        Assert.Equal(0.2, Mining.SecondsToMine(power, rock.Block!), precision: 10);
+        Assert.Equal(0.5, Mining.SecondsToMine(power, rock.Block!), precision: 10);
         var drop = Mining.Drop(set.ItemsByBlockId[0]);
         inventory.Add(drop.ItemId, drop.Quantity * 5);
         Assert.Equal(6, inventory.Count(0));
@@ -101,7 +103,7 @@ public class ParsedItemsetTests
         Assert.True(Crafting.TryCraft(inventory, set, grind, times: 2));
         Assert.Equal(0, inventory.Count(0));
         Assert.Equal(8, inventory.Count(10));
-        Assert.Equal(["20x1", "10x5", "10x3"], inventory.Layout().Take(3));
+        Assert.Equal(["10x5", "20x1", "10x3"], inventory.Layout().Take(3));
 
         var bake = Assert.Single(Crafting.For(set, CraftingStation.Smelter));
         Assert.Empty(Crafting.For(set, CraftingStation.Extractor));

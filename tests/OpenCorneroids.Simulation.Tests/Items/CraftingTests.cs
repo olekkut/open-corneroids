@@ -321,4 +321,43 @@ public class CraftingTests
         Assert.Equal(["1x3", "-"], inventory.Layout());
         Assert.Equal(0, changes.Count);
     }
+
+    // --- the main inventory only ---
+
+    [Fact]
+    public void Crafting_from_the_main_inventory_ignores_the_hotbar()
+    {
+        var inventory = NewInventory(12);
+        inventory.SetSlot(0, S(Rock, 10));          // hotbar
+        inventory.SetSlot(Crafting.MainInventory, S(Rock, 3));
+        var set = Set();
+
+        Assert.Equal(1, Crafting.MaxCraftable(inventory, PlateFromRock, Crafting.MainInventory));
+        Assert.True(Crafting.TryCraft(inventory, set, PlateFromRock, 1, Crafting.MainInventory));
+
+        Assert.Equal(S(Rock, 10), inventory.Slots[0]);
+        Assert.Equal(1, inventory.Count(Rock) - 10);
+        Assert.DoesNotContain(inventory.Slots.Take(Crafting.MainInventory), s => s?.ItemId == Plate);
+        Assert.Equal(1, inventory.Count(Plate));
+        Assert.False(Crafting.TryCraft(inventory, set, PlateFromRock, 1, Crafting.MainInventory));
+    }
+
+    [Fact]
+    public void The_result_must_fit_in_the_main_inventory()
+    {
+        var inventory = NewInventory(Crafting.MainInventory + 1);
+        inventory.SetSlot(Crafting.MainInventory, S(Rock, 2));
+        inventory.SetSlot(1, null);                 // room in the hotbar does not count
+
+        Assert.True(Crafting.TryCraft(inventory, Set(), PlateFromRock, 1, Crafting.MainInventory));   // the rock's slot frees up
+        Assert.Equal(S(Plate, 1), inventory.Slots[Crafting.MainInventory]);
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(2, 1)]
+    [InlineData(7, 3)]
+    [InlineData(10, 5)]
+    public void Half_a_batch_is_half_of_what_can_be_afforded_and_at_least_one(int affordable, int expected) =>
+        Assert.Equal(expected, Crafting.HalfBatch(affordable));
 }

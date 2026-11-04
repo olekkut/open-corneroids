@@ -26,7 +26,6 @@ public sealed class SurvivalMode : PlayMode
     int _selected;   // hotbar slot in hand, or -1 for an empty hand
     BlockTarget? _drillTarget;
     double _drillTime;
-    bool _drillBlocked;   // the target is fully drilled but its drop did not fit
 
     public SurvivalMode(GridSet grids, Hud hud, Inventory inventory, ItemsetDef itemset, Suit suit) : base(grids, hud)
     {
@@ -148,12 +147,11 @@ public sealed class SurvivalMode : PlayMode
     public event Action? Fired;
 
     /// <summary>
-    /// Drilling needs continuous aim: progress builds while the button is held on one block and starts over when
-    /// the aim moves to another block or the button is let go. The exception is a block that is fully drilled but
-    /// whose drop has nowhere to go: it stays intact and remembers it is done, even across letting go and opening
-    /// the inventory, so the player can make room and then finish it with a click instead of drilling it again.
-    /// Aiming the drill at any other block forgets it. A multi-block is one target however the aim moves over it,
-    /// and takes the drill power and time of its own BlockDef, like any block.
+    /// Drilling as in the original: with a drill in hand and the button held on a block within
+    /// <see cref="DrillReach"/> m, progress builds for the time <see cref="Mining.SecondsToMine"/> gives and starts over
+    /// when the aim moves or the button is let go. The block then breaks and leaves one of itself floating where it was
+    /// (<see cref="FloatingItems"/>), whatever room the inventory has. Grey sparks fly while the drill bites, yellow ones
+    /// when it is too weak, and then the block never breaks. A multi-block is one target however the aim moves over it.
     /// </summary>
     public override void Update(double delta, BlockTarget? target, bool drilling)
     {
@@ -166,7 +164,7 @@ public sealed class SurvivalMode : PlayMode
             return;
         }
         int power = HeldDrillPower;
-        if (!drilling || power == 0 || target is not { } cell)
+        if (!drilling || power == 0 || target is not { } cell || !InReach(cell))
         {
             StopDrilling();
             return;
@@ -175,15 +173,15 @@ public sealed class SurvivalMode : PlayMode
         {
             _drillTarget = cell;
             _drillTime = 0;
-            _drillBlocked = false;
         }
 
         var item = Palette.Item(cell.Grid.BlockOf(cell));
         var block = item.Block!;
-        if (!Mining.CanMine(power, block))
+        bool bites = Mining.CanMine(power, block);
+        Sparks(cell, bites, delta);
+        if (!bites)
         {
             Hud.ShowProgress(null);
-            Hud.Flash($"{item.Name} needs drill power {block.PowerToDrill} (this drill: {power})", warning: true);
             return;
         }
 
@@ -193,16 +191,36 @@ public sealed class SurvivalMode : PlayMode
         if (_drillTime < seconds) return;
 
         var drop = Mining.Drop(item);
-        if (!_inventory.CanAdd([drop]))
-        {
-            _drillBlocked = true;
-            Hud.Flash("Inventory full", warning: true);
-            return;
-        }
+        var at = TargetCenter(cell);
         Grids.Break(cell);
-        _inventory.Add(drop.ItemId, drop.Quantity);
-        Hud.Flash($"+{drop.Quantity} {NameOf(drop.ItemId)}");
+        if (Drops is { } drops) drops.Drop(drop.ItemId, drop.Quantity, at);
+        else _inventory.Add(drop.ItemId, drop.Quantity);
         ResetDrill();
+    }
+
+    /// <summary>The original reaches 3 m with a drill, from the eye to the block (spec 1.5).</summary>
+    public const float DrillReach = 3f;
+
+    /// <summary>Where mined items float and how they reach the player; set by the world.</summary>
+    public FloatingItems? Drops { get; set; }
+
+    double _sinceSparks;
+
+    /// <summary>Measured along the view to where the aim enters the block, as the original does (spec 1.5).</summary>
+    bool InReach(BlockTarget cell) => AimDistance <= DrillReach;
+
+    /// <summary>Where the aim meets the block: where the sparks fly.</summary>
+    Vector3 AimPoint => View.Eye + View.Forward * AimDistance;
+
+    static Vector3 TargetCenter(BlockTarget cell) => cell.Object is { } obj
+        ? cell.Grid.ToGlobal(obj.ModelBox.GetCenter())
+        : cell.Grid.ToGlobal((Vector3)cell.Cell + new Vector3(0.5f, 0.5f, 0.5f));
+
+    void Sparks(BlockTarget cell, bool bites, double delta)
+    {
+        if ((_sinceSparks += delta) < 0.1 || Shots is null) return;
+        _sinceSparks = 0;
+        Shots.Spark(AimPoint - View.Forward * 0.05f, bites ? new Color(0.75f, 0.75f, 0.75f) : new Color(1f, 0.9f, 0.1f));
     }
 
     /// <summary>
@@ -249,19 +267,13 @@ public sealed class SurvivalMode : PlayMode
         TryPlace(eye, aim, block, () => _inventory.TryTakeFromSlot(_selected, 1));
     }
 
-    /// <summary>The button is up or the aim is off every block. The bar always goes (it may still show a block
-    /// that was just broken); a blocked, fully drilled block keeps its progress, anything else starts over.</summary>
-    void StopDrilling()
-    {
-        Hud.ShowProgress(null);
-        if (!_drillBlocked) ResetDrill();
-    }
+    /// <summary>The button is up or the aim is off every block: the drilling starts over.</summary>
+    void StopDrilling() => ResetDrill();
 
     void ResetDrill()
     {
         _drillTarget = null;
         _drillTime = 0;
-        _drillBlocked = false;
         Hud.ShowProgress(null);
     }
 

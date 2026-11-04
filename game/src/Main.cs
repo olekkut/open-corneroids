@@ -167,6 +167,7 @@ public partial class Main : Node
         // --give describes the first world only; a world picked later from the menu starts plain
         // (item ids there may mean something else entirely).
         if (!_hooksApplied && !world.Creative) world.Give(_args.Give);
+        if (!_hooksApplied && !world.Creative) world.DropInFront(_args.Drop);
         ApplyHooks(world);
         return world;
     }

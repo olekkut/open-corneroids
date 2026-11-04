@@ -59,6 +59,7 @@ public partial class FlyCamera : Camera3D
     /// <see cref="LeaveReach"/>: 2.5 and 5 body radii.</summary>
     public const float BoardReach = 2.5f * PlayerMotor.BodyRadius, LeaveReach = 5f * PlayerMotor.BodyRadius;
 
+    float _aimDistance = float.PositiveInfinity;
     ShipGrid? _riding;
     Transform3D _ridePose;      // the ridden ship's pose at the end of the last frame
     Vector3 _rideSpeed;         // its motion where the player was then, given back if the ship vanishes
@@ -796,7 +797,7 @@ public partial class FlyCamera : Camera3D
         }
         else
         {
-            _hasTarget = _grids.Raycast(GlobalPosition, -GlobalTransform.Basis.Z, Reach, out _aim);
+            _hasTarget = _grids.Raycast(GlobalPosition, -GlobalTransform.Basis.Z, Reach, out _aim, out _aimDistance);
         }
         if (_hasTarget) _target = _aim.Grid.TargetAt(_aim.Hit);
         ShowHighlight();
@@ -805,6 +806,10 @@ public partial class FlyCamera : Camera3D
         bool captured = Input.MouseMode == Input.MouseModeEnum.Captured;
         if (!captured) _primaryHeld = false;
         _mode.View = (GlobalPosition, -GlobalTransform.Basis.Z, WorldVelocity);
+        // A pinned aim (test hooks) has no ray distance: the centre of the aimed cell stands in for it.
+        _mode.AimDistance = !_hasTarget ? float.PositiveInfinity
+            : PinnedAim is not null ? GlobalPosition.DistanceTo(_aim.Grid.ToGlobal((Vector3)_aim.Hit + new Vector3(0.5f, 0.5f, 0.5f)))
+            : _aimDistance;
         _mode.Update(delta, _hasTarget ? _target : null, drilling: PrimaryDown && !windowOpen);
 
         CountFrame(delta);
@@ -813,7 +818,9 @@ public partial class FlyCamera : Camera3D
         bool turnable = _grids.Palette.IsObject(_mode.SelectedBlock) || _grids.Palette.IsTurnable(_mode.SelectedBlock);
         _hud.SetStatus($"FPS {_fps}   position {p.X:0},{p.Y:0},{p.Z:0}" + (_riding is { } aboard ? $"   aboard {aboard.Name}" : "") + _mode.Status +
                        (turnable ? $"   orientation {_mode.Orientation.Describe()}" : "") +
-                       (_hasTarget ? $"   looking at {_grids.Palette.Item(_target.Grid.BlockOf(_target)).Name}{ShipNote(_target.Grid)}" : ""));
+                       // The aimed block may have just been mined away this frame.
+                       (_hasTarget && _target.Grid.BlockOf(_target) is var looked && looked != BlockPalette.Air
+                           ? $"   looking at {_grids.Palette.Item(looked).Name}{ShipNote(_target.Grid)}" : ""));
     }
 
     /// <summary>

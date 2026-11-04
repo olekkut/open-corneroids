@@ -12,7 +12,6 @@ namespace OpenCorneroids.Game.Ui;
 /// </summary>
 public partial class CraftingPanel : PanelContainer
 {
-    const int Batch = 5;
     static readonly Color Enough = new(0.75f, 1f, 0.75f);
     static readonly Color Short = new(1f, 0.45f, 0.4f);
 
@@ -109,15 +108,17 @@ public partial class CraftingPanel : PanelContainer
         middle.AddChild(needs);
         line.AddChild(middle);
 
-        var one = CraftButton("Craft x1", blueprint, 1);
-        var five = CraftButton($"Craft x{Batch}", blueprint, Batch);
+        // The original crafts one batch with a left click and half of what can be afforded with a right click
+        //; here they are two buttons.
+        var one = CraftButton("Craft 1", blueprint, half: false);
+        var five = CraftButton("Craft half", blueprint, half: true);
         line.AddChild(one);
         line.AddChild(five);
         _rows.Add(new Row(blueprint, name, ingredients, one, five));
         return panel;
     }
 
-    Button CraftButton(string text, BlueprintDef blueprint, int times)
+    Button CraftButton(string text, BlueprintDef blueprint, bool half)
     {
         var button = new Button { Text = text, FocusMode = FocusModeEnum.None, SizeFlagsVertical = SizeFlags.ShrinkCenter };
         // The default theme's button is almost the panel's colour; a filled green box makes it obvious which
@@ -130,7 +131,11 @@ public partial class CraftingPanel : PanelContainer
         button.AddThemeColorOverride("font_hover_color", Colors.White);
         button.AddThemeColorOverride("font_pressed_color", Colors.White);
         button.AddThemeColorOverride("font_disabled_color", new Color(1, 1, 1, 0.3f));
-        button.Pressed += () => Craft(blueprint, times);
+        // A recipe with no ingredients can be afforded without end: half of that would never fit, so it is taken as a
+        // stack's worth.
+        button.Pressed += () => Craft(blueprint, half
+            ? Crafting.HalfBatch(Math.Min(Crafting.MaxCraftable(_inventory, blueprint, Crafting.MainInventory), 2 * Inventory.UnknownItemMaxStack))
+            : 1);
         return button;
     }
 
@@ -147,9 +152,9 @@ public partial class CraftingPanel : PanelContainer
     void Craft(BlueprintDef blueprint, int times)
     {
         var name = Lookup(blueprint.Result.ItemId)?.Name ?? blueprint.Name;
-        _status.Text = Crafting.TryCraft(_inventory, _itemset, blueprint, times)
+        _status.Text = Crafting.TryCraft(_inventory, _itemset, blueprint, times, Crafting.MainInventory)
             ? $"Crafted {blueprint.Result.Quantity * times} {name}"
-            : "Not enough room in the inventory for the result";
+            : "Inventory is full!";
         _status.AddThemeColorOverride("font_color", _status.Text.StartsWith("Crafted") ? Enough : Short);
     }
 
@@ -157,15 +162,16 @@ public partial class CraftingPanel : PanelContainer
     {
         foreach (var row in _rows)
         {
-            int max = Crafting.MaxCraftable(_inventory, row.Blueprint);
+            // Only the main inventory counts: what is on the hotbar can't be used.
+            int max = Crafting.MaxCraftable(_inventory, row.Blueprint, Crafting.MainInventory);
             // An unknown id in the blueprint would make TryCraft refuse, so don't offer the button at all.
             bool valid = Lookup(row.Blueprint.Result.ItemId) is not null && row.Ingredients.All(i => Lookup(i.ItemId) is not null);
             row.One.Disabled = !valid || max < 1;
-            row.Five.Disabled = !valid || max < Batch;
+            row.Five.Disabled = !valid || max < 2;
             row.Name.AddThemeColorOverride("font_color", valid && max >= 1 ? Colors.White : new Color(1, 1, 1, 0.55f));
             foreach (var (_, count, itemId, need) in row.Ingredients)
             {
-                int have = _inventory.Count(itemId);
+                int have = (int)Math.Min(int.MaxValue, _inventory.CountFrom(itemId, Crafting.MainInventory));
                 count.Text = $"{have}/{need}";
                 count.AddThemeColorOverride("font_color", have >= need ? Enough : Short);
             }

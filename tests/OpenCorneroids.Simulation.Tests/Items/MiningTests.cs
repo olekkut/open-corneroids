@@ -73,14 +73,16 @@ public class MiningTests
 
     // --- SecondsToMine ---
 
+    // The original's rules: 0.8 s, less 0.1 s per point of power over powerToDrill, never under 0.3 s.
     [Theory]
-    [InlineData(1, Rock, 0.5)]   // 0.1 * 5 / 1
-    [InlineData(2, Rock, 0.25)]  // 0.1 * 5 / 2
-    [InlineData(5, Rock, 0.15)]  // 0.1 floored to the minimum
-    [InlineData(3, Ore, 2.0 / 3)] // 0.1 * 20 / 3
-    [InlineData(5, Ore, 0.4)]
-    [InlineData(1, Glass, 0.15)] // health 0: 0, floored
-    public void SecondsToMine_scales_with_health_over_power(int power, int itemId, double expected) =>
+    [InlineData(1, Rock, 0.8)]   // powerToDrill 1: nothing to spare
+    [InlineData(2, Rock, 0.7)]
+    [InlineData(5, Rock, 0.4)]
+    [InlineData(3, Ore, 0.8)]    // powerToDrill 3
+    [InlineData(5, Ore, 0.6)]
+    [InlineData(1, Glass, 0.7)]  // powerToDrill 0
+    [InlineData(9, Rock, 0.3)]   // 8 to spare: floored
+    public void SecondsToMine_falls_with_power_to_spare(int power, int itemId, double expected) =>
         Assert.Equal(expected, Mining.SecondsToMine(power, BlockOf(itemId)), precision: 10);
 
     [Theory]
@@ -92,14 +94,15 @@ public class MiningTests
 
     [Theory]
     [InlineData(0)]
-    [InlineData(-50)]
-    public void SecondsToMine_of_a_block_with_non_positive_health_is_the_minimum(int health) =>
-        Assert.Equal(Mining.MinSecondsToMine, Mining.SecondsToMine(1, Block(99, health, powerToDrill: 0)));
+    [InlineData(5)]
+    [InlineData(255)]
+    public void A_blocks_health_plays_no_part(int health) =>
+        Assert.Equal(Mining.MaxSecondsToMine - 0.1, Mining.SecondsToMine(1, Block(99, health, powerToDrill: 0)), precision: 10);
 
     [Fact]
-    public void SecondsToMine_never_drops_below_the_minimum()
+    public void SecondsToMine_stays_between_the_limits()
     {
-        Assert.Equal(0.15, Mining.MinSecondsToMine);
+        Assert.Equal((0.3, 0.8), (Mining.MinSecondsToMine, Mining.MaxSecondsToMine));
         Assert.Equal(Mining.MinSecondsToMine, Mining.SecondsToMine(int.MaxValue, BlockOf(Ore)));
     }
 

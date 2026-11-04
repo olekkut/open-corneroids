@@ -3,17 +3,15 @@ using OpenCorneroids.Content.Itemsets;
 namespace OpenCorneroids.Simulation.Items;
 
 /// <summary>
-/// Drilling rules. Only the power comparison comes from the itemset format (<c>power</c> on drills,
-/// <c>powerToDrill</c> on blocks); the timing formula and the drop rule are ours, tunable, and the original
-/// game's behaviour for both is unknown.
+/// Drilling rules, as the original has them: a drill mines a block when its <c>power</c> is at
+/// least the block's <c>powerToDrill</c>; it takes 0.8 s less 0.1 s for each point of power to spare, never under
+/// 0.3 s; the block's <c>health</c> plays no part; and a mined block drops one of itself.
 /// </summary>
 public static class Mining
 {
-    /// <summary>Floor on mining time so even a strong drill on a weak block is a visible action, not a flicker. Tunable.</summary>
-    public const double MinSecondsToMine = 0.15;
-
-    /// <summary>Seconds per point of block health at drill power 1. Tunable; original behaviour unknown.</summary>
-    public const double SecondsPerHealthPerPower = 0.1;
+    public const double MaxSecondsToMine = 0.8;
+    public const double MinSecondsToMine = 0.3;
+    public const double SecondsPerSparePower = 0.1;
 
     /// <summary>
     /// The best drill the player carries anywhere in the inventory, not just the selected slot, so mining does not
@@ -37,21 +35,14 @@ public static class Mining
         return drillPower > 0 && drillPower >= block.PowerToDrill;
     }
 
-    /// <summary>
-    /// Time scales with block health and inversely with drill power. Our formula, tunable; the original's is unknown.
-    /// Zero or negative health needs no special case: it lands on <see cref="MinSecondsToMine"/> like any other
-    /// quick block, so the result is always positive. <see cref="double.PositiveInfinity"/> when the block cannot be
-    /// mined.
-    /// </summary>
+    /// <summary>Seconds to break <paramref name="block"/> with a drill of <paramref name="drillPower"/>;
+    /// <see cref="double.PositiveInfinity"/> when it can't.</summary>
     public static double SecondsToMine(int drillPower, BlockDef block) =>
         CanMine(drillPower, block)
-            ? Math.Max(MinSecondsToMine, SecondsPerHealthPerPower * block.Health / drillPower)
+            ? Math.Clamp(MaxSecondsToMine - SecondsPerSparePower * (drillPower - block.PowerToDrill), MinSecondsToMine, MaxSecondsToMine)
             : double.PositiveInfinity;
 
-    /// <summary>
-    /// A mined block yields one of its own item. Our rule: the original may drop something else (ore from asteroids,
-    /// for instance), which is unknown.
-    /// </summary>
+    /// <summary>A mined block yields one of its own item, ores included (spec 1.5).</summary>
     public static ItemStack Drop(ItemDef minedBlockItem)
     {
         ArgumentNullException.ThrowIfNull(minedBlockItem);

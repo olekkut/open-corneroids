@@ -134,7 +134,7 @@ public partial class WorldView : Node3D
         {
             if (saved is null)
             {
-                int leftOver = StartingKit.Give(Inventory, itemset);
+                int leftOver = StartingKit.Give(Inventory, itemset, Crafting.MainInventory);
                 if (leftOver > 0) GD.PushWarning($"Starting kit: {leftOver} items did not fit the inventory");
             }
             else
@@ -154,7 +154,7 @@ public partial class WorldView : Node3D
             mode = new SurvivalMode(Grids, hud, Inventory, itemset, Suit);
             windows = new GameWindows { Name = "Windows" };
             AddChild(windows);
-            windows.Setup(Inventory, Suit, itemset, Icons);
+            windows.Setup(Inventory, Suit, itemset, Icons, StartingKit.Endless(itemset));
         }
         hud.SetControls(mode.Controls + "   F5 save");
 
@@ -175,6 +175,15 @@ public partial class WorldView : Node3D
         shots.Setup(Grids, itemset);
         shots.BlockDestroyed += name => hud.Log($"Shot apart: {name}");
         mode.Shots = shots;
+        if (mode is SurvivalMode survival)
+        {
+            var drops = new FloatingItems { Name = "Drops" };
+            AddChild(drops);
+            drops.Setup(Inventory, itemset, Icons, () => camera.GlobalPosition);
+            drops.PickedUp += (name, count) => hud.Flash($"+{count} {name}");
+            survival.Drops = drops;
+            _drops = drops;
+        }
         camera.Setup(Grids, hud, mode, windows);
         camera.ExitRequested += () => ExitRequested?.Invoke();
         camera.SaveRequested += () => Save();
@@ -449,6 +458,16 @@ public partial class WorldView : Node3D
         }
         if (refused > 0) GD.PushWarning($"--open-doors: {refused} door(s) left shut because the player is in the way");
     }
+
+    /// <summary><c>--drop</c>: leaves items floating a metre in front of the player.</summary>
+    public void DropInFront(IEnumerable<(int ItemId, int Count)> items)
+    {
+        if (_drops is null) return;
+        var at = Player.GlobalPosition - Player.GlobalTransform.Basis.Z;
+        foreach (var (itemId, count) in items) _drops.Drop(itemId, count, at);
+    }
+
+    FloatingItems? _drops;
 
     /// <summary>Selects the hotbar slot that holds <paramref name="itemId"/> (<c>--select</c>).</summary>
     public void SelectItem(int itemId)

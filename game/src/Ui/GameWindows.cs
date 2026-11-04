@@ -23,7 +23,8 @@ public partial class GameWindows : CanvasLayer
     /// <summary>The station whose blueprints are on screen, or null when only the inventory is open.</summary>
     public CraftingStation? OpenStation { get; private set; }
 
-    public void Setup(Inventory inventory, Suit suit, ItemsetDef itemset, ItemIcons icons)
+    /// <param name="endless">Items the player can always take another of (the starting drill and stations).</param>
+    public void Setup(Inventory inventory, Suit suit, ItemsetDef itemset, ItemIcons icons, IReadOnlyList<int> endless)
     {
         Layer = 2;   // above the HUD
         _root = new Control { Visible = false, MouseFilter = Control.MouseFilterEnum.Stop };
@@ -51,7 +52,7 @@ public partial class GameWindows : CanvasLayer
         row.AddChild(_character);
         _inventory = new InventoryPanel { Name = "Inventory", SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
         row.AddChild(_inventory);
-        _inventory.Setup(inventory, itemset, icons);
+        _inventory.Setup(inventory, itemset, icons, endless);
         _character.Setup(suit, inventory, _inventory, itemset, icons);
     }
 

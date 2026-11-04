@@ -4,15 +4,38 @@ using static OpenCorneroids.Simulation.Tests.Items.Support.TestItems;
 
 namespace OpenCorneroids.Simulation.Tests.Items;
 
+/// <summary>The original's rules, with the extractor given as an item (see <see cref="StartingKit"/>).</summary>
 public class StartingKitTests
 {
     [Fact]
-    public void Give_adds_one_of_each_default_item_in_list_order()
+    public void The_first_drill_the_table_and_the_furnace_are_endless_and_not_given()
     {
-        var set = Set(defaultItems: [WeakDrill, Rock, Plate]);
+        var set = Set(defaultItems: [Table, WeakDrill, Furnace, Rock, Extractor, Plate]);
         var inventory = Inventory.ForItemset(set, 4);
+
+        Assert.Equal([WeakDrill, Table, Furnace], StartingKit.Endless(set));
         Assert.Equal(0, StartingKit.Give(inventory, set));
-        Assert.Equal(["20x1", "1x1", "10x1", "-"], inventory.Layout());
+        Assert.Equal(["1x1", "52x1", "10x1", "-"], inventory.Layout());
+    }
+
+    [Fact]
+    public void Later_drills_are_ignored_and_the_last_station_of_a_kind_wins()
+    {
+        var set = Set(defaultItems: [StrongDrill, WeakDrill, Table, Table, Rock]);
+        var inventory = Inventory.ForItemset(set, 3);
+
+        Assert.Equal([StrongDrill, Table], StartingKit.Endless(set));
+        StartingKit.Give(inventory, set);
+        Assert.Equal(["1x1", "-", "-"], inventory.Layout());
+    }
+
+    [Fact]
+    public void Give_goes_into_the_slots_from_the_first_one_asked_for()
+    {
+        var set = Set(defaultItems: [Rock, Plate]);
+        var inventory = Inventory.ForItemset(set, 4);
+        StartingKit.Give(inventory, set, firstSlot: 2);
+        Assert.Equal(["-", "-", "1x1", "10x1"], inventory.Layout());
     }
 
     [Fact]
@@ -22,15 +45,16 @@ public class StartingKitTests
         var inventory = Inventory.ForItemset(set, 3);
         Assert.Equal(0, StartingKit.Give(inventory, set));
         Assert.Equal(["1x1", "-", "-"], inventory.Layout());
+        Assert.Empty(StartingKit.Endless(set));
     }
 
     [Fact]
     public void Give_treats_repeated_entries_as_separate_items()
     {
-        var set = Set(defaultItems: [Rock, WeakDrill, Rock, WeakDrill]);
+        var set = Set(defaultItems: [Rock, Plate, Rock]);
         var inventory = Inventory.ForItemset(set, 4);
         StartingKit.Give(inventory, set);
-        Assert.Equal(["1x2", "20x1", "20x1", "-"], inventory.Layout());
+        Assert.Equal(["1x2", "10x1", "-", "-"], inventory.Layout());
     }
 
     [Fact]
@@ -44,21 +68,10 @@ public class StartingKitTests
     }
 
     [Fact]
-    public void Give_adds_to_what_the_inventory_already_holds()
-    {
-        var set = Set(defaultItems: [Rock]);
-        var inventory = Inventory.ForItemset(set, 2);
-        inventory.Add(Rock, 5);
-        StartingKit.Give(inventory, set);
-        Assert.Equal(["1x6", "-"], inventory.Layout());
-    }
-
-    [Fact]
     public void Give_reports_items_that_did_not_fit()
     {
-        var set = Set(defaultItems: [WeakDrill, StrongDrill, Rock]);
+        var set = Set(defaultItems: [Plate, Bar, Rock]);
         var inventory = Inventory.ForItemset(set, 1);
         Assert.Equal(2, StartingKit.Give(inventory, set));
-        Assert.Equal(["20x1"], inventory.Layout());
     }
 }

@@ -34,6 +34,9 @@ public sealed class GameArgs
     /// <summary>Items added to the survival inventory at start, from <c>--give=itemId:count[,itemId:count...]</c>.</summary>
     public List<(int ItemId, int Count)> Give { get; } = new();
 
+    /// <summary>Items left floating a metre in front of the player at the start (survival), for pickup tests.</summary>
+    public List<(int ItemId, int Count)> Drop { get; } = new();
+
     /// <summary>Create a world with this name (from <see cref="Itemset"/>, or the base install's itemset) and save it
     /// at once, replacing any save of the same name.</summary>
     public string? NewWorld { get; private set; }
@@ -118,6 +121,7 @@ public sealed class GameArgs
                 case "--creative": parsed.Creative = true; break;
                 case "--open": parsed.Open = value.ToLowerInvariant(); break;
                 case "--give": parsed.Give.AddRange(ParseGive(value)); break;
+                case "--drop": parsed.Drop.AddRange(ParseGive(value)); break;
                 case "--new-world": parsed.NewWorld = value; break;
                 case "--load": parsed.Load = value; break;
                 case "--quit-after-save": parsed.QuitAfterSave = true; break;

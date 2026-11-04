@@ -25,7 +25,7 @@ public partial class InventoryPanel : PanelContainer
     int? _picked;
     int _pickedItemId;
 
-    public void Setup(Inventory inventory, ItemsetDef itemset, ItemIcons icons)
+    public void Setup(Inventory inventory, ItemsetDef itemset, ItemIcons icons, IReadOnlyList<int> endless)
     {
         _inventory = inventory;
         _itemset = itemset;
@@ -59,11 +59,38 @@ public partial class InventoryPanel : PanelContainer
         trashRow.AddChild(_trashHint);
         column.AddChild(trashRow);
 
+        // The starting drill and stations never run out, as in the original: a click takes one.
+        if (endless.Count > 0)
+        {
+            var endlessRow = new HBoxContainer();
+            endlessRow.AddThemeConstantOverride("separation", 8);
+            foreach (var itemId in endless)
+            {
+                if (!itemset.ItemsById.TryGetValue(itemId, out var item)) continue;
+                var slot = ItemSlot.Create(SlotSize, MouseFilterEnum.Stop);
+                slot.Show(item, 0, icons, "∞");
+                slot.TooltipText = $"{item.Name}: never runs out, click to take one";
+                slot.Clicked += _ => TakeEndless(item);
+                endlessRow.AddChild(slot);
+            }
+            var hint = Hud.Text("Always yours: click to take one.", 13, new Color(0.8f, 0.9f, 1f, 0.8f));
+            hint.VerticalAlignment = VerticalAlignment.Center;
+            hint.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            endlessRow.AddChild(hint);
+            column.AddChild(endlessRow);
+        }
+
         column.AddChild(Hud.Text("Click an item, then click where it goes. Right click cancels.", 13, new Color(1, 1, 1, 0.55f)));
-        column.AddChild(Hud.Text("Esc or I/Tab closes.", 13, new Color(1, 1, 1, 0.55f)));
+        column.AddChild(Hud.Text("Esc or C/I closes.", 13, new Color(1, 1, 1, 0.55f)));
 
         inventory.Changed += Refresh;
         Refresh();
+    }
+
+    void TakeEndless(ItemDef item)
+    {
+        CancelPick();
+        _trashHint.Text = _inventory.Add(item.ItemId, 1) == 0 ? $"Took a {item.Name}" : "No room for it";
     }
 
     /// <summary>The slot whose stack is picked up, waiting for a second click; null when nothing is.</summary>

@@ -211,9 +211,13 @@ public partial class Projectiles : Node3D
         return _sparkMeshes[projectileId] = new QuadMesh { Size = new Vector2(0.08f, 0.08f), Material = material };
     }
 
-    void Spark(Vector3 at, ProjectileDef def)
+    void Spark(Vector3 at, ProjectileDef def) =>
+        Spark(at, new Color(def.Color.R / 255f, def.Color.G / 255f, def.Color.B / 255f).Lightened(0.3f), def.ProjectileId);
+
+    /// <summary>A short burst of specks: a hit, or a drill at work (grey when it bites, yellow when it is too weak, as
+    /// in the original).</summary>
+    public void Spark(Vector3 at, Color color, int look = -1)
     {
-        var color = new Color(def.Color.R / 255f, def.Color.G / 255f, def.Color.B / 255f).Lightened(0.3f);
         var sparks = new CpuParticles3D
         {
             Emitting = true,
@@ -227,7 +231,7 @@ public partial class Projectiles : Node3D
             InitialVelocityMin = 1.5f,
             InitialVelocityMax = 4f,
             Color = color,
-            Mesh = SparkMesh(def.ProjectileId),
+            Mesh = SparkMesh(look),
         };
         AddChild(sparks);
         sparks.GlobalPosition = at;

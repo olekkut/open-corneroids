@@ -50,6 +50,7 @@ Arguments after `--`:
 | `--place` | With `--preview`: place the previewed block there by the normal rules (survival spends the item), e.g. with `--quit-after-save` to save a placed object without a mouse |
 | `--focus=<itemId>` | Move the camera close to the first placed multi-block of that item (from the side it already looks at), framing its footprint; for checking a showcase or loaded object by eye |
 | `--select=<itemId>` | Select the hotbar slot holding that item (survival), e.g. a weapon for a firing test |
+| `--drop=<itemId>:<count>[,...]` | Leave those items floating a metre in front of the player at the start (survival), to check picking up |
 | `--open-doors` | Open every door once the world is up, and keep doors from closing by themselves; a door that would open into the player stays shut (warning in the console); for screenshots |
 | `--demo-ship` | In a new world, build a small ship near the spawn, at the nearest spot with 40 cells of open space in front of it (−Z, where it faces), from the itemset's own blocks, attached to nothing: a hull of the first plain opaque block, the first console in its top front, the strongest power supply on top and two thrusters on each face (exhaust outwards; on the top and bottom on opposite diagonals, so it can pitch and roll both ways), skipping what the itemset lacks. Hull blocks don't conduct power, so the weakest non-supplying single-cell power block (a cable) replaces the hull on the shortest paths from the power block to the console and every thruster. The camera moves to look at it |
 | `--launch` | Press E on a console of the static world: the `--demo-ship` console, or else the one nearest the camera, launching its structure as a ship |
@@ -69,8 +70,10 @@ Arguments after `--`:
 | `--quit-after-save` | Save the world started from the command line, then quit (no screenshot). Exit code 1 if nothing was saved. With `--frames`, the world runs that long first |
 | `--screenshot=<file.png>` | Save a screenshot after 240 frames (or `--frames`), then quit (without saving the world). Mouse and keyboard are ignored meanwhile, so stray input can't change the picture. The log has the frame rate measured over the run |
 
-The game starts in survival: you get the itemset's starting kit (`defaultItems`) in a 40-slot inventory whose
-first eight slots are the hotbar, as in the original.
+The game starts in survival with the itemset's starting kit (`defaultItems`), as the original gives it: the first drill,
+the crafting table and the ore furnace are endless (beside the inventory: click one to take another), and the rest
+goes into the main inventory. The inventory has 40 slots, the first eight being the hotbar. Crafting uses only what is
+in the main inventory, not the hotbar: craft one at a time, or half of what you can afford.
 
 Your suit has **Health** and **Power** (the bars above the hotbar). Power recharges by itself (5 per second, more
 with a power source worn); boosting with Shift uses it. Armor and helmets, power sources and the like are worn in the
@@ -91,8 +94,9 @@ Controls (survival) follow the original's defaults:
 - **Moving:** WASD, Space up and Ctrl down along your own up. Each key pushes at 5 m/s² and you cruise at 4 m/s; Shift
   boosts along the view at 10 m/s² up to 8 m/s for 20 suit power a second. Let go and you coast to a stop. N is noclip
   (ours).
-- **Hands:** the left button acts with what you hold. A drill drills and a weapon fires while it is held down; a block
-  is placed and a consumable used (or a wearable put on) when you let go. Letting go of the right button empties your
+- **Hands:** the left button acts with what you hold. A drill drills (within 3 m: grey sparks when it bites, yellow when
+  it is too weak) and a weapon fires while it is held down; a block is placed and a consumable used (or a wearable put
+  on) when you let go. A mined block floats where it was for 30 seconds; come within 1.5 m and it flies to you. Letting go of the right button empties your
   hand. 1–8 or the wheel pick a hotbar slot; R or the middle button turns the block you are about to place.
 - **Blocks:** E uses the block you look at (a console's seat, a crafting station, a door); F edits it (console
   binding, still to come). T switches the flashlight.

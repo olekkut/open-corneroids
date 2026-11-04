@@ -96,8 +96,13 @@ Watched through its narration and stills taken from it (stored outside the repos
 Where the original's behaviour is known, it replaces the guesses below. Done so far (2026-11-04): controls and
 movement (spec 1.1–1.2). The boost costs 20 power a second, not 10; drilling needs a drill in hand; the left button
 acts with what is held and releasing the right one empties the hand; the player rides along with a ship they are near.
-Still to follow the spec: mining times and drops, crafting limits, health and armor, weapon recoil and spread, ship
-consoles and power networks, consumables, the starting kit.
+Mining, drops, crafting and the starting kit (spec 1.5, 1.6, 1.10) too: drilling takes 0.8 s less 0.1 s per point of
+power to spare (never under 0.3 s), within 3 m, with grey sparks (yellow when the drill is too weak); a mined block
+floats where it was for 30 s and flies to a player who comes within 1.5 m with room for it; crafting uses only the
+main inventory (craft one, or half of what can be afforded); the starting drill, crafting table and ore furnace are
+endless slots and the rest of the kit goes into the main inventory. One deviation: the spec has 1.2.0 ignore an
+extractor in the kit, but nothing crafts one, so it is given as an item, as the v1.0.5 footage shows.
+Still to follow the spec: health and armor, weapon recoil and spread, ship consoles and power networks, consumables.
 
 ## 3. Our rules where the footage is silent
 
