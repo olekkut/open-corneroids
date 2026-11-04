@@ -108,8 +108,8 @@ public partial class CraftingPanel : PanelContainer
         middle.AddChild(needs);
         line.AddChild(middle);
 
-        // The original crafts one batch with a left click and half of what can be afforded with a right click
-        //; here they are two buttons.
+        // The original crafts one batch with a left click and half of what can be afforded with a right click;
+        // here they are two buttons.
         var one = CraftButton("Craft 1", blueprint, half: false);
         var five = CraftButton("Craft half", blueprint, half: true);
         line.AddChild(one);

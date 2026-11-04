@@ -108,6 +108,9 @@ public partial class Main : Node
         }
     }
 
+    double _nextRecord = 0.3;
+    int _recorded;
+
     /// <summary>Frame of a <c>--screenshot</c> when <c>--frames</c> does not say.</summary>
     const int DefaultScreenshotFrame = 240;
 
@@ -123,6 +126,12 @@ public partial class Main : Node
         int measureFrom = _args.Seconds is null ? Math.Min(60, target / 4) : 60;
         if (++_worldFrames == measureFrom) _measureStartMs = Time.GetTicksMsec();
         _worldSeconds += Math.Min(Math.Max(0, delta), ShipPhysics.MaxFrame);
+        if (_args.RecordDir is { } record && _worldSeconds >= _nextRecord)
+        {
+            System.IO.Directory.CreateDirectory(record);
+            GetViewport().GetTexture().GetImage().SavePng(System.IO.Path.Combine(record, $"frame_{_recorded++:0000}.png"));
+            _nextRecord = _worldSeconds + 1.0 / 15;
+        }
         if (_args.Seconds is { } due ? _worldSeconds < due : _worldFrames != target) return;
         var seconds = (Time.GetTicksMsec() - _measureStartMs) / 1000.0;
         int measured = _worldFrames - measureFrom;

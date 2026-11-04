@@ -3,6 +3,10 @@
 Status: proposal · Scope: loading original Corneroids content (vanilla 1.0.1.2 / 1.2.0) and community
 itemset/texture mods into open-corneroids (Godot 4, C#) without shipping or modifying any of it.
 
+> **Bundled data (2026-11-04).** The project now ships the content folders of four packs in `byoa/` (vanilla 1.2.0,
+> CADNR v21, Nav's itemset, Sord's textures; never a program) so it runs out of the box; see `CREDITS.md`. Everything
+> below still applies: they load as BYOA packs like any other, and more can be added.
+
 Toolchain: **Godot Engine – .NET 4.7.2** (x86_64) plus a .NET SDK. The standard (non-.NET) Godot
 build can't run C#.
 

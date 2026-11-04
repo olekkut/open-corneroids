@@ -73,7 +73,7 @@ public class MiningTests
 
     // --- SecondsToMine ---
 
-    // The original's rules: 0.8 s, less 0.1 s per point of power over powerToDrill, never under 0.3 s.
+    // As in the original: 0.8 s, less 0.1 s per point of power over powerToDrill, never under 0.3 s.
     [Theory]
     [InlineData(1, Rock, 0.8)]   // powerToDrill 1: nothing to spare
     [InlineData(2, Rock, 0.7)]

@@ -4,7 +4,7 @@ using static OpenCorneroids.Simulation.Physics.AstronautMotion;
 
 namespace OpenCorneroids.Simulation.Tests.Physics;
 
-/// <summary>The original's rules: the original's movement numbers.</summary>
+/// <summary>The original's movement numbers.</summary>
 public class AstronautMotionTests
 {
     static readonly Vector3 Forward = -Vector3.UnitZ;
@@ -44,7 +44,7 @@ public class AstronautMotionTests
         // With W also held the boost replaces it rather than adding to it.
         Assert.Equal(after, Step(Vector3.Zero, Keys(Forward, forward: true, boost: true), 0.1f));
 
-        // Up to 8 at 10 m/s², then the 8 m/s² over-limit drag leaves 2 m/s² (as the spec says): 0.8 s + 2.2 s × 2.
+        // Up to 8 at 10 m/s², then the 8 m/s² over-limit drag leaves 2 m/s² (as in the original): 0.8 s + 2.2 s × 2.
         Assert.Equal(BoostSpeedLimit + 2.2f * 2, Run(Vector3.Zero, Keys(Vector3.Zero, boost: true), 3).Length(), 1);
     }
 

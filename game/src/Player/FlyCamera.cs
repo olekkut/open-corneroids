@@ -773,7 +773,7 @@ public partial class FlyCamera : Camera3D
             RotateObjectLocal(Vector3.Back, roll * WalkRollRate * (float)delta);
             Orthonormalize();
         }
-        // The boost pushes along the view even without W (spec 1.2) and costs suit power in survival. Unlike the
+        // The boost pushes along the view even without W, as in the original, and costs suit power in survival. Unlike the
         // original, a boost the suit can't pay for leaves plain W working.
         bool boost = Held(GameInput.Boost) && _mode.TryBoost(delta);
         var motion = new Simulation.Physics.AstronautMotion.Input(keys.ToNumerics(), (-basis.Z).ToNumerics(), Held(GameInput.Forward), boost);

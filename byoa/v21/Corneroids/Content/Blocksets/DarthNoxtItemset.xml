@@ -1,0 +1,5418 @@
+<?xml version="1.0" encoding="utf-8"?>
+<itemset version="5">
+  <name>CADNR v21</name>
+  <author>DN feat. Chef</author>
+  <key>DarthNoxItemset</key>
+  <defaultItems>
+    <item itemId="70" />
+    <item itemId="72" />
+    <item itemId="55" />
+    <item itemId="48" />
+    <item itemId="71" />
+  </defaultItems>
+  <textures>
+    <blockTexture>
+      <name>DarthNox texture</name>
+      <key>darthnoxblocks</key>
+    </blockTexture>
+    <spriteTexture>
+      <name>DarthNox texture</name>
+      <key>darthnoxsprites</key>
+    </spriteTexture>
+  </textures>
+  <blocks>
+    <armors>
+      <armor itemId="29" blockId="8">
+        <color r="157" g="157" b="157" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Light aluminium block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>39</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="0" y="1" w="1" h="1" />
+          <top x="0" y="1" w="1" h="1" />
+          <bottom x="0" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+      <armor itemId="30" blockId="9">
+        <color r="157" g="157" b="157" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Medium aluminium block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>58</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="1" y="1" w="1" h="1" />
+          <top x="1" y="1" w="1" h="1" />
+          <bottom x="1" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+      <armor itemId="31" blockId="10">
+        <color r="157" g="157" b="157" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Heavy aluminium block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>3</mass>
+        <health>77</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="2" y="1" w="1" h="1" />
+          <top x="2" y="1" w="1" h="1" />
+          <bottom x="2" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+      <armor itemId="28" blockId="7">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Light iron block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>39</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="3" y="1" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+      <armor itemId="32" blockId="11">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Medium iron block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>3</mass>
+        <health>58</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="4" y="1" w="1" h="1" />
+          <top x="4" y="1" w="1" h="1" />
+          <bottom x="4" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+      <armor itemId="33" blockId="12">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Heavy iron block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>77</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="1" w="1" h="1" />
+          <top x="5" y="1" w="1" h="1" />
+          <bottom x="5" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+      <armor itemId="34" blockId="13">
+        <color r="54" g="57" b="149" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Light titanium block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>58</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="6" y="1" w="1" h="1" />
+          <top x="6" y="1" w="1" h="1" />
+          <bottom x="6" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+      <armor itemId="35" blockId="14">
+        <color r="54" g="57" b="149" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Medium titanium block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>3</mass>
+        <health>87</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="7" y="1" w="1" h="1" />
+          <top x="7" y="1" w="1" h="1" />
+          <bottom x="7" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+      <armor itemId="36" blockId="15">
+        <color r="54" g="57" b="149" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Heavy titanium block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>115</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="8" y="1" w="1" h="1" />
+          <top x="8" y="1" w="1" h="1" />
+          <bottom x="8" y="1" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="132" blockId="54">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium Covered Light Iron Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>64</health>
+        <powerToDrill>4</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="12" w="1" h="1" />
+          <top x="5" y="12" w="1" h="1" />
+          <bottom x="5" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="133" blockId="55">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium Covered Medium Iron Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>3</mass>
+        <health>96</health>
+        <powerToDrill>4</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="6" y="12" w="1" h="1" />
+          <top x="6" y="12" w="1" h="1" />
+          <bottom x="6" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="134" blockId="56">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium Covered Heavy Iron Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>128</health>
+        <powerToDrill>4</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="7" y="12" w="1" h="1" />
+          <top x="7" y="12" w="1" h="1" />
+          <bottom x="7" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="136" blockId="57">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Light Ponium Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>96</health>
+        <powerToDrill>5</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="8" y="12" w="1" h="1" />
+          <top x="8" y="12" w="1" h="1" />
+          <bottom x="8" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="137" blockId="58">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Medium Ponium Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>3</mass>
+        <health>144</health>
+        <powerToDrill>5</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="9" y="12" w="1" h="1" />
+          <top x="9" y="12" w="1" h="1" />
+          <bottom x="9" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="138" blockId="59">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Heavy Ponium Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>192</health>
+        <powerToDrill>5</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="10" y="12" w="1" h="1" />
+          <top x="10" y="12" w="1" h="1" />
+          <bottom x="10" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="139" blockId="60">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium Covered Light Titanium Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>128</health>
+        <powerToDrill>7</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="2" y="12" w="1" h="1" />
+          <top x="2" y="12" w="1" h="1" />
+          <bottom x="2" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="140" blockId="61">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium Covered Medium Titanium Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>3</mass>
+        <health>192</health>
+        <powerToDrill>7</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="3" y="12" w="1" h="1" />
+          <top x="3" y="12" w="1" h="1" />
+          <bottom x="3" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="141" blockId="62">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium Covered Heavy Titanium Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>255</health>
+        <powerToDrill>7</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="4" y="12" w="1" h="1" />
+          <top x="4" y="12" w="1" h="1" />
+          <bottom x="4" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+	  <armor itemId="196" blockId="101">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ceramic block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>10</mass>
+        <health>200</health>
+        <powerToDrill>5</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="13" y="12" w="1" h="1" />
+          <top x="13" y="12" w="1" h="1" />
+          <bottom x="13" y="12" w="1" h="1" />
+        </activeTextures>
+      </armor>
+    </armors>
+    <asteroids>
+      <asteroid itemId="0" blockId="0">
+        <color r="100" g="81" b="53" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Light rock</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>5</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="0" y="0" w="1" h="1" />
+          <top x="0" y="0" w="1" h="1" />
+          <bottom x="0" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>light</asteroidType>
+      </asteroid>
+      <asteroid itemId="1" blockId="1">
+        <color r="65" g="52" b="34" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Medium rock</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="1" />
+        <mass>2</mass>
+        <health>10</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="7" y="0" w="1" h="1" />
+          <top x="7" y="0" w="1" h="1" />
+          <bottom x="7" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>medium</asteroidType>
+      </asteroid>
+      <asteroid itemId="2" blockId="2">
+        <color r="65" g="52" b="34" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Heavy rock</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="2" />
+        <mass>3</mass>
+        <health>15</health>
+        <powerToDrill>5</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="10" y="0" w="1" h="1" />
+          <top x="10" y="0" w="1" h="1" />
+          <bottom x="10" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>heavy</asteroidType>
+      </asteroid>
+      <asteroid itemId="69" blockId="33">
+        <color r="100" g="81" b="53" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobaltite rock</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>5</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="3" y="0" w="1" h="1" />
+          <top x="3" y="0" w="1" h="1" />
+          <bottom x="3" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>light</asteroidType>
+      </asteroid>
+      <asteroid itemId="68" blockId="32">
+        <color r="120" g="104" b="92" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Icy rock</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>6</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="1" y="0" w="1" h="1" />
+          <top x="1" y="0" w="1" h="1" />
+          <bottom x="1" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>light</asteroidType>
+      </asteroid>
+    </asteroids>
+    <cameras>
+      <camera itemId="53" blockId="26">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Camera block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>64</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="2" w="1" h="1" />
+          <top x="12" y="2" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-10</power>
+        <deactiveTextures>
+          <walls x="12" y="3" w="1" h="1" />
+          <top x="12" y="3" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </camera>
+      <camera itemId="179" blockId="98">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Armored camera block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>10</mass>
+        <health>250</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="2" d="2" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="2" w="1" h="1" />
+          <top x="12" y="2" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-20</power>
+        <deactiveTextures>
+          <walls x="12" y="3" w="1" h="1" />
+          <top x="12" y="3" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </camera>
+    </cameras>
+    <consoles>
+      <console itemId="46" blockId="23">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Standard console block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="3" w="1" h="1" />
+          <top x="1" y="6" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-10</power>
+        <deactiveTextures>
+          <walls x="5" y="2" w="1" h="1" />
+          <top x="0" y="6" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <buttons>6</buttons>
+      </console>
+	  <!-- -->
+	  <console itemId="129" blockId="52">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large console block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>3</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="3" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="3" w="1" h="1" />
+          <top x="4" y="8" w="3" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-30</power>
+        <deactiveTextures>
+          <walls x="5" y="2" w="1" h="1" />
+          <top x="1" y="8" w="3" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <buttons>10</buttons>
+      </console>
+	  <!-- -->
+    </consoles>
+    <crafting>
+      <crafting itemId="70" blockId="34" type="craftingtable">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Crafting table</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="11" y="1" w="1" h="1" />
+          <top x="10" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+      </crafting>
+      <crafting itemId="71" blockId="35" type="extractor">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Mineral extractor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="13" y="1" w="1" h="1" />
+          <top x="12" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+      </crafting>
+      <crafting itemId="72" blockId="36" type="smelter">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ore furnace</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="9" y="1" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+      </crafting>
+    </crafting>
+    <doors>
+      <door itemId="56" blockId="28">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>8</mass>
+        <health>58</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="4" d="1" />
+          <modelSize w="2" h="2" d="1" />
+          <modelPlacement x="0" y="-1" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="0" w="2" h="2" />
+          <top x="4" y="1" w="1" h="1" />
+          <bottom x="4" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>2</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="150" blockId="69">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large iron blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>18</mass>
+        <health>77</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="3" h="6" d="1" />
+          <modelSize w="3" h="3" d="1" />
+          <modelPlacement x="0" y="-1.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="0" w="2" h="2" />
+          <top x="4" y="1" w="1" h="1" />
+          <bottom x="4" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>3</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="57" blockId="29">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>58</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="2" h="4" d="1" />
+          <modelSize w="2" h="2" d="1" />
+          <modelPlacement x="0" y="-1" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="2" w="2" h="2" />
+          <top x="1" y="1" w="1" h="1" />
+          <bottom x="1" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>2</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="151" blockId="70">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large aluminium blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>9</mass>
+        <health>77</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="3" h="6" d="1" />
+          <modelSize w="3" h="3" d="1" />
+          <modelPlacement x="0" y="-1.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="2" w="2" h="2" />
+          <top x="1" y="1" w="1" h="1" />
+          <bottom x="1" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>3</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="59" blockId="31">
+        <color r="54" g="57" b="149" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>8</mass>
+        <health>87</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="2" h="4" d="1" />
+          <modelSize w="2" h="2" d="1" />
+          <modelPlacement x="0" y="-1" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="4" w="2" h="2" />
+          <top x="7" y="1" w="1" h="1" />
+          <bottom x="7" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>2</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="152" blockId="71">
+        <color r="54" g="57" b="149" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large titanium blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>18</mass>
+        <health>115</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="3" h="6" d="1" />
+          <modelSize w="3" h="3" d="1" />
+          <modelPlacement x="0" y="-1.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="4" w="2" h="2" />
+          <top x="7" y="1" w="1" h="1" />
+          <bottom x="7" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>3</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="153" blockId="72">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>8</mass>
+        <health>144</health>
+        <powerToDrill>5</powerToDrill>
+        <dimensions>
+          <size w="2" h="4" d="1" />
+          <modelSize w="2" h="2" d="1" />
+          <modelPlacement x="0" y="-1" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="11" w="2" h="2" />
+          <top x="9" y="12" w="1" h="1" />
+          <bottom x="9" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>2</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="154" blockId="73">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large ponium blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>18</mass>
+        <health>192</health>
+        <powerToDrill>5</powerToDrill>
+        <dimensions>
+          <size w="3" h="6" d="1" />
+          <modelSize w="3" h="3" d="1" />
+          <modelPlacement x="0" y="-1.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="11" w="2" h="2" />
+          <top x="9" y="12" w="1" h="1" />
+          <bottom x="9" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>3</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="159" blockId="78">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium covered iron blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>8</mass>
+        <health>96</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="4" d="1" />
+          <modelSize w="2" h="2" d="1" />
+          <modelPlacement x="0" y="-1" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="0" y="13" w="2" h="2" />
+          <top x="6" y="12" w="1" h="1" />
+          <bottom x="6" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>2</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="160" blockId="79">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large thulium covered iron blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>18</mass>
+        <health>128</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="3" h="6" d="1" />
+          <modelSize w="3" h="3" d="1" />
+          <modelPlacement x="0" y="-1.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="0" y="13" w="2" h="2" />
+          <top x="6" y="12" w="1" h="1" />
+          <bottom x="6" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>3</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="161" blockId="80">
+        <color r="54" g="57" b="149" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium covered titanium blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>8</mass>
+        <health>192</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="2" h="4" d="1" />
+          <modelSize w="2" h="2" d="1" />
+          <modelPlacement x="0" y="-1" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="2" y="13" w="2" h="2" />
+          <top x="3" y="12" w="1" h="1" />
+          <bottom x="3" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>2</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="162" blockId="81">
+        <color r="54" g="57" b="149" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large redium covered titanium blast door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>18</mass>
+        <health>255</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="3" h="6" d="1" />
+          <modelSize w="3" h="3" d="1" />
+          <modelPlacement x="0" y="-1.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="2" y="13" w="2" h="2" />
+          <top x="3" y="12" w="1" h="1" />
+          <bottom x="3" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>3</distance>
+          <speed>4</speed>
+          <time>2000</time>
+        </door>
+      </door>
+      <door itemId="163" blockId="82">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium bay door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>100</mass>
+        <health>255</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="11" h="22" d="2" />
+          <modelSize w="11" h="11" d="2" />
+          <modelPlacement x="0" y="-5.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="2" w="2" h="2" />
+          <top x="1" y="1" w="1" h="1" />
+          <bottom x="1" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>11</distance>
+          <speed>4</speed>
+          <time>20000</time>
+        </door>
+      </door>
+      <door itemId="166" blockId="85">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron bay door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>100</mass>
+        <health>255</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="11" h="22" d="2" />
+          <modelSize w="11" h="11" d="2" />
+          <modelPlacement x="0" y="-5.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="0" w="2" h="2" />
+          <top x="4" y="1" w="1" h="1" />
+          <bottom x="4" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>11</distance>
+          <speed>4</speed>
+          <time>20000</time>
+        </door>
+      </door>
+      <door itemId="167" blockId="86">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium bay door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>100</mass>
+        <health>255</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="11" h="22" d="2" />
+          <modelSize w="11" h="11" d="2" />
+          <modelPlacement x="0" y="-5.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="4" w="2" h="2" />
+          <top x="7" y="1" w="1" h="1" />
+          <bottom x="7" y="1" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>11</distance>
+          <speed>4</speed>
+          <time>20000</time>
+        </door>
+      </door>
+      <door itemId="168" blockId="87">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium covered iron bay door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>100</mass>
+        <health>255</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="11" h="22" d="2" />
+          <modelSize w="11" h="11" d="2" />
+          <modelPlacement x="0" y="-5.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="0" y="13" w="2" h="2" />
+          <top x="6" y="12" w="1" h="1" />
+          <bottom x="6" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>11</distance>
+          <speed>4</speed>
+          <time>20000</time>
+        </door>
+      </door>
+      <door itemId="169" blockId="88">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium bay door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>100</mass>
+        <health>255</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="11" h="22" d="2" />
+          <modelSize w="11" h="11" d="2" />
+          <modelPlacement x="0" y="-5.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="11" w="2" h="2" />
+          <top x="9" y="12" w="1" h="1" />
+          <bottom x="9" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>11</distance>
+          <speed>4</speed>
+          <time>20000</time>
+        </door>
+      </door>
+      <door itemId="170" blockId="89">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium covered titanium bay door</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>100</mass>
+        <health>255</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="11" h="22" d="2" />
+          <modelSize w="11" h="11" d="2" />
+          <modelPlacement x="0" y="-5.5" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="2" y="13" w="2" h="2" />
+          <top x="3" y="12" w="1" h="1" />
+          <bottom x="3" y="12" w="1" h="1" />
+        </activeTextures>
+        <door>
+          <direction x="0" y="1" z="0" />
+          <distance>11</distance>
+          <speed>4</speed>
+          <time>20000</time>
+        </door>
+      </door>
+    </doors>
+    <gunConsoles>
+      <gunConsole itemId="54" blockId="27">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cannon Console Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="3" w="1" h="1" />
+          <top x="3" y="6" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-10</power>
+        <deactiveTextures>
+          <walls x="5" y="2" w="1" h="1" />
+          <top x="2" y="6" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <buttons>1</buttons>
+      </gunConsole>
+      <gunConsole itemId="171" blockId="90">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large Cannon Console Block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>12</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="1" d="2" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="3" w="1" h="1" />
+          <top x="3" y="6" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-40</power>
+        <deactiveTextures>
+          <walls x="5" y="2" w="1" h="1" />
+          <top x="2" y="6" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <buttons>10</buttons>
+      </gunConsole>
+    </gunConsoles>
+    <guns>
+      <gun itemId="47" blockId="24">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Anti-Personnel Cannon</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>3</mass>
+        <health>50</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="2" y="7" w="1" h="1" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-10</power>
+        <deactiveTextures>
+          <walls x="1" y="7" w="1" h="1" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>1.5</barrelLength>
+        <reloadTime>200</reloadTime>
+        <projectileId>4</projectileId>
+      </gun>
+      <gun itemId="82" blockId="42">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Light Assault Cannon</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>10</mass>
+        <health>64</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="2" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="6" y="6" w="1" h="2" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </activeTextures>
+        <power>-30</power>
+        <deactiveTextures>
+          <walls x="5" y="6" w="1" h="2" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>2.5</barrelLength>
+        <reloadTime>300</reloadTime>
+        <projectileId>5</projectileId>
+      </gun>
+      <gun itemId="83" blockId="43">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Anti-Corvette Cannon</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>25</mass>
+        <health>96</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="3" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="10" y="6" w="2" h="3" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-100</power>
+        <deactiveTextures>
+          <walls x="8" y="6" w="2" h="3" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>2</barrelLength>
+        <reloadTime>600</reloadTime>
+        <projectileId>3</projectileId>
+      </gun>
+      <gun itemId="84" blockId="44">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Anti-Frigate Cannon</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>50</mass>
+        <health>192</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="4" d="2" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="5" w="2" h="4" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-200</power>
+        <deactiveTextures>
+          <walls x="8" y="5" w="2" h="4" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>2.5</barrelLength>
+        <reloadTime>1000</reloadTime>
+        <projectileId>6</projectileId>
+      </gun>
+      <gun itemId="92" blockId="45">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Heavy Assault Cannon</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>10</mass>
+        <health>64</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="2" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="7" y="6" w="1" h="2" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-40</power>
+        <deactiveTextures>
+          <walls x="5" y="6" w="1" h="2" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>2.5</barrelLength>
+        <reloadTime>200</reloadTime>
+        <projectileId>5</projectileId>
+      </gun>
+      <gun itemId="155" blockId="74">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Spinal Cannon</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>50</mass>
+        <health>255</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="3" h="18" d="3" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="5" w="2" h="4" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-1000</power>
+        <deactiveTextures>
+          <walls x="8" y="5" w="2" h="4" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>10</barrelLength>
+        <reloadTime>250</reloadTime>
+        <projectileId>8</projectileId>
+      </gun>
+      <gun itemId="165" blockId="84">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Armored Heavy Turret</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>50</mass>
+        <health>255</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="2" d="2" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="13" y="4" w="1" h="1" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-50</power>
+        <deactiveTextures>
+          <walls x="13" y="4" w="1" h="1" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>2</barrelLength>
+        <reloadTime>130</reloadTime>
+        <projectileId>5</projectileId>
+      </gun>
+      <gun itemId="197" blockId="102">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Lance Cannon</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>25</mass>
+        <health>255</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="9" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="5" w="2" h="4" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-500</power>
+        <deactiveTextures>
+          <walls x="8" y="5" w="2" h="4" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>5</barrelLength>
+        <reloadTime>5</reloadTime>
+        <projectileId>9</projectileId>
+      </gun>
+      <gun itemId="198" blockId="103">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Armored Light Turret</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>15</mass>
+        <health>128</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="13" y="4" w="1" h="1" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-15</power>
+        <deactiveTextures>
+          <walls x="13" y="4" w="1" h="1" />
+          <top x="0" y="7" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <barrelLength>1.5</barrelLength>
+        <reloadTime>120</reloadTime>
+        <projectileId>4</projectileId>
+      </gun>
+	  </guns>
+    <pointLights>
+      <pointLight itemId="52" blockId="25">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt wall torch</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>0.2</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="0" y="8" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+        <power>0</power>
+        <deactiveTextures>
+          <walls x="0" y="8" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </deactiveTextures>
+        <light>
+          <color r="128" g="128" b="255" />
+          <radius>5</radius>
+        </light>
+      </pointLight>
+       <pointLight itemId="143" blockId="63">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium wall torch</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>0.2</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="0" y="5" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+        <power>0</power>
+        <deactiveTextures>
+          <walls x="0" y="5" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </deactiveTextures>
+        <light>
+          <color r="225" g="64" b="64" />
+          <radius>8</radius>
+        </light>
+      </pointLight>
+          <pointLight itemId="144" blockId="64">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium wall torch</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>0.2</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="4" y="7" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+        <power>0</power>
+        <deactiveTextures>
+          <walls x="4" y="7" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </deactiveTextures>
+        <light>
+          <color r="64" g="225" b="64" />
+          <radius>5</radius>
+        </light>
+      </pointLight>      
+          <pointLight itemId="145" blockId="65">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium wall torch</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>0.2</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="4" y="6" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+        <power>0</power>
+        <deactiveTextures>
+          <walls x="4" y="6" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </deactiveTextures>
+        <light>
+          <color r="225" g="65" b="225" />
+          <radius>5</radius>
+        </light>
+      </pointLight>      
+          <pointLight itemId="146" blockId="66">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titainum wall torch</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>0.2</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="7" y="8" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+        <power>0</power>
+        <deactiveTextures>
+          <walls x="7" y="8" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </deactiveTextures>
+        <light>
+          <color r="200" g="200" b="200" />
+          <radius>5</radius>
+        </light>
+      </pointLight>      
+          <pointLight itemId="147" blockId="67">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Uranium wall torch</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>0.2</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="3" y="7" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </activeTextures>
+        <power>0</power>
+        <deactiveTextures>
+          <walls x="3" y="7" w="1" h="1" />
+          <top x="3" y="1" w="1" h="1" />
+          <bottom x="3" y="1" w="1" h="1" />
+        </deactiveTextures>
+        <light>
+          <color r="225" g="225" b="64" />
+          <radius>5</radius>
+        </light>
+      </pointLight>     
+    </pointLights>
+    <spotLights />
+    <minerals>
+      <mineral itemId="3" blockId="3">
+        <color r="100" g="81" b="53" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Uranium ore</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="4" />
+        <mass>3</mass>
+        <health>3</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="4" y="0" w="1" h="1" />
+          <top x="4" y="0" w="1" h="1" />
+          <bottom x="4" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>medium</asteroidType>
+        <rarity>10</rarity>
+      </mineral>
+      <mineral itemId="4" blockId="4">
+        <color r="100" g="81" b="53" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron ore</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="6" />
+        <mass>3</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="6" y="0" w="1" h="1" />
+          <top x="6" y="0" w="1" h="1" />
+          <bottom x="6" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>light</asteroidType>
+        <rarity>50</rarity>
+      </mineral>
+      <mineral itemId="5" blockId="5">
+        <color r="100" g="81" b="53" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium ore</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="5" />
+        <mass>2</mass>
+        <health>3</health>
+        <powerToDrill>2</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="0" w="1" h="1" />
+          <top x="5" y="0" w="1" h="1" />
+          <bottom x="5" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>light</asteroidType>
+        <rarity>20</rarity>
+      </mineral>
+      <mineral itemId="37" blockId="16">
+        <color r="65" g="52" b="34" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium ore</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="7" />
+        <mass>3</mass>
+        <health>3</health>
+        <powerToDrill>3</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="8" y="0" w="1" h="1" />
+          <top x="8" y="0" w="1" h="1" />
+          <bottom x="8" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>medium</asteroidType>
+        <rarity>25</rarity>
+      </mineral>
+      <mineral itemId="38" blockId="17">
+        <color r="65" g="52" b="34" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium ore</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="8" />
+        <mass>3</mass>
+        <health>3</health>
+        <powerToDrill>4</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="9" y="0" w="1" h="1" />
+          <top x="9" y="0" w="1" h="1" />
+          <bottom x="9" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>medium</asteroidType>
+        <rarity>10</rarity>
+      </mineral>
+      <mineral itemId="40" blockId="18">
+        <color r="65" g="52" b="34" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium ore</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="9" />
+        <mass>3</mass>
+        <health>3</health>
+        <powerToDrill>6</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="11" y="0" w="1" h="1" />
+          <top x="11" y="0" w="1" h="1" />
+          <bottom x="11" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>heavy</asteroidType>
+        <rarity>25</rarity>
+      </mineral>
+	  <!-- Modified Ore -->
+	  <mineral itemId="121" blockId="48">
+        <color r="65" g="52" b="34" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium ore</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="9" />
+        <mass>5</mass>
+        <health>5</health>
+        <powerToDrill>7</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="0" w="1" h="1" />
+          <top x="12" y="0" w="1" h="1" />
+          <bottom x="12" y="0" w="1" h="1" />
+        </activeTextures>
+        <asteroidType>heavy</asteroidType>
+        <rarity>10</rarity>
+      </mineral>
+	 <!--  <mineral itemId="130" blockId="53">
+        <color r="65" g="52" b="34" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ancient artefact</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="9" />
+        <mass>20</mass>
+        <health>500</health>
+        <powerToDrill>8</powerToDrill>
+        <dimensions>
+          <size w="2" h="2" d="2" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="9" w="2" h="2" />
+          <top x="14" y="9" w="2" h="2" />
+          <bottom x="14" y="9" w="2" h="2" />
+        </activeTextures>
+        <asteroidType>heavy</asteroidType>
+        <rarity>5</rarity>
+      </mineral> -->
+	  <!-- Modified Ore -->
+    </minerals>
+    <power>
+      <power itemId="42" blockId="19">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cable block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="1" y="3" w="1" h="1" />
+          <top x="0" y="3" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-1</power>
+        <deactiveTextures>
+          <walls x="1" y="2" w="1" h="1" />
+          <top x="0" y="2" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+      <power itemId="43" blockId="20">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Standard cobalt power block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="2" y="3" w="1" h="1" />
+          <top x="3" y="3" w="1" h="1" />
+          <bottom x="3" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>20</power>
+        <deactiveTextures>
+          <walls x="2" y="2" w="1" h="1" />
+          <top x="3" y="2" w="1" h="1" />
+          <bottom x="3" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+      <power itemId="44" blockId="21">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Powerful cobalt power block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>6</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="2" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="7" y="2" w="1" h="2" />
+          <top x="4" y="3" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>50</power>
+        <deactiveTextures>
+          <walls x="6" y="2" w="1" h="2" />
+          <top x="4" y="2" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+      <power itemId="79" blockId="39">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Standard nuclear power block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>16</mass>
+        <health>24</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="2" d="2" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="8" y="3" w="2" h="2" />
+          <top x="4" y="3" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>220</power>
+        <deactiveTextures>
+          <walls x="10" y="3" w="2" h="2" />
+          <top x="4" y="2" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+      <power itemId="80" blockId="40">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Powerful nuclear power block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>24</mass>
+        <health>36</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="3" d="2" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="8" y="2" w="2" h="3" />
+          <top x="4" y="3" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>500</power>
+        <deactiveTextures>
+          <walls x="10" y="2" w="2" h="3" />
+          <top x="4" y="2" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+	  <power itemId="127" blockId="50">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Standard anti-matter power block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>60</mass>
+        <health>80</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="3" h="3" d="3" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="6" y="9" w="3" h="3" />
+          <top x="4" y="3" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>1200</power>
+        <deactiveTextures>
+          <walls x="9" y="9" w="3" h="3" />
+          <top x="4" y="2" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+      <power itemId="164" blockId="83">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Uranium plated cable block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>90</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="12" w="1" h="1" />
+          <top x="0" y="3" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-2</power>
+        <deactiveTextures>
+          <walls x="11" y="12" w="1" h="1" />
+          <top x="0" y="2" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+      <power itemId="194" blockId="99">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt solar panel</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>0.1</mass>
+        <health>1</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="7" y="4" w="1" h="1" />
+          <top x="7" y="4" w="1" h="1" />
+          <bottom x="7" y="4" w="1" h="1" />
+        </activeTextures>
+        <power>5</power>
+        <deactiveTextures>
+          <walls x="7" y="4" w="1" h="1" />
+          <top x="7" y="4" w="1" h="1" />
+          <bottom x="7" y="4" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+      <power itemId="195" blockId="100">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Uranium solar panel</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>2</mass>
+        <health>3</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="7" y="5" w="1" h="1" />
+          <top x="7" y="5" w="1" h="1" />
+          <bottom x="7" y="5" w="1" h="1" />
+        </activeTextures>
+        <power>10</power>
+        <deactiveTextures>
+          <walls x="7" y="5" w="1" h="1" />
+          <top x="7" y="5" w="1" h="1" />
+          <bottom x="7" y="5" w="1" h="1" />
+        </deactiveTextures>
+      </power>
+	  </power>
+    <thrusters>
+      <thruster itemId="45" blockId="22">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Weak hydrogen thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>5</mass>
+        <health>13</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="1" h="1" d="1" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="4" w="1" h="1" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-5</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="1" h="1" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>20</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+      <thruster itemId="77" blockId="37">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Small hydrogen thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>10</mass>
+        <health>25</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="2" d="1" />
+          <modelSize w="1" h="2" d="1" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="4" w="1" h="2" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-10</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="1" h="2" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>50</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+      <thruster itemId="78" blockId="38">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Standard hydrogen thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>20</mass>
+        <health>50</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="1" d="2" />
+          <modelSize w="2" h="1" d="2" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="4" w="2" h="1" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-15</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="2" h="1" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>100</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+      <thruster itemId="81" blockId="41">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Standard nuclear thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>40</mass>
+        <health>100</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="2" d="2" />
+          <modelSize w="2" h="2" d="2" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="9" w="2" h="2" />
+          <top x="0" y="4" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-150</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="2" h="2" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>1000</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  <thruster itemId="124" blockId="49">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Powerful ion thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>100</mass>
+        <health>250</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="3" h="3" d="3" />
+          <modelSize w="3" h="3" d="3" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="3" y="9" w="3" h="3" />
+          <top x="0" y="12" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-2000</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="3" h="3" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>15000</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  <thruster itemId="128" blockId="51">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Small nuclear thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>15</mass>
+        <health>38</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="3" d="1" />
+          <modelSize w="1" h="3" d="1" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="9" w="1" h="3" />
+          <top x="0" y="4" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-100</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="1" h="3" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>500</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  <thruster itemId="172" blockId="91">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Powerful hydrogen thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>40</mass>
+        <health>100</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="2" d="2" />
+          <modelSize w="2" h="2" d="2" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="5" y="4" w="2" h="2" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-20</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="2" h="2" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>150</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  <thruster itemId="173" blockId="92">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Weak nuclear thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>10</mass>
+        <health>25</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="2" d="1" />
+          <modelSize w="1" h="2" d="1" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="9" w="1" h="2" />
+          <top x="0" y="4" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-50</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="1" h="2" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>200</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  <thruster itemId="174" blockId="93">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Powerful nuclear thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>60</mass>
+        <health>150</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="3" d="2" />
+          <modelSize w="2" h="3" d="2" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="9" w="2" h="3" />
+          <top x="0" y="4" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-200</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="2" h="3" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>1500</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  <thruster itemId="175" blockId="94">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Weak ion thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>15</mass>
+        <health>38</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="3" d="1" />
+          <modelSize w="1" h="3" d="1" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="3" y="9" w="1" h="3" />
+          <top x="0" y="12" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-500</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="1" h="3" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>2000</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  <thruster itemId="176" blockId="95">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Small ion thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>20</mass>
+        <health>50</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="1" d="2" />
+          <modelSize w="2" h="1" d="2" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="3" y="9" w="2" h="1" />
+          <top x="0" y="12" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-1000</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="2" h="1" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>5000</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  <thruster itemId="177" blockId="96">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Standard ion thruster</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>60</mass>
+        <health>150</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="3" d="2" />
+          <modelSize w="2" h="3" d="2" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="3" y="9" w="2" h="3" />
+          <top x="0" y="12" w="1" h="1" />
+          <bottom x="4" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-1500</power>
+        <deactiveTextures>
+          <walls x="0" y="9" w="2" h="3" />
+          <top x="1" y="12" w="1" h="1" />
+          <bottom x="4" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>10000</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+      <thruster itemId="178" blockId="97">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Inertia generator</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>5</mass>
+        <health>5</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="1" h="1" d="1" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="4" y="3" w="1" h="1" />
+          <top x="4" y="3" w="1" h="1" />
+          <bottom x="0" y="3" w="1" h="1" />
+        </activeTextures>
+        <power>-5</power>
+        <deactiveTextures>
+          <walls x="4" y="2" w="1" h="1" />
+          <top x="4" y="2" w="1" h="1" />
+          <bottom x="0" y="2" w="1" h="1" />
+        </deactiveTextures>
+        <thruster>
+          <force>0</force>
+          <flameLength>0</flameLength>
+          <flameOffset x="0" y="0" z="0" />
+        </thruster>
+      </thruster>
+	  </thrusters>
+    <containers>
+      <container itemId="156" blockId="75">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Small Crate</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>10</mass>
+        <health>10</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="4" w="1" h="1" />
+          <top x="13" y="4" w="1" h="1" />
+          <bottom x="13" y="4" w="1" h="1" />
+        </activeTextures>
+        <container>
+          <width>2</width>
+          <height>2</height>
+        </container>
+      </container>
+      <container itemId="157" blockId="76">
+        <color r="89" g="89" b="89" />
+        <description></description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Large Crate</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>40</mass>
+        <health>10</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="2" d="2" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="4" w="1" h="1" />
+          <top x="13" y="4" w="1" h="1" />
+          <bottom x="13" y="4" w="1" h="1" />
+        </activeTextures>
+        <container>
+          <width>4</width>
+          <height>4</height>
+        </container>
+      </container>
+      <container itemId="158" blockId="77">
+        <color r="89" g="89" b="89" />
+        <description>Fun fact: There is one of these inside you RIGHT NOW.</description>
+        <maxStackSize>16</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Crate of Holding</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>10</mass>
+        <health>10</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="12" y="4" w="1" h="1" />
+          <top x="0" y="12" w="1" h="1" />
+          <bottom x="0" y="12" w="1" h="1" />
+        </activeTextures>
+        <container>
+          <width>6</width>
+          <height>5</height>
+        </container>
+      </container>
+    </containers>
+    <windows>
+      <window itemId="112" blockId="46">
+        <color r="157" g="157" b="157" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Small window block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>1</mass>
+        <health>12</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="1" h="1" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="6" w="1" h="1" />
+          <top x="14" y="6" w="1" h="1" />
+          <bottom x="14" y="6" w="1" h="1" />
+        </activeTextures>
+      </window>
+      <window itemId="113" blockId="47">
+        <color r="157" g="157" b="157" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Big window block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>4</mass>
+        <health>40</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="2" h="2" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="7" w="2" h="2" />
+          <top x="14" y="7" w="2" h="2" />
+          <bottom x="14" y="7" w="2" h="2" />
+        </activeTextures>
+      </window>
+      <window itemId="149" blockId="68">
+        <color r="157" g="157" b="157" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Very big window block</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <mass>9</mass>
+        <health>90</health>
+        <powerToDrill>1</powerToDrill>
+        <dimensions>
+          <size w="3" h="3" d="1" />
+          <modelSize w="0" h="0" d="0" />
+          <modelPlacement x="0" y="0" z="0" />
+        </dimensions>
+        <activeTextures>
+          <walls x="14" y="7" w="2" h="2" />
+          <top x="14" y="7" w="2" h="2" />
+          <bottom x="14" y="7" w="2" h="2" />
+        </activeTextures>
+      </window>
+    </windows>
+  </blocks>
+  <projectiles>
+    <projectile projectileId="1">
+      <color r="0" g="0" b="255" />
+      <damage>2</damage>
+      <lifetime>3000</lifetime>
+      <ricochetAngle>0</ricochetAngle>
+      <speed>50</speed>
+      <size w="0.05" h="0.5" d="0.05" />
+    </projectile>
+    <projectile projectileId="2">
+      <color r="0" g="192" b="0" />
+      <damage>5</damage>
+      <lifetime>3000</lifetime>
+      <ricochetAngle>0.7854</ricochetAngle>
+      <speed>60</speed>
+      <size w="0.05" h="1" d="0.05" />
+    </projectile>
+    <projectile projectileId="3">
+      <color r="160" g="0" b="160" />
+      <damage>24</damage>
+      <lifetime>7000</lifetime>
+      <ricochetAngle>0</ricochetAngle>
+      <speed>100</speed>
+      <size w="0.2" h="5" d="0.2" />
+    </projectile>
+    <projectile projectileId="4">
+      <color r="0" g="0" b="255" />
+      <damage>1</damage>
+      <lifetime>3000</lifetime>
+      <ricochetAngle>0</ricochetAngle>
+      <speed>100</speed>
+      <size w="0.2" h="2" d="0.2" />
+    </projectile>
+    <projectile projectileId="5">
+      <color r="0" g="192" b="0" />
+      <damage>3</damage>
+      <lifetime>3000</lifetime>
+      <ricochetAngle>0</ricochetAngle>
+      <speed>100</speed>
+      <size w="0.2" h="3" d="0.2" />
+    </projectile>
+    <projectile projectileId="6">
+      <color r="255" g="0" b="0" />
+      <damage>90</damage>
+      <lifetime>3000</lifetime>
+      <ricochetAngle>0</ricochetAngle>
+      <speed>50</speed>
+      <size w="0.5" h="7" d="0.5" />
+    </projectile>
+    <projectile projectileId="7">
+      <color r="255" g="128" b="0" />
+      <damage>5</damage>
+      <lifetime>1000</lifetime>
+      <ricochetAngle>1</ricochetAngle>
+      <speed>5</speed>
+      <size w="0.5" h="0.5" d="0.5" />
+    </projectile>
+    <projectile projectileId="8">
+      <color r="255" g="0" b="0" />
+      <damage>125</damage>
+      <lifetime>10000</lifetime>
+      <ricochetAngle>0</ricochetAngle>
+      <speed>50</speed>
+      <size w="2" h="15" d="2" />
+    </projectile>
+    <projectile projectileId="9">
+      <color r="255" g="0" b="0" />
+      <damage>10</damage>
+      <lifetime>500</lifetime>
+      <ricochetAngle>0</ricochetAngle>
+      <speed>300</speed>
+      <size w="0.05" h="10" d="0.05" />
+    </projectile>
+  </projectiles>
+  <crafting>
+    <blueprints>
+	
+		<!--  Extractor Blueprints-->
+      <blueprint name="Extract cobalt" usage="1">
+        <ingredients>
+          <ingredient itemId="69" quantity="1" /> <!-- Cobaltite Rock -->
+        </ingredients>
+        <result itemId="73" quantity="1" />
+      </blueprint>
+      
+	 <blueprint name="Extract ice" usage="1">
+        <ingredients>
+          <ingredient itemId="68" quantity="1" /> <!-- Icy Rock -->
+        </ingredients>
+        <result itemId="74" quantity="1" />
+      </blueprint>
+      
+	<blueprint name="Extract hydrogen" usage="1">
+        <ingredients>
+          <ingredient itemId="75" quantity="2" /> <!-- Water -->
+        </ingredients>
+        <result itemId="76" quantity="1" />
+      </blueprint>
+      
+      <blueprint name="Crush thulium" usage="1">
+        <ingredients>
+          <ingredient itemId="38" quantity="1" /> <!-- Thulium Ore -->
+        </ingredients>
+        <result itemId="39" quantity="1" />
+      </blueprint>
+		<!--  Extractor Blueprints End-->
+		
+		<!--  Furnace Blueprints-->
+      <blueprint name="Smelt iron" usage="2">
+        <ingredients>
+          <ingredient itemId="4" quantity="1" />
+        </ingredients>
+        <result itemId="10" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Smelt cobalt" usage="2">
+        <ingredients>
+          <ingredient itemId="73" quantity="2" />
+        </ingredients>
+        <result itemId="7" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Smelt ice" usage="2">
+        <ingredients>
+          <ingredient itemId="74" quantity="2" />
+        </ingredients>
+        <result itemId="75" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Smelt aluminium" usage="2">
+        <ingredients>
+          <ingredient itemId="5" quantity="1" />
+        </ingredients>
+        <result itemId="9" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Smelt titanium" usage="2">
+        <ingredients>
+          <ingredient itemId="37" quantity="1" />
+        </ingredients>
+        <result itemId="11" quantity="1" />
+      </blueprint>
+      
+      <blueprint name="Smelt ponium" usage="2">
+        <ingredients>
+          <ingredient itemId="40" quantity="1" />
+          <ingredient itemId="37" quantity="1" />
+        </ingredients>
+        <result itemId="41" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Smelt Plutonium" usage="2">
+        <ingredients>
+          <ingredient itemId="8" quantity="3" />
+        </ingredients>
+        <result itemId="12" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Smelt Uranium" usage="2">
+        <ingredients>
+          <ingredient itemId="3" quantity="3" />
+        </ingredients>
+        <result itemId="8" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Smelt Ceramic Block" usage="2">
+        <ingredients>
+          <ingredient itemId="0" quantity="5" />
+          <ingredient itemId="1" quantity="5" />
+          <ingredient itemId="2" quantity="5" />
+        </ingredients>
+        <result itemId="196" quantity="1" />
+      </blueprint>
+	  <!--  Furnace Blueprints End -->
+	  
+	  <!--  Engines Blueprints -->
+      <blueprint name="Create Inertia Generator" usage="0">
+        <ingredients>
+          <ingredient itemId="44" quantity="1" />
+          <ingredient itemId="16" quantity="1" />
+        </ingredients>
+        <result itemId="178" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Weak Hydrogen Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="76" quantity="1" />
+          <ingredient itemId="28" quantity="1" />
+        </ingredients>
+        <result itemId="45" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Small Hydrogen Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="45" quantity="1" />
+          <ingredient itemId="76" quantity="1" />
+          <ingredient itemId="28" quantity="1" />
+        </ingredients>
+        <result itemId="77" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Standard Hydrogen Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="77" quantity="1" />
+          <ingredient itemId="76" quantity="1" />
+          <ingredient itemId="28" quantity="2" />
+        </ingredients>
+        <result itemId="78" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Powerful Hydrogen Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="78" quantity="1" />
+          <ingredient itemId="76" quantity="1" />
+          <ingredient itemId="28" quantity="4" />
+        </ingredients>
+        <result itemId="172" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Weak Nuclear Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="45" quantity="10" />
+          <ingredient itemId="13" quantity="1" />
+          <ingredient itemId="34" quantity="2" />
+        </ingredients>
+        <result itemId="173" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Small Nuclear Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="77" quantity="10" />
+          <ingredient itemId="13" quantity="2" />
+          <ingredient itemId="34" quantity="3" />
+        </ingredients>
+        <result itemId="128" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Standard Nuclear Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="78" quantity="10" />
+          <ingredient itemId="13" quantity="3" />
+          <ingredient itemId="34" quantity="8" />
+        </ingredients>
+        <result itemId="81" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Powerful Nuclear Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="172" quantity="10" />
+          <ingredient itemId="13" quantity="4" />
+          <ingredient itemId="34" quantity="12" />
+        </ingredients>
+        <result itemId="174" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Weak Ion Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="173" quantity="5" />
+          <ingredient itemId="122" quantity="3" />
+          <ingredient itemId="136" quantity="3" />
+        </ingredients>
+        <result itemId="175" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Small Ion Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="128" quantity="5" />
+          <ingredient itemId="122" quantity="6" />
+          <ingredient itemId="136" quantity="4" />
+        </ingredients>
+        <result itemId="176" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Standard Ion Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="81" quantity="5" />
+          <ingredient itemId="122" quantity="9" />
+          <ingredient itemId="136" quantity="12" />
+        </ingredients>
+        <result itemId="177" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Powerful Ion Thruster" usage="0">
+        <ingredients>
+          <ingredient itemId="174" quantity="5" />
+          <ingredient itemId="122" quantity="12" />
+          <ingredient itemId="136" quantity="27" />
+        </ingredients>
+        <result itemId="124" quantity="1" />
+      </blueprint>
+	  <!--  Engines Blueprints End -->
+	  
+	  <!--  Metal Blocks Blueprints End -->
+      <blueprint name="Create Light Iron Block" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="1" />
+        </ingredients>
+        <result itemId="28" quantity="6" />
+      </blueprint>
+      
+	  <blueprint name="Create Medium Iron block" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="1" />
+        </ingredients>
+        <result itemId="32" quantity="4" />
+      </blueprint>
+	  
+      <blueprint name="Create Heavy Iron Block" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="1" />
+        </ingredients>
+        <result itemId="33" quantity="2" />
+      </blueprint>
+      
+	  <blueprint name="Create Light Aluminium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="1" />
+        </ingredients>
+        <result itemId="29" quantity="6" />
+      </blueprint>
+	  
+      <blueprint name="Create Medium Aluminium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="1" />
+        </ingredients>
+        <result itemId="30" quantity="4" />
+      </blueprint>
+      
+	  <blueprint name="Create Heavy Aluminium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="1" />
+        </ingredients>
+        <result itemId="31" quantity="2" />
+      </blueprint>
+	  
+      <blueprint name="Create Light Titanium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="1" />
+        </ingredients>
+        <result itemId="34" quantity="6" />
+      </blueprint>
+      
+	  <blueprint name="Create Medium Titanium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="1" />
+        </ingredients>
+        <result itemId="35" quantity="4" />
+      </blueprint>
+	  
+      <blueprint name="Create Heavy Titanium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="1" />
+        </ingredients>
+        <result itemId="36" quantity="2" />
+      </blueprint>
+	  <!--  Metal Blocks Blueprints End -->
+	  
+	  <!-- Drills Blueprint -->
+	  <blueprint name="Create Enhanced Iron Drill" usage="0">
+        <ingredients>
+          <ingredient itemId="55" quantity="1" />
+          <ingredient itemId="10" quantity="16" />
+        </ingredients>
+        <result itemId="85" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Powerful Iron Drill" usage="0">
+        <ingredients>
+          <ingredient itemId="85" quantity="1" />
+          <ingredient itemId="91" quantity="5" />
+          <ingredient itemId="10" quantity="5" />
+        </ingredients>
+        <result itemId="86" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Tripple Iron Drill" usage="0"> 
+        <ingredients>
+          <ingredient itemId="86" quantity="3" />
+          <ingredient itemId="11" quantity="15" /> 
+        </ingredients>
+        <result itemId="87" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Thulium Drill" usage="0">
+        <ingredients>
+          <ingredient itemId="87" quantity="1" />
+          <ingredient itemId="39" quantity="5" /> 
+        </ingredients>
+        <result itemId="88" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Enchanced Thulium Drill" usage="0">
+        <ingredients>
+          <ingredient itemId="88" quantity="1" />
+		  <ingredient itemId="11" quantity="30" /> 
+          <ingredient itemId="39" quantity="15" /> 
+        </ingredients>
+        <result itemId="89" quantity="1" />
+      </blueprint>
+	  <!-- Drills Blueprint End -->
+	  
+	  <!-- Weapons Blueprint -->
+	  <blueprint name="Create Cobalt Pistol" usage="0">
+        <ingredients>
+          <ingredient itemId="55" quantity="1" />
+          <ingredient itemId="91" quantity="1" />
+        </ingredients>
+        <result itemId="48" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Cobalt SMG" usage="0">
+        <ingredients>
+          <ingredient itemId="48" quantity="1" />
+          <ingredient itemId="10" quantity="1" />
+          <ingredient itemId="91" quantity="2" />
+        </ingredients>
+        <result itemId="49" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Thulium Assault Rifle" usage="0">
+        <ingredients>
+          <ingredient itemId="49" quantity="1" />
+          <ingredient itemId="10" quantity="4" />
+          <ingredient itemId="39" quantity="8" />
+        </ingredients>
+        <result itemId="50" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Thulium Minigun" usage="0">
+        <ingredients>
+          <ingredient itemId="50" quantity="2" />
+          <ingredient itemId="10" quantity="4" />
+        </ingredients>
+        <result itemId="51" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Flamethrower" usage="0">
+        <ingredients>
+          <ingredient itemId="45" quantity="1" />
+          <ingredient itemId="51" quantity="1" />
+          <ingredient itemId="41" quantity="20" />
+        </ingredients>
+        <result itemId="148" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Heavy Plasma Launcher" usage="0">
+        <ingredients>
+          <ingredient itemId="47" quantity="1" />
+          <ingredient itemId="51" quantity="1" />
+          <ingredient itemId="41" quantity="20" />
+        </ingredients>
+        <result itemId="90" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Laser Rifle" usage="0">
+        <ingredients>
+          <ingredient itemId="90" quantity="1" />
+          <ingredient itemId="148" quantity="1" />
+          <ingredient itemId="135" quantity="5" />
+        </ingredients>
+        <result itemId="180" quantity="1" />
+      </blueprint>
+	  <!-- Weapons Blueprint End -->
+	  
+	  <!-- Armor Blueprint -->
+      <blueprint name="Create Iron Helmet" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="5" />
+        </ingredients>
+        <result itemId="60" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Iron Shoulder Armors" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="3" />
+        </ingredients>
+        <result itemId="95" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Iron Arm Armors" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="2" />
+        </ingredients>
+        <result itemId="98" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Iron Chest Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="4" />
+        </ingredients>
+        <result itemId="61" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Iron Legs Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="4" />
+        </ingredients>
+        <result itemId="101" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Iron Feet Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="2" />
+        </ingredients>
+        <result itemId="104" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Light Battery" usage="0">
+        <ingredients>
+          <ingredient itemId="15" quantity="2" />
+        </ingredients>
+        <result itemId="66" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Aluminium Helmet" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="5" />
+        </ingredients>
+        <result itemId="63" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Aluminium Shoulder Armors" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="3" />
+        </ingredients>
+        <result itemId="94" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Aluminium Arm Armors" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="2" />
+        </ingredients>
+        <result itemId="97" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Aluminium Chest Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="4" />
+        </ingredients>
+        <result itemId="62" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Aluminium Legs Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="4" />
+        </ingredients>
+        <result itemId="100" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Aluminium Feet Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="2" />
+        </ingredients>
+        <result itemId="103" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Cobalt Power Source" usage="0">
+        <ingredients>
+          <ingredient itemId="7" quantity="3" />
+		  <ingredient itemId="9" quantity="3" />
+        </ingredients>
+        <result itemId="107" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Titanium Helmet" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="5" />
+        </ingredients>
+        <result itemId="64" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Titanium Shoulder Armors" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="3" />
+        </ingredients>
+        <result itemId="96" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Titanium Arms Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="2" />
+        </ingredients>
+        <result itemId="99" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Titanium Chest Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="4" />
+        </ingredients>
+        <result itemId="65" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Titanium Legs Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="4" />
+        </ingredients>
+        <result itemId="102" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Titanium Feet Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="2" />
+        </ingredients>
+        <result itemId="105" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Titanium Power Source" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="16" />
+        </ingredients>
+        <result itemId="108" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Thulium Covered Iron Helmet" usage="0">
+        <ingredients>
+          <ingredient itemId="60" quantity="1" />
+          <ingredient itemId="142" quantity="3" />
+        </ingredients>
+        <result itemId="181" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Thulium Covered Iron Shoulder Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="95" quantity="1" />
+          <ingredient itemId="142" quantity="2" />
+        </ingredients>
+        <result itemId="182" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Thulium Covered Iron Arms Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="98" quantity="1" />
+          <ingredient itemId="142" quantity="1" />
+        </ingredients>
+        <result itemId="183" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Thulium Covered Iron Chest Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="61" quantity="1" />
+          <ingredient itemId="142" quantity="2" />
+        </ingredients>
+        <result itemId="184" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Thulium Covered Iron Legs Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="101" quantity="1" />
+          <ingredient itemId="142" quantity="2" />
+        </ingredients>
+        <result itemId="185" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Thulium Covered Iron Feet Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="104" quantity="1" />
+          <ingredient itemId="142" quantity="1" />
+        </ingredients>
+        <result itemId="186" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Ponium Helmet" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="5" />
+        </ingredients>
+        <result itemId="115" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Ponium Shoulder Armors" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="3" />
+        </ingredients>
+        <result itemId="116" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Ponium Arms Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="2" />
+        </ingredients>
+        <result itemId="117" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Ponium Chest Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="4" />
+        </ingredients>
+        <result itemId="114" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Ponium Legs Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="4" />
+        </ingredients>
+        <result itemId="118" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Ponium Feet Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="2" />
+        </ingredients>
+        <result itemId="119" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Ponium Power Source" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="16" />
+        </ingredients>
+        <result itemId="120" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Redium Covered Titanium Helmet" usage="0">
+        <ingredients>
+          <ingredient itemId="64" quantity="1" />
+          <ingredient itemId="125" quantity="3" />
+        </ingredients>
+        <result itemId="187" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Redium Covered Titanium Shoulder Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="96" quantity="1" />
+          <ingredient itemId="125" quantity="2" />
+        </ingredients>
+        <result itemId="188" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Redium Covered Titanium Arms Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="99" quantity="1" />
+          <ingredient itemId="125" quantity="1" />
+        </ingredients>
+        <result itemId="189" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Redium Covered Titanium Chest Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="65" quantity="1" />
+          <ingredient itemId="125" quantity="2" />
+        </ingredients>
+        <result itemId="190" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Redium Covered Titanium Legs Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="102" quantity="1" />
+          <ingredient itemId="125" quantity="2" />
+        </ingredients>
+        <result itemId="191" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Redium Covered Titanium Feet Armor" usage="0">
+        <ingredients>
+          <ingredient itemId="105" quantity="1" />
+          <ingredient itemId="125" quantity="1" />
+        </ingredients>
+        <result itemId="192" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Redium Power Source" usage="0">
+        <ingredients>
+          <ingredient itemId="122" quantity="16" />
+        </ingredients>
+        <result itemId="193" quantity="1" />
+      </blueprint>
+	  <!-- Armor Blueprint End -->
+	  
+	  <!-- Cannons Blueprint -->
+      <blueprint name="Create Anti-Personnel Cannon" usage="0">
+        <ingredients>
+          <ingredient itemId="28" quantity="1" /> <!-- Light iron Block -->
+          <ingredient itemId="43" quantity="1" /> <!-- Ctandart Cobalt Power Block-->
+          <ingredient itemId="91" quantity="4" /> <!-- Cobalt Diamonds-->
+        </ingredients>
+        <result itemId="47" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Armored Light Turret" usage="0">
+        <ingredients>
+          <ingredient itemId="47" quantity="2" />
+          <ingredient itemId="33" quantity="4" />
+        </ingredients>
+        <result itemId="198" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Light Assault Cannon" usage="0">
+        <ingredients>
+          <ingredient itemId="47" quantity="2" /> <!-- Anti-Personnel Cannon -->
+          <ingredient itemId="91" quantity="4" /> <!-- Cobalt Diamonds-->
+        </ingredients>
+        <result itemId="82" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Heavy Assault Cannon" usage="0">
+        <ingredients>
+          <ingredient itemId="82" quantity="1" />  <!-- Light Assault Cannon -->
+          <ingredient itemId="39" quantity="12" />  <!-- Thulium Shards -->
+        </ingredients>
+        <result itemId="92" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Armored Heavy Turret" usage="0">
+        <ingredients>
+          <ingredient itemId="92" quantity="2" />
+          <ingredient itemId="138" quantity="4" />
+        </ingredients>
+        <result itemId="165" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Anti-Corvette Cannon" usage="0">
+        <ingredients>
+          <ingredient itemId="92" quantity="2" /> 
+        </ingredients>
+        <result itemId="83" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Anti-Frigate Cannon" usage="0">
+        <ingredients>
+          <ingredient itemId="83" quantity="2" />
+          <ingredient itemId="41" quantity="8" />
+        </ingredients>
+        <result itemId="84" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Lance Cannon" usage="0">
+        <ingredients>
+          <ingredient itemId="84" quantity="1" />
+          <ingredient itemId="135" quantity="1" />
+          <ingredient itemId="122" quantity="2" />
+        </ingredients>
+        <result itemId="197" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Spinal Cannon" usage="0">
+        <ingredients>
+          <ingredient itemId="197" quantity="4" />
+          <ingredient itemId="135" quantity="1" />
+          <ingredient itemId="122" quantity="2" />
+        </ingredients>
+        <result itemId="155" quantity="1" />
+      </blueprint>
+	  <!-- Cannons Blueprint End -->
+	  
+	  <!-- Doors Blueprint -->
+	  <blueprint name="Create Iron Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="28" quantity="4" />
+          <ingredient itemId="43" quantity="1" />
+        </ingredients>
+        <result itemId="56" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Large Iron Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="56" quantity="2" />
+        </ingredients>
+        <result itemId="150" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Iron Bay Door" usage="0">
+        <ingredients>
+          <ingredient itemId="150" quantity="4" />
+        </ingredients>
+        <result itemId="166" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Aluminium Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="29" quantity="4" />
+          <ingredient itemId="43" quantity="1" />
+        </ingredients>
+        <result itemId="57" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Large Aluminium Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="57" quantity="2" />
+        </ingredients>
+        <result itemId="151" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Aluminium Bay Door" usage="0">
+        <ingredients>
+          <ingredient itemId="151" quantity="4" />
+        </ingredients>
+        <result itemId="163" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Titanium Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="34" quantity="4" />
+          <ingredient itemId="43" quantity="1" />
+        </ingredients>
+        <result itemId="59" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Large Titanium Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="59" quantity="2" />
+        </ingredients>
+        <result itemId="152" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Titanium Bay Door" usage="0">
+        <ingredients>
+          <ingredient itemId="152" quantity="4" />
+        </ingredients>
+        <result itemId="167" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Thulium Covered Iron Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="56" quantity="1" />
+          <ingredient itemId="142" quantity="1" />
+        </ingredients>
+        <result itemId="159" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Large Thulium Covered Iron Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="150" quantity="1" />
+          <ingredient itemId="142" quantity="2" />
+        </ingredients>
+        <result itemId="160" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Thulium Covered Iron Bay Door" usage="0">
+        <ingredients>
+          <ingredient itemId="166" quantity="1" />
+          <ingredient itemId="142" quantity="8" />
+        </ingredients>
+        <result itemId="168" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Ponium Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="136" quantity="4" />
+          <ingredient itemId="43" quantity="1" />
+        </ingredients>
+        <result itemId="153" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Large Ponium Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="153" quantity="2" />
+        </ingredients>
+        <result itemId="154" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Ponium Bay Door" usage="0">
+        <ingredients>
+          <ingredient itemId="154" quantity="4" />
+        </ingredients>
+        <result itemId="169" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Redium Covered Titanium Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="59" quantity="1" />
+          <ingredient itemId="125" quantity="1" />
+        </ingredients>
+        <result itemId="161" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Large Redium Covered Titanium Blast Door" usage="0">
+        <ingredients>
+          <ingredient itemId="152" quantity="1" />
+          <ingredient itemId="125" quantity="2" />
+        </ingredients>
+        <result itemId="162" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Redium Covered Titanium Bay Door" usage="0">
+        <ingredients>
+          <ingredient itemId="167" quantity="1" />
+          <ingredient itemId="125" quantity="8" />
+        </ingredients>
+        <result itemId="170" quantity="1" />
+      </blueprint>
+	  <!-- Doors Blueprint End -->
+	  
+	  <!-- Consoles Blueprint -->
+      <blueprint name="Create Standard Console Block" usage="0">
+        <ingredients>
+          <ingredient itemId="70" quantity="1" /> <!-- Crafting Table -->
+          <ingredient itemId="43" quantity="1" /> <!-- Standard Cobalt Power Block -->
+          <ingredient itemId="28" quantity="1" /> <!-- Light Iron Block-->
+        </ingredients>
+        <result itemId="46" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Cannon Console Block" usage="0">
+        <ingredients>
+          <ingredient itemId="46" quantity="1" />
+          <ingredient itemId="48" quantity="1" />
+        </ingredients>
+        <result itemId="54" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Large Cannon Console Block" usage="0">
+        <ingredients>
+          <ingredient itemId="54" quantity="1" />
+          <ingredient itemId="50" quantity="1" />
+        </ingredients>
+        <result itemId="171" quantity="1" />
+      </blueprint>
+	  <!-- Consoles Blueprint End -->
+	  
+	  <!-- Reactors Blueprint -->
+	  <blueprint name="Create Standard Cobalt Power Block" usage="0">
+        <ingredients>
+          <ingredient itemId="28" quantity="1" />
+          <ingredient itemId="15" quantity="1" />
+        </ingredients>
+        <result itemId="43" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Cobalt Solar Panel" usage="0">
+        <ingredients>
+          <ingredient itemId="43" quantity="1" />
+          <ingredient itemId="112" quantity="1" />
+        </ingredients>
+        <result itemId="194" quantity="8" />
+      </blueprint>
+
+	  <blueprint name="Create Uranium Solar Panel" usage="0">
+        <ingredients>
+          <ingredient itemId="194" quantity="8" />
+          <ingredient itemId="8" quantity="1" />
+        </ingredients>
+        <result itemId="195" quantity="8" />
+      </blueprint>
+	  
+      <blueprint name="Create Powerful Cobalt Power Block" usage="0">
+        <ingredients>
+          <ingredient itemId="43" quantity="3" />
+        </ingredients>
+        <result itemId="44" quantity="1" />
+      </blueprint>
+      
+      <blueprint name="Create Standard Nuclear Power Block" usage="0">
+        <ingredients>
+          <ingredient itemId="43" quantity="4" />
+          <ingredient itemId="14" quantity="1" />
+        </ingredients>
+        <result itemId="79" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Powerful Nuclear Power Block" usage="0">
+        <ingredients>
+          <ingredient itemId="79" quantity="1" />
+          <ingredient itemId="14" quantity="3" />
+        </ingredients>
+        <result itemId="80" quantity="1" />
+      </blueprint>
+	  <!-- Reactors Blueprint End -->
+	  
+	  <!-- Misc Blueprint -->
+	  <blueprint name="Create Cobalt Batteries" usage="0">
+        <ingredients>
+          <ingredient itemId="7" quantity="1" />
+        </ingredients>
+        <result itemId="15" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Smelt Cobalt Diamonds" usage="0">
+        <ingredients>
+          <ingredient itemId="7" quantity="2" />
+        </ingredients>
+        <result itemId="91" quantity="1" />
+      </blueprint>
+      
+      <blueprint name="Create Mineral Extractor" usage="0">
+        <ingredients>
+          <ingredient itemId="70" quantity="1" />
+          <ingredient itemId="55" quantity="1" />
+        </ingredients>
+        <result itemId="71" quantity="1" />
+      </blueprint>
+      
+	  <blueprint name="Create Cable Block" usage="0">
+        <ingredients>
+          <ingredient itemId="43" quantity="1" />
+          <ingredient itemId="28" quantity="1" />
+        </ingredients>
+        <result itemId="42" quantity="8" />
+      </blueprint>
+
+	  <blueprint name="Create Uranium Plated Cable Block" usage="0">
+        <ingredients>
+          <ingredient itemId="42" quantity="8" />
+          <ingredient itemId="8" quantity="1" />
+        </ingredients>
+        <result itemId="164" quantity="8" />
+      </blueprint>
+	  
+      <blueprint name="Create Cobalt Torches" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="1" />
+          <ingredient itemId="7" quantity="1" />
+        </ingredients>
+        <result itemId="67" quantity="8" />
+      </blueprint>
+      
+	  <blueprint name="Create Thulium Torches" usage="0">
+        <ingredients>
+          <ingredient itemId="39" quantity="1" />
+          <ingredient itemId="67" quantity="8" />
+        </ingredients>
+        <result itemId="93" quantity="8" />
+      </blueprint>
+	  
+      <blueprint name="Create Cobalt Wall Torch" usage="0">
+        <ingredients>
+          <ingredient itemId="28" quantity="1" />
+          <ingredient itemId="15" quantity="1" />
+        </ingredients>
+        <result itemId="52" quantity="4" />
+      </blueprint>
+
+      <blueprint name="Create Titainum Wall Torch" usage="0">
+        <ingredients>
+          <ingredient itemId="52" quantity="4" />
+          <ingredient itemId="11" quantity="1" />
+        </ingredients>
+        <result itemId="146" quantity="4" />
+      </blueprint>
+
+      <blueprint name="Create Uranium Wall Torch" usage="0">
+        <ingredients>
+          <ingredient itemId="52" quantity="4" />
+          <ingredient itemId="8" quantity="1" />
+        </ingredients>
+        <result itemId="147" quantity="4" />
+      </blueprint>   
+     
+      <blueprint name="Create Thulium Wall Torch" usage="0">
+        <ingredients>
+          <ingredient itemId="52" quantity="4" />
+          <ingredient itemId="39" quantity="1" />
+        </ingredients>
+        <result itemId="144" quantity="4" />
+      </blueprint>             
+ 
+      <blueprint name="Create Ponium Wall Torch" usage="0">
+        <ingredients>
+          <ingredient itemId="52" quantity="4" />
+          <ingredient itemId="41" quantity="1" />
+        </ingredients>
+        <result itemId="145" quantity="8" />
+      </blueprint>
+
+      <blueprint name="Create Redium Wall Torch" usage="0">
+        <ingredients>
+          <ingredient itemId="52" quantity="4" />
+          <ingredient itemId="122" quantity="1" />
+        </ingredients>
+        <result itemId="143" quantity="4" />
+      </blueprint> 
+      
+	  <blueprint name="Create Camera Block" usage="0">
+        <ingredients>
+          <ingredient itemId="28" quantity="1" />
+          <ingredient itemId="43" quantity="1" />
+          <ingredient itemId="106" quantity="1" />
+        </ingredients>
+        <result itemId="53" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Armored Camera Block" usage="0">
+        <ingredients>
+          <ingredient itemId="53" quantity="1" />
+		  <ingredient itemId="136" quantity="4" />
+          <ingredient itemId="44" quantity="1" />
+          <ingredient itemId="135" quantity="1" />
+        </ingredients>
+        <result itemId="179" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Cobalt Lens" usage="0">
+        <ingredients>
+          <ingredient itemId="91" quantity="2" />
+        </ingredients>
+        <result itemId="106" quantity="1" />
+      </blueprint>
+     
+	  <blueprint name="Create Uranium Rods" usage="0">
+        <ingredients>
+          <ingredient itemId="8" quantity="3" />
+        </ingredients>
+        <result itemId="13" quantity="1" />
+      </blueprint>
+	  
+      <blueprint name="Create Plutonium Rods" usage="0">
+        <ingredients>
+          <ingredient itemId="12" quantity="3" />
+        </ingredients>
+        <result itemId="14" quantity="1" />
+      </blueprint>
+	  <!-- Misc Blueprint End -->
+	  
+	  <!-- Windows Blueprint -->
+	  <blueprint name="Create Iron Chassis" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="2" />
+        </ingredients>
+        <result itemId="16" quantity="6" />
+      </blueprint>
+<!--	  
+	  <blueprint name="Create Aluminium Chassis" usage="0">
+        <ingredients>
+          <ingredient itemId="9" quantity="2" />
+        </ingredients>
+        <result itemId="17" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Titanium Chassis" usage="0">
+        <ingredients>
+          <ingredient itemId="11" quantity="2" />
+        </ingredients>
+        <result itemId="18" quantity="1" />
+      </blueprint>
+-->	  
+	  <blueprint name="Create Small Window Block" usage="0">
+        <ingredients>
+          <ingredient itemId="16" quantity="1" />
+          <ingredient itemId="106" quantity="1" /> 
+        </ingredients>
+        <result itemId="112" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Big Window Block" usage="0">
+        <ingredients>
+          <ingredient itemId="112" quantity="3" />
+        </ingredients>
+        <result itemId="113" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Very Big Window Block" usage="0">
+        <ingredients>
+          <ingredient itemId="113" quantity="2" />
+        </ingredients>
+        <result itemId="149" quantity="1" />
+      </blueprint>
+	  <!--  Windows Blueprints End-->
+	  
+	  <!-- Modified Blueprints -->	  
+	  <blueprint name="Create Ponium Drill" usage="0">
+        <ingredients>
+          <ingredient itemId="89" quantity="1" />
+		  <ingredient itemId="11" quantity="30" /> 
+          <ingredient itemId="41" quantity="20" /> 
+        </ingredients>
+        <result itemId="123" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Crush Redium" usage="1">
+        <ingredients>
+          <ingredient itemId="121" quantity="1" /> <!-- Redium Ore -->
+        </ingredients>
+        <result itemId="122" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Crush Redium Shards" usage="1">
+        <ingredients>
+          <ingredient itemId="122" quantity="2" /> <!-- Redium Shards -->
+        </ingredients>
+        <result itemId="125" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Redium Essence" usage="2">
+        <ingredients>
+          <ingredient itemId="125" quantity="2" /> <!-- Redium Dust -->
+		  <ingredient itemId="75" quantity="1" /> <!-- Water -->
+        </ingredients>
+        <result itemId="126" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Health Potion" usage="0">
+        <ingredients>
+          <ingredient itemId="126" quantity="1" /> <!-- Redium Ore -->
+		  <ingredient itemId="75" quantity="2" /> <!-- Water -->
+        </ingredients>
+        <result itemId="109" quantity="1" />
+      </blueprint>
+
+	  <blueprint name="Create Standard Anti-Matter Power Block" usage="0">
+        <ingredients>
+          <ingredient itemId="80" quantity="2" />	<!-- Powerful Nuclear Power Block -->
+		  <ingredient itemId="122" quantity="16" /> <!-- Redium Shards -->
+		  <ingredient itemId="11" quantity="10" /> 	<!-- Titanium Ingot -->
+        </ingredients>
+        <result itemId="127" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Large Console Block" usage="0">
+        <ingredients>
+          <ingredient itemId="46" quantity="3" />	<!-- Standard console Block -->
+		  <ingredient itemId="11" quantity="10" />	<!-- Titanium Ingot -->
+        </ingredients>
+        <result itemId="129" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Redium Lens" usage="0">
+        <ingredients>
+          <ingredient itemId="122" quantity="2" />	<!-- Redium Shards -->
+        </ingredients>
+        <result itemId="135" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Redium Powered Drill" usage="0">
+        <ingredients>
+          <ingredient itemId="123" quantity="1" />
+          <ingredient itemId="135" quantity="4" />	<!-- Redium Lens -->
+	     <ingredient itemId="122" quantity="12" />	<!-- Redium Shards -->
+	     <ingredient itemId="41" quantity="10" />	<!-- Ponium Ingot -->
+        </ingredients>
+        <result itemId="131" quantity="1" />
+      </blueprint>
+	  
+	  <blueprint name="Create Thulium Covered Light Iron Block" usage="0">
+        <ingredients>
+		  <ingredient itemId="28" quantity="3" />	<!-- Ligth Iron Block -->
+		  <ingredient itemId="142" quantity="1" />	<!-- Thulium Dust -->
+        </ingredients>
+        <result itemId="132" quantity="3" />
+      </blueprint>
+	  
+	  <blueprint name="Create Thulium Covered Medium Iron Block" usage="0">
+        <ingredients>
+          <ingredient itemId="32" quantity="3" />	<!-- Medium Iron Block -->
+		  <ingredient itemId="142" quantity="1" />	<!-- Thulium Dust -->
+        </ingredients>
+        <result itemId="133" quantity="3" />
+      </blueprint>
+	  
+	  <blueprint name="Create Thulium Covered Heavy Iron Block" usage="0">
+        <ingredients>
+          <ingredient itemId="33" quantity="3" />	<!-- Heavy Iron Block -->
+		  <ingredient itemId="142" quantity="1" />	<!-- Thulium Dust -->
+        </ingredients>
+        <result itemId="134" quantity="3" />
+      </blueprint>
+	  
+	  <blueprint name="Create Light Ponium Block" usage="0">
+        <ingredients>
+		  <ingredient itemId="41" quantity="1" />	<!-- Ponium Ingot -->
+        </ingredients>
+        <result itemId="136" quantity="6" />
+      </blueprint>
+	  
+	  <blueprint name="Create Medium Ponium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="1" />	<!-- Ponium Ingot -->
+        </ingredients>
+        <result itemId="137" quantity="4" />
+      </blueprint>
+	  
+	  <blueprint name="Create Heavy Ponium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="41" quantity="1" />	<!-- Ponium Ingot -->
+        </ingredients>
+        <result itemId="138" quantity="2" />
+      </blueprint>
+	  
+	  <blueprint name="Create Redium Covered Light Titanium Block" usage="0">
+        <ingredients>
+		  <ingredient itemId="34" quantity="3" />	<!-- Light Titanium Block -->
+		  <ingredient itemId="125" quantity="1" />	<!-- Redium Dust -->
+        </ingredients>
+        <result itemId="139" quantity="3" />
+      </blueprint>
+	  
+	  <blueprint name="Create Redium Covered Medium Titanium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="35" quantity="3" />	<!-- Medium Titanium Block -->
+		  <ingredient itemId="125" quantity="1" />	<!-- Redium Dust -->
+        </ingredients>
+        <result itemId="140" quantity="3" />
+      </blueprint>
+	  
+	  <blueprint name="Create Redium Covered Heavy Titanium Block" usage="0">
+        <ingredients>
+          <ingredient itemId="36" quantity="3" />	<!-- Heavy Titanium Block -->
+		  <ingredient itemId="125" quantity="1" />	<!-- Redium Dust -->
+        </ingredients>
+        <result itemId="141" quantity="3" />
+      </blueprint>
+	  
+	  <blueprint name="Create Thulium Dust" usage="1">
+        <ingredients>
+          <ingredient itemId="39" quantity="2" />	<!-- Thulium Shards -->
+        </ingredients>
+        <result itemId="142" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Small Crate" usage="0">
+        <ingredients>
+          <ingredient itemId="16" quantity="3" />
+          <ingredient itemId="28" quantity="6" />
+        </ingredients>
+        <result itemId="156" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Large Crate" usage="0">
+        <ingredients>
+          <ingredient itemId="156" quantity="3" />
+        </ingredients>
+        <result itemId="157" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Crate Of Holding" usage="0">
+        <ingredients>
+          <ingredient itemId="156" quantity="1" />
+          <ingredient itemId="127" quantity="1" />
+        </ingredients>
+        <result itemId="158" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Temporary Armor Boost" usage="0">
+        <ingredients>
+          <ingredient itemId="10" quantity="5" />
+          <ingredient itemId="61" quantity="1" />
+        </ingredients>
+        <result itemId="111" quantity="1" />
+      </blueprint>
+
+      <blueprint name="Create Power Overcharge" usage="0">
+        <ingredients>
+          <ingredient itemId="15" quantity="3" />
+        </ingredients>
+        <result itemId="110" quantity="1" />
+      </blueprint>
+	  <!-- Modified Blueprints End -->
+    </blueprints>
+  </crafting>
+  <items>
+    <consumables>
+      <consumable itemId="109">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Health Potion</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="11" />
+        <type>1</type>
+        <armor>0</armor>
+        <health>25</health>
+        <power>0</power>
+        <duration>0</duration>
+        <buffSpriteCoords x="0" y="0" />
+      </consumable>
+      <consumable itemId="110">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Power Overcharge</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="11" />
+        <type>0</type>
+        <armor>0</armor>
+        <health>0</health>
+        <power>10</power>
+        <duration>20000</duration>
+        <buffSpriteCoords x="0" y="0" />
+      </consumable>
+      <consumable itemId="111">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Extra Armor Plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="11" />
+        <type>0</type>
+        <armor>10</armor>
+        <health>0</health>
+        <power>0</power>
+        <duration>120000</duration>
+        <buffSpriteCoords x="0" y="0" />
+      </consumable>
+    </consumables>
+    <ingredients>
+      <ingredient itemId="7">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt ingot</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="4" />
+      </ingredient>
+      <ingredient itemId="8">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Uranium ingot</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="5" />
+      </ingredient>
+      <ingredient itemId="9">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium ingot</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="6" />
+      </ingredient>
+      <ingredient itemId="10">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron ingot</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="7" />
+      </ingredient>
+      <ingredient itemId="11">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium ingot</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="8" />
+      </ingredient>
+      <ingredient itemId="12">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Plutonium ingot</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="5" />
+      </ingredient>
+      <ingredient itemId="13">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Uranium rods</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="5" />
+      </ingredient>
+      <ingredient itemId="14">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Plutonium rods</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="3" y="5" />
+      </ingredient>
+      <ingredient itemId="15">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt batteries</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="3" />
+      </ingredient>
+      <ingredient itemId="16">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron chassis</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="7" />
+      </ingredient>
+      <ingredient itemId="17">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium chassis</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="6" />
+      </ingredient>
+      <ingredient itemId="18">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium chassis</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="8" />
+      </ingredient>
+      <ingredient itemId="19">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium light plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="6" />
+      </ingredient>
+      <ingredient itemId="20">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium medium plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="3" y="6" />
+      </ingredient>
+      <ingredient itemId="21">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium heavy plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="4" y="6" />
+      </ingredient>
+      <ingredient itemId="22">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron light plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="7" />
+      </ingredient>
+      <ingredient itemId="23">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron medium plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="3" y="7" />
+      </ingredient>
+      <ingredient itemId="24">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron heavy plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="4" y="7" />
+      </ingredient>
+      <ingredient itemId="25">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium light plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="8" />
+      </ingredient>
+      <ingredient itemId="26">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium medium plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="3" y="8" />
+      </ingredient>
+      <ingredient itemId="27">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>256</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium heavy plating</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="4" y="8" />
+      </ingredient>
+      <ingredient itemId="39">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium shards</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="9" />
+      </ingredient>
+      <ingredient itemId="41">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium ingot</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="10" />
+      </ingredient>
+      <ingredient itemId="73">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt rubble</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="4" />
+      </ingredient>
+      <ingredient itemId="74">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ice shards</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="2" />
+      </ingredient>
+      <ingredient itemId="75">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Water</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="2" />
+      </ingredient>
+      <ingredient itemId="76">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Liquid hydrogen</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="2" />
+      </ingredient>
+      <ingredient itemId="91">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt Diamonds</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="4" />
+      </ingredient>
+      <ingredient itemId="106">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt Lens</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="3" y="4" />
+      </ingredient>
+	  <!-- -->
+	  <ingredient itemId="122">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium shards</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="9" />
+      </ingredient>
+	  <ingredient itemId="125">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium Dust</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="4" y="4" />
+      </ingredient>
+	  <ingredient itemId="126">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium Essence</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="3" y="2" />
+      </ingredient>
+	  <ingredient itemId="135">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium Lens</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="5" y="4" />
+      </ingredient>
+	  <ingredient itemId="142">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium Dust</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="9" />
+      </ingredient>
+
+	  <!-- -->
+    </ingredients>
+    <drills>
+      <drill itemId="55">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron drill</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="0" y="0" />
+        <light type="point">
+          <color r="255" g="255" b="0" />
+          <radius>3</radius>
+        </light>
+        <power>1</power>
+      </drill>
+      <drill itemId="85">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Enhanced Iron Drill</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="0" />
+        <light type="point">
+          <color r="0" g="0" b="255" />
+          <radius>3</radius>
+        </light>
+        <power>2</power>
+      </drill>
+      <drill itemId="86">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Powerful Iron Drill</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="0" />
+        <light type="point">
+          <color r="0" g="0" b="255" />
+          <radius>3</radius>
+        </light>
+        <power>3</power>
+      </drill>
+      <drill itemId="87">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>3</modelDepth>
+        <name>Triple Iron Drill</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="3" y="0" />
+        <light type="point">
+          <color r="0" g="0" b="255" />
+          <radius>5</radius>
+        </light>
+        <power>4</power>
+      </drill>
+      <drill itemId="88">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>2</modelDepth>
+        <name>Thulium Drill</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="4" y="0" />
+        <light type="point">
+          <color r="35" g="160" b="50" />
+          <radius>5</radius>
+        </light>
+        <power>5</power>
+      </drill>
+      <drill itemId="89">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>3</modelDepth>
+        <name>Enhanced Thulium Drill</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="5" y="0" />
+        <light type="point">
+          <color r="35" g="160" b="50" />
+          <radius>5</radius>
+        </light>
+        <power>6</power>
+      </drill>
+	  <!-- -->
+	  <drill itemId="123">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>3</modelDepth>
+        <name>Ponium Drill</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="6" y="0" />
+        <light type="point">
+          <color r="116" g="52" b="132" />
+          <radius>5</radius>
+        </light>
+        <power>7</power>
+      </drill>
+	  <drill itemId="131">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>3</modelDepth>
+        <name>Redium Powered Drill</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="7" y="0" />
+        <light type="point">
+          <color r="200" g="0" b="0" />
+          <radius>5</radius>
+        </light>
+        <power>8</power>
+      </drill>
+	  <!-- -->
+    </drills>
+    <torches>
+      <torch itemId="67">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt torch</name>
+        <powerUsage>25</powerUsage>
+        <sprite x="0" y="0" />
+        <light type="point">
+          <color r="128" g="128" b="255" />
+          <radius>8</radius>
+        </light>
+        <burningTime>20000</burningTime>
+      </torch>
+      <torch itemId="93">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium Torch</name>
+        <powerUsage>25</powerUsage>
+        <sprite x="0" y="0" />
+        <light type="point">
+          <color r="0" g="192" b="0" />
+          <radius>10</radius>
+        </light>
+        <burningTime>30000</burningTime>
+      </torch>
+    </torches>
+    <weapons>
+      <weapon itemId="48">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt Pistol</name>
+        <powerUsage>1</powerUsage>
+        <sprite x="0" y="1" />
+        <light type="point">
+          <color r="0" g="0" b="255" />
+          <radius>1</radius>
+        </light>
+        <reloadTime>400</reloadTime>
+        <projectileId>1</projectileId>
+        <pushback>0.025</pushback>
+        <spread>0</spread>
+      </weapon>
+      <weapon itemId="49">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt SMG</name>
+        <powerUsage>2</powerUsage>
+        <sprite x="1" y="1" />
+        <light type="point">
+          <color r="0" g="0" b="255" />
+          <radius>1</radius>
+        </light>
+        <reloadTime>150</reloadTime>
+        <projectileId>1</projectileId>
+        <pushback>0.025</pushback>
+        <spread>0.05</spread>
+      </weapon>
+      <weapon itemId="50">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>3</modelDepth>
+        <name>Thulium Assault Rifle</name>
+        <powerUsage>3</powerUsage>
+        <sprite x="2" y="1" />
+        <light type="point">
+          <color r="0" g="192" b="0" />
+          <radius>2</radius>
+        </light>
+        <reloadTime>200</reloadTime>
+        <projectileId>2</projectileId>
+        <pushback>0.05</pushback>
+        <spread>0.05</spread>
+      </weapon>
+      <weapon itemId="51">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>3</modelDepth>
+        <name>Thulium Minigun</name>
+        <powerUsage>3</powerUsage>
+        <sprite x="3" y="1" />
+        <light type="point">
+          <color r="0" g="192" b="0" />
+          <radius>2</radius>
+        </light>
+        <reloadTime>100</reloadTime>
+        <projectileId>2</projectileId>
+        <pushback>0.075</pushback>
+        <spread>0.1</spread>
+      </weapon>
+      <weapon itemId="90">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>7</modelDepth>
+        <name>Heavy Plasma Launcher</name>
+        <powerUsage>25</powerUsage>
+        <sprite x="4" y="1" />
+        <light type="point">
+          <color r="199" g="22" b="22" />
+          <radius>5</radius>
+        </light>
+        <reloadTime>1000</reloadTime>
+        <projectileId>6</projectileId>
+        <pushback>0.2</pushback>
+        <spread>0</spread>
+      </weapon>
+      <weapon itemId="148">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>7</modelDepth>
+        <name>Flamethrower</name>
+        <powerUsage>2</powerUsage>
+        <sprite x="5" y="1" />
+        <light type="point">
+          <color r="255" g="128" b="0" />
+          <radius>5</radius>
+        </light>
+        <reloadTime>5</reloadTime>
+        <projectileId>7</projectileId>
+        <pushback>0.05</pushback>
+        <spread>0.3</spread>
+      </weapon>
+      <weapon itemId="180">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>3</modelDepth>
+        <name>Laser Rifle</name>
+        <powerUsage>2</powerUsage>
+        <sprite x="6" y="1" />
+        <light type="point">
+          <color r="255" g="0" b="0" />
+          <radius>5</radius>
+        </light>
+        <reloadTime>5</reloadTime>
+        <projectileId>9</projectileId>
+        <pushback>0.014</pushback>
+        <spread>0</spread>
+      </weapon>
+    </weapons>
+    <wearables>
+      <wearable itemId="61">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron Chest Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="8" y="7" />
+        <slot>2</slot>
+        <armorRating>1</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="66">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Light battery</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="3" />
+        <slot>6</slot>
+        <armorRating>0</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>1</powerRechargeRate>
+      </wearable>
+      <wearable itemId="62">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium Chest Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="8" y="6" />
+        <slot>2</slot>
+        <armorRating>2</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="65">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium Chest Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="8" y="8" />
+        <slot>2</slot>
+        <armorRating>3</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="63">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium Helmet</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="5" y="6" />
+        <slot>0</slot>
+        <armorRating>2</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="60">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron Helmet</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="5" y="7" />
+        <slot>0</slot>
+        <armorRating>1</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="64">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium Helmet</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="5" y="8" />
+        <slot>0</slot>
+        <armorRating>3</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="94">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium Shoulders Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="6" y="6" />
+        <slot>1</slot>
+        <armorRating>2</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="95">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron Shoulders Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="6" y="7" />
+        <slot>1</slot>
+        <armorRating>1</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="96">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium Shoulders Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="6" y="8" />
+        <slot>1</slot>
+        <armorRating>3</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="97">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium Arms Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="7" y="6" />
+        <slot>4</slot>
+        <armorRating>2</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="98">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron Arms Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="7" y="7" />
+        <slot>4</slot>
+        <armorRating>1</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="99">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium Arms Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="7" y="8" />
+        <slot>4</slot>
+        <armorRating>3</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="100">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium Legs Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="9" y="6" />
+        <slot>3</slot>
+        <armorRating>2</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="101">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron Legs Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="9" y="7" />
+        <slot>3</slot>
+        <armorRating>1</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="102">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium Legs Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="9" y="8" />
+        <slot>3</slot>
+        <armorRating>3</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="103">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Aluminium Feet Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="10" y="6" />
+        <slot>5</slot>
+        <armorRating>2</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="104">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Iron Feet Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="10" y="7" />
+        <slot>5</slot>
+        <armorRating>1</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="105">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium Feet Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="10" y="8" />
+        <slot>5</slot>
+        <armorRating>3</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+      <wearable itemId="107">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Cobalt Power Source</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="1" y="3" />
+        <slot>6</slot>
+        <armorRating>0</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>3</powerRechargeRate>
+      </wearable>
+      <wearable itemId="108">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Titanium Power Source</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="2" y="3" />
+        <slot>6</slot>
+        <armorRating>0</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>5</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="114">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium Chest Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="8" y="10" />
+        <slot>2</slot>
+        <armorRating>6</armorRating>
+        <healthRating>2</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="115">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium Helmet</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="5" y="10" />
+        <slot>0</slot>
+        <armorRating>6</armorRating>
+        <healthRating>2</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="116">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium Shoulders Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="6" y="10" />
+        <slot>1</slot>
+        <armorRating>6</armorRating>
+        <healthRating>2</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="117">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium Arms Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="7" y="10" />
+        <slot>4</slot>
+        <armorRating>6</armorRating>
+        <healthRating>2</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="118">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium Legs Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="9" y="10" />
+        <slot>3</slot>
+        <armorRating>6</armorRating>
+        <healthRating>2</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="119">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium Feet Armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="10" y="10" />
+        <slot>5</slot>
+        <armorRating>6</armorRating>
+        <healthRating>2</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="120">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Ponium Power Source</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="3" y="3" />
+        <slot>6</slot>
+        <armorRating>0</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>12</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="181">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium covered iron helmet</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="5" y="9" />
+        <slot>0</slot>
+        <armorRating>4</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="182">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium covered iron shoulders armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="6" y="9" />
+        <slot>1</slot>
+        <armorRating>4</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="183">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium covered iron arms armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="7" y="9" />
+        <slot>4</slot>
+        <armorRating>4</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="184">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium covered iron chest armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="8" y="9" />
+        <slot>2</slot>
+        <armorRating>4</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="185">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium covered iron legs armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="9" y="9" />
+        <slot>3</slot>
+        <armorRating>4</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="186">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Thulium covered iron feet armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="10" y="9" />
+        <slot>5</slot>
+        <armorRating>4</armorRating>
+        <healthRating>0</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="187">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium covered titanium helmet</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="5" y="11" />
+        <slot>0</slot>
+        <armorRating>8</armorRating>
+        <healthRating>5</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="188">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium covered titanium shoulders armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="6" y="11" />
+        <slot>1</slot>
+        <armorRating>8</armorRating>
+        <healthRating>5</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="189">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium covered titanium arms armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="7" y="11" />
+        <slot>4</slot>
+        <armorRating>8</armorRating>
+        <healthRating>5</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="190">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium covered titanium chest armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="8" y="11" />
+        <slot>2</slot>
+        <armorRating>8</armorRating>
+        <healthRating>5</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="191">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium covered titanium legs armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="9" y="11" />
+        <slot>3</slot>
+        <armorRating>8</armorRating>
+        <healthRating>5</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="192">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium covered titanium feet armor</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="10" y="11" />
+        <slot>5</slot>
+        <armorRating>8</armorRating>
+        <healthRating>5</healthRating>
+        <powerRechargeRate>0</powerRechargeRate>
+      </wearable>
+	  <wearable itemId="193">
+        <color r="0" g="0" b="0" />
+        <description></description>
+        <maxStackSize>64</maxStackSize>
+        <modelDepth>1</modelDepth>
+        <name>Redium power source</name>
+        <powerUsage>0</powerUsage>
+        <sprite x="4" y="3" />
+        <slot>6</slot>
+        <armorRating>0</armorRating>
+        <healthRating>5</healthRating>
+        <powerRechargeRate>20</powerRechargeRate>
+      </wearable>
+	  </wearables>
+  </items>
+</itemset>

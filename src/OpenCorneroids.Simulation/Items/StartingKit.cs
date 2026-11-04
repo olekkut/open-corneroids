@@ -3,10 +3,9 @@ using OpenCorneroids.Content.Itemsets;
 namespace OpenCorneroids.Simulation.Items;
 
 /// <summary>
-/// What a new player starts with, from the itemset's <c>defaultItems</c>, as the original does it (the original's rules
-/// 1.10): the first drill listed, the crafting table and the ore furnace (smelter) are <see cref="Endless"/> slots that
-/// never run out, shown beside the inventory; every other entry is one item in the main inventory. One deviation: the
-/// spec says 1.2.0 ignores an extractor in the list, but no blueprint makes one, so a player could never extract
+/// What a new player starts with, from the itemset's <c>defaultItems</c>, as the original does it: the first drill listed, the crafting table and the ore furnace (smelter) are <see cref="Endless"/> slots that
+/// never run out, shown beside the inventory; every other entry is one item in the main inventory. One deviation: 1.2.0
+/// ignores an extractor in the list, but no blueprint makes one, so a player could never extract
 /// anything; the footage of v1.0.5 shows the extractor given as an ordinary item, which is what we do.
 /// </summary>
 public static class StartingKit

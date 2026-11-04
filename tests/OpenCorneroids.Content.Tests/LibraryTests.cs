@@ -74,6 +74,20 @@ public class LibraryTests
     }
 
     [Fact]
+    public void An_install_copied_without_its_program_is_still_an_install()
+    {
+        using var tree = new TempTree();
+        tree.Write("Data/Corneroids/Content/Blocksets/defaultItemset.xml", MiniItemset.Xml());
+        tree.Write("Data/Corneroids/Content/Shaders/blockShader.xnb", "XNBw");
+        tree.Write("Mod/Content/Blocksets/modItemset.xml", MiniItemset.Xml().Replace("<key>MiniItemset</key>", "<key>ModItemset</key>"));
+
+        var library = ContentLibrary.Scan([tree.Root]);
+
+        Assert.Equal(PackKind.GameInstall, library.FindPack("Data")!.Kind);
+        Assert.Equal(PackKind.ItemsetMod, library.FindPack("Mod")!.Kind);
+    }
+
+    [Fact]
     public void Without_a_known_vanilla_install_there_is_no_base_and_a_warning()
     {
         using var tree = BuildRoot();

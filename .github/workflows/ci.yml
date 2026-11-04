@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Test the content loader and the simulation
+        run: dotnet test OpenCorneroids.sln -c Release
+
+      - name: Build the Godot project
+        run: dotnet build game/OpenCorneroids.csproj -c Release

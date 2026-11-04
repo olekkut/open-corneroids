@@ -43,7 +43,10 @@ public static class PackScanner
             bool hasItemsets = source.List("Blocksets", ".xml").Any();
             var installDir = Path.GetDirectoryName(content)!;
             bool hasExe = HasFile(installDir, "Corneroids.exe") || HasFile(installDir, "Corneroids.exe.deploy");
-            var kind = !hasItemsets ? PackKind.TexturePack : hasExe ? PackKind.GameInstall : PackKind.ItemsetMod;
+            // A copy of an install's data without its program (as the game's own bundle ships it) still carries the
+            // game's compiled shaders, which itemset mods never do.
+            bool hasEngineData = source.List("Shaders", ".xnb").Any();
+            var kind = !hasItemsets ? PackKind.TexturePack : hasExe || hasEngineData ? PackKind.GameInstall : PackKind.ItemsetMod;
             return new PackInfo(id, kind, folder, source, kind == PackKind.GameInstall ? IdentifyVanilla(source) : null);
         }
 

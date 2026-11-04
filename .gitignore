@@ -1,5 +1,21 @@
-# Original game files and community mods (BYOA) must never be committed.
-/byoa/
+# Bundled game data (see CREDITS.md): only the content folders of these four packs are tracked, never a program.
+/byoa/*
+!/byoa/Corneroids-Alpha-1.2.0/
+/byoa/Corneroids-Alpha-1.2.0/*
+!/byoa/Corneroids-Alpha-1.2.0/Corneroids/
+/byoa/Corneroids-Alpha-1.2.0/Corneroids/*
+!/byoa/Corneroids-Alpha-1.2.0/Corneroids/Content/
+!/byoa/v21/
+/byoa/v21/*
+!/byoa/v21/Corneroids/
+/byoa/v21/Corneroids/*
+!/byoa/v21/Corneroids/Content/
+!/byoa/v21/Corneroids/v21 Readme.txt
+!/byoa/navItemset/
+!/byoa/SordsTextures/
+*.dll
+*.deploy
+
 
 # Local toolchains and binaries
 /.dotnet/
@@ -19,3 +35,4 @@ TestResults/
 
 # Per-agent isolated build output
 /.artifacts/
+/build/

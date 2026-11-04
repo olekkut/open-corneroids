@@ -26,4 +26,6 @@ project/assembly_name="OpenCorneroids"
 
 [rendering]
 
+textures/vram_compression/import_etc2_astc=true
+
 textures/canvas_textures/default_texture_filter=0

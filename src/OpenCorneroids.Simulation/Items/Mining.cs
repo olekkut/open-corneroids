@@ -42,7 +42,7 @@ public static class Mining
             ? Math.Clamp(MaxSecondsToMine - SecondsPerSparePower * (drillPower - block.PowerToDrill), MinSecondsToMine, MaxSecondsToMine)
             : double.PositiveInfinity;
 
-    /// <summary>A mined block yields one of its own item, ores included (spec 1.5).</summary>
+    /// <summary>A mined block yields one of its own item, ores included.</summary>
     public static ItemStack Drop(ItemDef minedBlockItem)
     {
         ArgumentNullException.ThrowIfNull(minedBlockItem);

@@ -34,6 +34,10 @@ public sealed class GameArgs
     /// <summary>Items added to the survival inventory at start, from <c>--give=itemId:count[,itemId:count...]</c>.</summary>
     public List<(int ItemId, int Count)> Give { get; } = new();
 
+    /// <summary>Saves a frame 15 times a second of game time into this folder until the screenshot is taken, to make
+    /// short demo clips (frames are numbered PNGs).</summary>
+    public string? RecordDir { get; private set; }
+
     /// <summary>Items left floating a metre in front of the player at the start (survival), for pickup tests.</summary>
     public List<(int ItemId, int Count)> Drop { get; } = new();
 
@@ -122,6 +126,7 @@ public sealed class GameArgs
                 case "--open": parsed.Open = value.ToLowerInvariant(); break;
                 case "--give": parsed.Give.AddRange(ParseGive(value)); break;
                 case "--drop": parsed.Drop.AddRange(ParseGive(value)); break;
+                case "--record": parsed.RecordDir = value; break;
                 case "--new-world": parsed.NewWorld = value; break;
                 case "--load": parsed.Load = value; break;
                 case "--quit-after-save": parsed.QuitAfterSave = true; break;

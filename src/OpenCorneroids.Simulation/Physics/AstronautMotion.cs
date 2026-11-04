@@ -3,8 +3,7 @@ using System.Numerics;
 namespace OpenCorneroids.Simulation.Physics;
 
 /// <summary>
-/// How the astronaut's velocity changes under the movement keys, following the original
-///: each held direction key pushes 5 m/s² along its own direction (they add up); boosting replaces
+/// How the astronaut's velocity changes under the movement keys, as in the original: each held direction key pushes 5 m/s² along its own direction (they add up); boosting replaces
 /// the forward key with 10 m/s² along the view and raises the soft speed limit from 4 to 8 m/s; above the soft limit
 /// the player loses 8 m/s² along the travel direction; nothing is ever faster than 20 m/s; and with no push at all the
 /// speed falls by 6 m/s² to a stop. Velocities are relative to whatever the player has boarded (a ship), or to the

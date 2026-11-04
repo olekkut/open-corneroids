@@ -78,7 +78,7 @@ public sealed class SurvivalMode : PlayMode
 
     double _boostWarned = double.NegativeInfinity;
 
-    /// <summary>Releasing the left button: a block in hand is placed, a consumable used (spec 1.1).</summary>
+    /// <summary>Releasing the left button: a block in hand is placed, a consumable used, as in the original.</summary>
     public override void PrimaryReleased(Vector3 eye, Aim? aim)
     {
         if (InHand is not { } stack || !_itemset.ItemsById.TryGetValue(stack.ItemId, out var item)) return;
@@ -92,7 +92,7 @@ public sealed class SurvivalMode : PlayMode
     /// <summary>The right button does nothing on its way down; see <see cref="SecondaryReleased"/>.</summary>
     public override void SecondaryPressed(Vector3 eye, Aim? aim) { }
 
-    /// <summary>Releasing the right button empties the hand (spec 1.1).</summary>
+    /// <summary>Releasing the right button empties the hand, as in the original.</summary>
     public override void SecondaryReleased()
     {
         if (_selected < 0) return;
@@ -132,7 +132,7 @@ public sealed class SurvivalMode : PlayMode
         ShowHotbar();
     }
 
-    /// <summary>The wheel steps through the slots and stops at the first and last (spec 1.1); from an empty hand it
+    /// <summary>The wheel steps through the slots and stops at the first and last, as in the original; from an empty hand it
     /// takes the first slot.</summary>
     public override void Cycle(int delta)
     {
@@ -198,7 +198,7 @@ public sealed class SurvivalMode : PlayMode
         ResetDrill();
     }
 
-    /// <summary>The original reaches 3 m with a drill, from the eye to the block (spec 1.5).</summary>
+    /// <summary>The original reaches 3 m with a drill, from the eye to the block.</summary>
     public const float DrillReach = 3f;
 
     /// <summary>Where mined items float and how they reach the player; set by the world.</summary>
@@ -206,7 +206,7 @@ public sealed class SurvivalMode : PlayMode
 
     double _sinceSparks;
 
-    /// <summary>Measured along the view to where the aim enters the block, as the original does (spec 1.5).</summary>
+    /// <summary>Measured along the view to where the aim enters the block, as the original does.</summary>
     bool InReach(BlockTarget cell) => AimDistance <= DrillReach;
 
     /// <summary>Where the aim meets the block: where the sparks fly.</summary>

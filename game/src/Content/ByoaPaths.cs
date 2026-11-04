@@ -31,7 +31,11 @@ public static class ByoaPaths
         }
 
         Add(args.ByoaDir);
-        Add(Path.Combine(Path.GetDirectoryName(OS.GetExecutablePath()) ?? "", "byoa"));
+        var exeDir = Path.GetDirectoryName(OS.GetExecutablePath()) ?? "";
+        Add(Path.Combine(exeDir, "byoa"));
+        // macOS: the executable sits in Name.app/Contents/MacOS; the data rides in Resources or beside the .app.
+        Add(Path.Combine(exeDir, "..", "Resources", "byoa"));
+        Add(Path.Combine(exeDir, "..", "..", "..", "byoa"));
         Add(EnsureUserRoot());
         // Development: the repository keeps a gitignored byoa/ next to the game/ project.
         Add(Path.Combine(ProjectSettings.GlobalizePath("res://"), "..", "byoa"));
