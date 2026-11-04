@@ -10,7 +10,7 @@ namespace OpenCorneroids.Game.Ui;
 /// </summary>
 public partial class ItemSlot : PanelContainer
 {
-    public enum Look { Normal, Hotbar, Selected, Picked }
+    public enum Look { Normal, Hotbar, Selected, Picked, Trash }
 
     // Per instance rather than static: Godot resources held in static fields outlive the engine and are reported
     // as leaks at exit.
@@ -18,6 +18,7 @@ public partial class ItemSlot : PanelContainer
     readonly StyleBoxFlat _hotbarStyle = Style(new Color(0.05f, 0.08f, 0.14f, 0.7f), new Color(0.45f, 0.65f, 1f, 0.6f), 1);
     readonly StyleBoxFlat _selectedStyle = Style(new Color(0.1f, 0.1f, 0.1f, 0.75f), new Color(1f, 0.85f, 0.3f), 3);
     readonly StyleBoxFlat _pickedStyle = Style(new Color(0.1f, 0.25f, 0.3f, 0.85f), new Color(0.4f, 1f, 1f), 3);
+    readonly StyleBoxFlat _trashStyle = Style(new Color(0.25f, 0.05f, 0.05f, 0.7f), new Color(1f, 0.4f, 0.35f, 0.7f), 1);
 
     TextureRect _icon = null!;
     Label _badge = null!, _count = null!;
@@ -71,6 +72,7 @@ public partial class ItemSlot : PanelContainer
         Look.Hotbar => _hotbarStyle,
         Look.Selected => _selectedStyle,
         Look.Picked => _pickedStyle,
+        Look.Trash => _trashStyle,
         _ => _normalStyle,
     });
 

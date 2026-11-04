@@ -8,7 +8,9 @@ namespace OpenCorneroids.Game.Ui;
 /// <summary>
 /// The inventory grid: the backpack rows on top and the hotbar row (slots 0..8) below them, set apart and tinted
 /// so it is clear which items are in hand. Click a stack to pick it up, click another slot to put it there; the
-/// move itself is <see cref="Inventory.MoveOrMerge"/>, so the same item merges and anything else swaps.
+/// move itself is <see cref="Inventory.MoveOrMerge"/>, so the same item merges and anything else swaps. Putting a
+/// stack on the trash slot throws it away (<see cref="Inventory.Discard"/>); clicking the trash with nothing picked
+/// takes the last thrown stack back.
 /// </summary>
 public partial class InventoryPanel : PanelContainer
 {
@@ -18,6 +20,8 @@ public partial class InventoryPanel : PanelContainer
     ItemsetDef _itemset = null!;
     ItemIcons _icons = null!;
     ItemSlot[] _all = [];
+    ItemSlot _trash = null!;
+    Label _trashHint = null!;
     int? _picked;
     int _pickedItemId;
 
@@ -43,6 +47,18 @@ public partial class InventoryPanel : PanelContainer
         var hotbar = Grid();
         for (int i = 0; i < Math.Min(Inventory.HotbarSize, _all.Length); i++) hotbar.AddChild(_all[i] = NewSlot(i));
         column.AddChild(hotbar);
+
+        var trashRow = new HBoxContainer();
+        trashRow.AddThemeConstantOverride("separation", 8);
+        _trash = ItemSlot.Create(SlotSize, MouseFilterEnum.Stop);
+        _trash.Clicked += OnTrashClicked;
+        trashRow.AddChild(_trash);
+        _trashHint = Hud.Text("", 13, new Color(1f, 0.75f, 0.7f, 0.8f));
+        _trashHint.VerticalAlignment = VerticalAlignment.Center;
+        _trashHint.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        trashRow.AddChild(_trashHint);
+        column.AddChild(trashRow);
+
         column.AddChild(Hud.Text("Click an item, then click where it goes. Right click cancels.", 13, new Color(1, 1, 1, 0.55f)));
         column.AddChild(Hud.Text("Esc or I/Tab closes.", 13, new Color(1, 1, 1, 0.55f)));
 
@@ -87,6 +103,27 @@ public partial class InventoryPanel : PanelContainer
         }
     }
 
+    /// <summary>With a stack picked, throws it away; with nothing picked, takes the trashed stack back.</summary>
+    void OnTrashClicked(MouseButton button)
+    {
+        if (button == MouseButton.Right)
+        {
+            CancelPick();
+            return;
+        }
+        if (_picked is { } from)
+        {
+            _picked = null;
+            _inventory.Discard(from);
+        }
+        else if (_inventory.Trash is not null && _inventory.RestoreTrash() == 0)
+        {
+            _trashHint.Text = "No room to take it back";
+            return;
+        }
+        Refresh();
+    }
+
     void Refresh()
     {
         // A craft can empty the picked slot or refill it with something else. Keeping the pick then would make the
@@ -100,6 +137,15 @@ public partial class InventoryPanel : PanelContainer
             if (stack is not null && item is null) _all[i].TooltipText = $"Unknown item {stack.ItemId}";
             _all[i].SetLook(_picked == i ? ItemSlot.Look.Picked : i < Inventory.HotbarSize ? ItemSlot.Look.Hotbar : ItemSlot.Look.Normal);
         }
+
+        var trash = _inventory.Trash;
+        var trashed = trash is not null && _itemset.ItemsById.TryGetValue(trash.ItemId, out var trashedItem) ? trashedItem : null;
+        _trash.Show(trashed, trash?.Quantity ?? 0, _icons);
+        _trash.SetLook(ItemSlot.Look.Trash);
+        _trash.TooltipText = trash is null ? "Trash" : $"Trash: {trashed?.Name ?? $"item {trash.ItemId}"} (click to take back)";
+        _trashHint.Text = trash is null
+            ? "Trash: put an item here to throw it away."
+            : "Trash: click to take it back. The next item thrown away destroys it.";
     }
 
     static GridContainer Grid()

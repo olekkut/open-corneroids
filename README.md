@@ -66,7 +66,8 @@ first nine slots are the hotbar.
 Controls (survival): mouse look, WASD move, Space/E up, Ctrl/Q down, Shift boost, N noclip,
 hold left click to drill the targeted block (needs a drill strong enough for it; the bar under the crosshair shows
 progress), right click places the selected hotbar block, mouse wheel or 1–9 selects a hotbar slot,
-F uses the targeted crafting station, opens/closes the targeted door or uses a console (see Ships), I or Tab opens the inventory (click a stack, then click where it goes),
+F uses the targeted crafting station, opens/closes the targeted door or uses a console (see Ships), I or Tab opens the inventory (click a stack, then click where it goes; put it on the red trash slot to throw it away,
+click the trash to take the last thrown stack back; the next throw destroys it and saves don't keep it),
 Esc closes a window, frees the mouse, and again returns to the menu. Movement stops while a window is open.
 F5 saves the world.
 

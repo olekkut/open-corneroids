@@ -516,4 +516,89 @@ public class InventoryTests
         Assert.Equal(1, inventory.Add(TestItems.WeakDrill, 4));
         Assert.Equal(["20x1", "20x1", "20x1"], inventory.Layout());
     }
+
+    // --- trash ---
+
+    [Fact]
+    public void Discarding_moves_the_whole_slot_into_the_trash()
+    {
+        var inventory = With(S(A, 5), S(B, 3));
+        var changes = 0;
+        inventory.Changed += () => changes++;
+
+        inventory.Discard(0);
+
+        Assert.Equal([null, S(B, 3)], inventory.Slots);
+        Assert.Equal(S(A, 5), inventory.Trash);
+        Assert.Equal(0, inventory.Count(A));
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
+    public void Discarding_an_empty_slot_does_nothing()
+    {
+        var inventory = With(S(A, 5), null);
+        inventory.Discard(0);
+        var changes = 0;
+        inventory.Changed += () => changes++;
+
+        inventory.Discard(1);
+
+        Assert.Equal(S(A, 5), inventory.Trash);
+        Assert.Equal(0, changes);
+    }
+
+    [Fact]
+    public void The_next_discard_destroys_what_the_trash_held()
+    {
+        var inventory = With(S(A, 5), S(B, 3));
+        inventory.Discard(0);
+        inventory.Discard(1);
+
+        Assert.Equal(S(B, 3), inventory.Trash);
+        Assert.Equal(3, inventory.RestoreTrash());
+        Assert.Equal(0, inventory.Count(A));
+        Assert.Equal(3, inventory.Count(B));
+    }
+
+    [Fact]
+    public void Restoring_merges_first_and_leaves_what_does_not_fit_in_the_trash()
+    {
+        var inventory = With(S(A, 4), S(A, 5), S(B, 10));
+        inventory.Discard(1);                  // trash: 5 A
+        inventory.SetSlot(1, S(B, 10));        // the freed slot fills up again
+
+        Assert.Equal(1, inventory.RestoreTrash());
+        Assert.Equal([S(A, 5), S(B, 10), S(B, 10)], inventory.Slots);
+        Assert.Equal(S(A, 4), inventory.Trash);
+    }
+
+    [Fact]
+    public void Restoring_with_no_room_or_an_empty_trash_changes_nothing()
+    {
+        var inventory = With(S(B, 10));
+        Assert.Equal(0, inventory.RestoreTrash());
+        inventory.Discard(0);
+        inventory.SetSlot(0, S(A, 5));
+        var changes = 0;
+        inventory.Changed += () => changes++;
+
+        Assert.Equal(0, inventory.RestoreTrash());
+        Assert.Equal(S(B, 10), inventory.Trash);
+        Assert.Equal(0, changes);
+    }
+
+    [Fact]
+    public void Clear_empties_the_trash_too_and_reports_it()
+    {
+        var inventory = With(S(A, 5), null);
+        inventory.Discard(0);
+        var changes = 0;
+        inventory.Changed += () => changes++;
+
+        inventory.Clear();
+
+        Assert.Null(inventory.Trash);
+        Assert.Equal(1, changes);
+    }
 }

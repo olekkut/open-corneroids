@@ -37,7 +37,7 @@ public sealed class Inventory
     /// <summary>A live read-only view; it reflects later changes without being re-fetched.</summary>
     public IReadOnlyList<ItemStack?> Slots { get; }
 
-    /// <summary>Raised once per public call that changed the slots, so UI can redraw without diffing.</summary>
+    /// <summary>Raised once per public call that changed the slots or the trash, so UI can redraw without diffing.</summary>
     public event Action? Changed;
 
     /// <summary>Builds an inventory whose stack limits come from the itemset.</summary>
@@ -169,7 +169,54 @@ public sealed class Inventory
         Commit(next);
     }
 
-    public void Clear() => Commit(new ItemStack?[slots.Length]);
+    /// <summary>Empties every slot and the trash.</summary>
+    public void Clear()
+    {
+        var hadTrash = Trash is not null;
+        Trash = null;
+        if (!Commit(new ItemStack?[slots.Length]) && hadTrash)
+            Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// The last stack thrown away, kept so a misclick can be undone. It sits outside <see cref="Slots"/>: it never
+    /// counts as owned (crafting, drill power and placing ignore it), and the next discard destroys it for good. Saves
+    /// do not keep it. Our rule; the original game's way of getting rid of items is unknown.
+    /// </summary>
+    public ItemStack? Trash { get; private set; }
+
+    /// <summary>
+    /// Moves a whole slot into <see cref="Trash"/>, destroying whatever the trash held. This is the way out of a full
+    /// inventory: digging fills it with rock that no recipe uses. An empty slot does nothing.
+    /// </summary>
+    public void Discard(int slot)
+    {
+        CheckSlot(slot);
+        if (slots[slot] is not { } stack)
+            return;
+        var next = Snapshot();
+        next[slot] = null;
+        Trash = stack;
+        Commit(next);
+    }
+
+    /// <summary>
+    /// Puts the trashed stack back the way a pickup arrives (<see cref="Add"/>): onto matching stacks first, then
+    /// into empty slots. Whatever does not fit stays in the trash.
+    /// </summary>
+    /// <returns>How many came back.</returns>
+    public int RestoreTrash()
+    {
+        if (Trash is not { } trash)
+            return 0;
+        var next = Snapshot();
+        var left = Fill(next, trash.ItemId, trash.Quantity);
+        if (left == trash.Quantity)
+            return 0;
+        Trash = left > 0 ? trash with { Quantity = left } : null;
+        Commit(next);
+        return trash.Quantity - left;
+    }
 
     /// <summary>
     /// Removes <paramref name="take"/> and then adds <paramref name="give"/> as one atomic step: if anything is
@@ -203,12 +250,14 @@ public sealed class Inventory
 
     ItemStack?[] Snapshot() => (ItemStack?[])slots.Clone();
 
-    void Commit(ItemStack?[] next)
+    /// <returns>Whether the slots changed (and <see cref="Changed"/> fired).</returns>
+    bool Commit(ItemStack?[] next)
     {
         if (next.AsSpan().SequenceEqual(slots))
-            return;
+            return false;
         next.CopyTo(slots, 0);
         Changed?.Invoke();
+        return true;
     }
 
     void CheckSlot(int slot, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(slot))] string? name = null)
