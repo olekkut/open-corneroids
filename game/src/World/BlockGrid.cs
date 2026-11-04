@@ -129,6 +129,35 @@ public abstract partial class BlockGrid : Node3D
     /// <summary>The grid block at <paramref name="p"/>; objects are not in the grid, see <see cref="IsSolid"/>.</summary>
     public ushort Get(Vector3I p) => InGrid(p) ? _cells[Index(p)] : BlockPalette.Air;
 
+    // ---- turned cells ----
+    // A single-cell block normally has no orientation: the cell holds only the block. Blocks whose look or use depends
+    // on which way they face (BlockPalette.IsTurnable: a console, a crafting station, a cannon) may be turned when
+    // placed; their orientation lives here, keyed by cell, and is cleared whenever the cell changes.
+    readonly Dictionary<Vector3I, Orientation> _turned = new();
+
+    /// <summary>How the grid block at <paramref name="p"/> is turned; <see cref="Orientation.Default"/> for most cells.</summary>
+    public Orientation TurnOf(Vector3I p) => _turned.Count > 0 && _turned.TryGetValue(p, out var o) ? o : Orientation.Default;
+
+    /// <summary>Every turned cell, for saves and for a launch carrying them onto a ship.</summary>
+    public IReadOnlyDictionary<Vector3I, Orientation> Turned => _turned;
+
+    /// <summary>Turns the grid block at <paramref name="p"/> (a turnable one) and remeshes it.</summary>
+    public void SetTurn(Vector3I p, Orientation o)
+    {
+        if (!InGrid(p) || !Turn(p, _cells[Index(p)], o)) return;
+        Revision++;
+        RebuildAround([p]);
+    }
+
+    /// <summary>Records <paramref name="o"/> for the cell without remeshing; false when nothing changed.</summary>
+    bool Turn(Vector3I p, ushort block, Orientation o)
+    {
+        if (block == BlockPalette.Air || o == Orientation.Default || !_palette.IsTurnable(block)) return _turned.Remove(p);
+        if (_turned.TryGetValue(p, out var old) && old == o) return false;
+        _turned[p] = o;
+        return true;
+    }
+
     /// <summary>Copies every cell, in <c>(z * GridSize + y) * GridSize + x</c> order, into <paramref name="buffer"/>
     /// (GridSize³ long), for work done off the main thread on a snapshot.</summary>
     public void CopyCellsTo(ushort[] buffer) => _cells.CopyTo(buffer, 0);
@@ -238,16 +267,21 @@ public abstract partial class BlockGrid : Node3D
     {
         if (!InGrid(p)) return;
         _cells[Index(p)] = block;
+        _turned.Remove(p);
         TrackPower(p, block);
         Revision++;
     }
 
     /// <summary>Sets a grid block and remeshes the affected chunks. Returns false outside the grid, or for an object
     /// block, which belongs in <see cref="AddObject"/>.</summary>
-    public bool Set(Vector3I p, ushort block)
+    public bool Set(Vector3I p, ushort block) => Set(p, block, Orientation.Default);
+
+    /// <summary>As <see cref="Set(Vector3I, ushort)"/>, turned by <paramref name="o"/> if the block is turnable.</summary>
+    public bool Set(Vector3I p, ushort block, Orientation o)
     {
         if (!InGrid(p) || (block != BlockPalette.Air && _palette.IsObject(block))) return false;
         _cells[Index(p)] = block;
+        Turn(p, block, o);
         Revision++;
         UpdateLight(p, block);
         TrackPower(p, block);
@@ -278,6 +312,7 @@ public abstract partial class BlockGrid : Node3D
         {
             if (!InGrid(p) || (block != BlockPalette.Air && _palette.IsObject(block)) || _cells[Index(p)] == block) continue;
             _cells[Index(p)] = block;
+            _turned.Remove(p);
             UpdateLight(p, block);
             TrackPower(p, block);
         }
@@ -466,6 +501,41 @@ public abstract partial class BlockGrid : Node3D
         [.. _objects.Values.OrderBy(o => o.Id).Select(o => new PlacedObject(_palette.BlockIdOf(o.Block), o.Origin, o.Orientation.Index, o.DoorState.Open))];
 
     /// <summary>
+    /// Restores saved turns onto the grid blocks already imported. A turn on a cell that is empty, outside the grid or
+    /// holds a block that can't be turned (the itemset changed) is dropped: the block stays, facing the default way.
+    /// Only the chunks around turned cells are remeshed again.
+    /// </summary>
+    /// <returns>How many saved turns were dropped.</returns>
+    public int ImportTurned(IReadOnlyList<TurnedCell> saved)
+    {
+        int dropped = 0;
+        var turned = new List<(Vector3I, Orientation)>();
+        foreach (var t in saved)
+        {
+            var p = t.Cell.ToGodot();
+            if (!Orientation.IsValidIndex(t.Orientation) || !InGrid(p) || !_palette.IsTurnable(_cells[Index(p)])) dropped++;
+            else turned.Add((p, Orientation.FromIndex(t.Orientation)));
+        }
+        SetTurns(turned);
+        return dropped;
+    }
+
+    /// <summary>Turns many grid blocks with one remesh of the chunks around them (a launch, a load).</summary>
+    public void SetTurns(IReadOnlyCollection<(Vector3I Cell, Orientation Turn)> turns)
+    {
+        var changed = new List<Vector3I>();
+        foreach (var (p, o) in turns)
+            if (InGrid(p) && Turn(p, _cells[Index(p)], o)) changed.Add(p);
+        if (changed.Count == 0) return;
+        Revision++;
+        RebuildAround(changed);
+    }
+
+    /// <summary>The turned cells for a save.</summary>
+    public List<TurnedCell> ExportTurned() =>
+        [.. _turned.OrderBy(t => t.Key.Z).ThenBy(t => t.Key.Y).ThenBy(t => t.Key.X).Select(t => new TurnedCell(t.Key.ToInt3(), t.Value.Index))];
+
+    /// <summary>
     /// Places saved objects after <see cref="Import"/>. Objects whose block this palette lacks (or now treats as a
     /// single-cell grid block), that would reach outside this grid, or that overlap what is already there are dropped;
     /// the return value counts them, to be reported like lost cells.
@@ -526,6 +596,7 @@ public abstract partial class BlockGrid : Node3D
                 : _palette.IndexOfBlockId(savedPalette[i]) is { } index && !_palette.IsObject(index) ? index : BlockPalette.Air;
 
         Array.Clear(_cells);
+        _turned.Clear();
         int lost = 0;
         for (int z = 0; z < savedSize; z++)
         for (int y = 0; y < savedSize; y++)

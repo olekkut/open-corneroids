@@ -48,8 +48,13 @@ public static class WorldSaveFormat
     /// Files without a suit (creative worlds) keep the older versions.
     /// </summary>
     public const ushort SuitVersion = 4;
+    /// <summary>
+    /// Version 4 plus <see cref="WorldSnapshot.Turned"/> and <see cref="ShipSnapshot.Turned"/>: a version 4 reader would
+    /// load every turned console, station and cannon facing the default way, and save it so.
+    /// </summary>
+    public const ushort TurnedVersion = 5;
     /// <summary>The newest version this build reads and writes.</summary>
-    public const ushort CurrentVersion = SuitVersion;
+    public const ushort CurrentVersion = TurnedVersion;
     /// <summary>Largest accepted edge length; 1024³ cells is already 2 GiB in memory.</summary>
     public const int MaxSize = 1024;
     /// <summary>Metadata is small (names, palette, inventory); the cap stops a hostile length from allocating gigabytes.</summary>
@@ -118,7 +123,8 @@ public static class WorldSaveFormat
     public static ushort VersionFor(WorldSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        return snapshot.Suit is not null ? SuitVersion
+        return snapshot.Turned is { Count: > 0 } || snapshot.Ships is { } ships && ships.Any(s => s.Turned is { Count: > 0 }) ? TurnedVersion
+            : snapshot.Suit is not null ? SuitVersion
             : snapshot.Ships is { Count: > 0 } ? ShipsVersion
             : snapshot.Objects is { Count: > 0 } ? ObjectsVersion
             : BaseVersion;
@@ -272,7 +278,30 @@ public static class WorldSaveFormat
         if (s.Suit is { } suit && (!double.IsFinite(suit.Health) || !double.IsFinite(suit.Power) || suit.Equipment is null || suit.Buffs is null
             || suit.Buffs.Any(b => b is null || !double.IsFinite(b.SecondsLeft))))
             return "the suit state is incomplete or has a non-finite number";
-        return ObjectsProblem(s.Objects, s.Size, "object", "world", "the world") ?? ShipsProblem(s, checkShipCells);
+        return ObjectsProblem(s.Objects, s.Size, "object", "world", "the world") ?? ShipsProblem(s, checkShipCells) ?? AllTurnedProblem(s);
+    }
+
+    /// <summary>Checked after the ships, so a missing ship list or a bad ship size is reported as that.</summary>
+    static string? AllTurnedProblem(WorldSnapshot s)
+    {
+        if (TurnedProblem(s.Turned, s.Size, "the world") is { } turned) return turned;
+        for (int i = 0; i < s.Ships.Count; i++)
+            if (TurnedProblem(s.Ships[i].Turned, s.Ships[i].Size, $"ship {i}") is { } shipTurned) return shipTurned;
+        return null;
+    }
+
+    static string? TurnedProblem(IReadOnlyList<TurnedCell>? turned, int size, string where)
+    {
+        if (turned is null) return $"{where}'s turned-block list is missing";
+        foreach (var t in turned)
+        {
+            if (t is null) return $"{where} has a null turned block";
+            if (!Orientation.IsValidIndex(t.Orientation) || t.Orientation == 0)
+                return $"{where} has a turned block with orientation {t.Orientation}, outside 1..{Orientation.Count - 1}";
+            if (t.Cell.X < 0 || t.Cell.Y < 0 || t.Cell.Z < 0 || t.Cell.X >= size || t.Cell.Y >= size || t.Cell.Z >= size)
+                return $"{where} has a turned block at {t.Cell}, outside its {size}-cell grid";
+        }
+        return null;
     }
 
     /// <param name="what">"the palette" or "ship 3's palette", for the whole-palette messages.</param>
@@ -590,6 +619,9 @@ public static class WorldSaveFormat
         // And the suit: a file without it starts a fresh one.
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public SuitDto? Suit { get; set; }
+        // And turned grid blocks, each [x, y, z, orientation]; left out when there are none.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int[]?[]? Turned { get; set; }
 
         public static MetadataDto From(WorldSnapshot s) => new()
         {
@@ -614,7 +646,16 @@ public static class WorldSaveFormat
             // Left out when there are none, so a world without ships is written exactly as older builds wrote it.
             Ships = s.Ships.Count == 0 ? null : [.. s.Ships.Select(ShipDto.From)],
             Suit = s.Suit is null ? null : SuitDto.From(s.Suit),
+            Turned = TurnedDto(s.Turned),
         };
+
+        public static int[]?[]? TurnedDto(IReadOnlyList<TurnedCell> turned) =>
+            turned.Count == 0 ? null : [.. turned.Select(t => new[] { t.Cell.X, t.Cell.Y, t.Cell.Z, t.Orientation })];
+
+        public static List<TurnedCell> TurnedCells(int[]?[]? turned, string field) =>
+            [.. (turned ?? []).Select((t, i) => t is [var x, var y, var z, var o]
+                ? new TurnedCell(new Int3(x, y, z), o)
+                : throw Damaged($"metadata field '{field}[{i}]' is not four integers"))];
 
         /// <summary>The snapshot without any cells (the world's and the ships' are decoded separately), plus each ship's
         /// still encoded cells, in ship order.</summary>
@@ -652,6 +693,7 @@ public static class WorldSaveFormat
                 Objects = PlacedObjects(Objects, "objects"),
                 Ships = [.. ships.Select((ship, i) => ship is null ? throw Damaged($"metadata field 'ships[{i}]' is null") : ship.ToSnapshot(i))],
                 Suit = Suit?.ToState(),
+                Turned = TurnedCells(Turned, "turned"),
             };
             return (snapshot, [.. ships.Select((ship, i) => ship!.Cells ?? throw Missing($"ships[{i}].cells"))]);
         }
@@ -687,6 +729,8 @@ public static class WorldSaveFormat
         public int[]? Palette { get; set; }
         public string? Cells { get; set; }
         public ObjectDto?[]? Objects { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int[]?[]? Turned { get; set; }
 
         public static ShipDto From(ShipSnapshot ship)
         {
@@ -701,6 +745,7 @@ public static class WorldSaveFormat
                 Palette = [.. ship.Palette],
                 Cells = Convert.ToBase64String(cells.GetBuffer(), 0, (int)cells.Length),
                 Objects = [.. ship.Objects.Select(ObjectDto.From)],
+                Turned = MetadataDto.TurnedDto(ship.Turned),
             };
         }
 
@@ -718,6 +763,7 @@ public static class WorldSaveFormat
                 [])
             {
                 Objects = MetadataDto.PlacedObjects(Objects, $"{field}.objects"),
+                Turned = MetadataDto.TurnedCells(Turned, $"{field}.turned"),
             };
         }
     }

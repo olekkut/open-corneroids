@@ -1,4 +1,5 @@
 using Godot;
+using Orientation = OpenCorneroids.Simulation.Shapes.Orientation;
 
 namespace OpenCorneroids.Game.World;
 
@@ -64,6 +65,23 @@ public static class ChunkMesher
         }
     }
 
+    /// <summary>
+    /// The face of a turned block that looks along <paramref name="normal"/>: the block's own face that the turn brings
+    /// there, keeping its texture (top, bottom or walls) and its texture's upright direction, carried round by the turn.
+    /// </summary>
+    static Face Turned(Vector3I normal, Orientation turn)
+    {
+        foreach (var own in Faces)
+        {
+            var n = turn.Apply(own.Normal.ToInt3()).ToGodot();
+            if (n != normal) continue;
+            var up = turn.Apply(own.Up.ToNumerics()).ToGodot();
+            // Right x Up = Normal, as for every face in Faces, so the winding stays front-facing.
+            return new Face(normal, up.Cross(normal), up, own.Uv);
+        }
+        throw new InvalidOperationException($"no face of a turned block looks along {normal}");
+    }
+
     public static ArrayMesh? Build(BlockGrid world, Vector3I origin, int size, Material opaque, Material cutout)
     {
         var palette = world.Palette;
@@ -79,8 +97,10 @@ public static class ChunkMesher
             bool isCutout = palette.IsCutout(block);
             bool active = !world.IsInactive(p);
             var center = new Vector3(p.X + 0.5f, p.Y + 0.5f, p.Z + 0.5f);
-            foreach (var face in Faces)
+            var turn = world.TurnOf(p);
+            foreach (var gridFace in Faces)
             {
+                var face = turn == Orientation.Default ? gridFace : Turned(gridFace.Normal, turn);
                 var next = p + face.Normal;
                 var neighbour = world.Get(next);
                 // Hidden behind an opaque block, between two panes of the same glass, or inside an opaque object model

@@ -51,6 +51,10 @@ public sealed record PlacedObject(int BlockId, Int3 Origin, int Orientation, flo
     }
 }
 
+/// <summary>A turned single-cell grid block: which way a console, crafting station or cannon in the cell faces.</summary>
+/// <param name="Orientation">An <see cref="Shapes.Orientation.Index"/>, 1..23 (0, the default, is never stored).</param>
+public sealed record TurnedCell(Int3 Cell, int Orientation);
+
 /// <summary>
 /// One ship: a cubic block grid of its own with a transform, so it can sit anywhere in the world at any angle. Cells and
 /// objects follow the same rules as the world's (<see cref="WorldSnapshot.Palette"/>, <see cref="WorldSnapshot.Cells"/>,
@@ -69,6 +73,9 @@ public sealed record ShipSnapshot(
 {
     /// <summary>The ship's multi-cell blocks, origins in ship-local cells.</summary>
     public IReadOnlyList<PlacedObject> Objects { get; init; } = [];
+
+    /// <summary>The ship's turned grid blocks, in ship-local cells. Optional in the file, like the world's.</summary>
+    public IReadOnlyList<TurnedCell> Turned { get; init; } = [];
 }
 
 /// <summary>Everything a save file holds, as plain data so the simulation can be rebuilt without Godot.</summary>
@@ -115,6 +122,12 @@ public sealed record WorldSnapshot(
     /// existed have none, and a loader then starts a fresh suit (full health and power, nothing worn).
     /// </summary>
     public SuitState? Suit { get; init; }
+
+    /// <summary>
+    /// Turned grid blocks of the static world (see <see cref="TurnedCell"/>). Optional in the file: saves written before
+    /// blocks could be turned have none, which is what they held.
+    /// </summary>
+    public IReadOnlyList<TurnedCell> Turned { get; init; } = [];
 
     /// <summary>Palette index and cell value of air.</summary>
     public const ushort Air = 0;

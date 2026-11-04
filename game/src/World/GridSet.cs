@@ -1,6 +1,7 @@
 using Godot;
 using OpenCorneroids.Simulation.Ships;
 using ShipLaunch = OpenCorneroids.Simulation.Ships.Launch;
+using Orientation = OpenCorneroids.Simulation.Shapes.Orientation;
 
 namespace OpenCorneroids.Game.World;
 
@@ -210,12 +211,15 @@ public sealed class GridSet
         // The whole door state goes along, not just how far open: a door still opening keeps opening and an open one
         // keeps its time before closing.
         var saved = objects.OrderBy(o => o.Id).Select(o => (o.Block, Origin: o.Origin.ToGodot() + shift, o.Orientation, o.DoorState)).ToList();
+        // Turned grid blocks keep their turn on the ship (clearing the world cells forgets it there).
+        var turns = cells.Select(c => (Cell: c.Cell + shift, Turn: world.TurnOf(c.Cell))).Where(t => t.Turn != Orientation.Default).ToList();
         world.ClearCells(cells.Select(c => c.Cell).ToList());
         foreach (var obj in objects) world.RemoveObject(obj);
 
         var ship = AddShip();
         ship.Position = -(Vector3)shift;
         ship.SetCells(cells.Select(c => (c.Cell + shift, c.Block)).ToList());
+        ship.SetTurns(turns);
         foreach (var (block, origin, orientation, door) in saved)
         {
             var added = ship.AddObject(block, origin.ToInt3(), orientation, door.Open);

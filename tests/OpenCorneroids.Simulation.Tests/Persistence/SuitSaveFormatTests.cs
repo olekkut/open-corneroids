@@ -25,7 +25,6 @@ public class SuitSaveFormatTests
     [Fact]
     public void A_suit_makes_the_newest_version_and_no_suit_keeps_the_old_one()
     {
-        Assert.Equal(WorldSaveFormat.SuitVersion, WorldSaveFormat.CurrentVersion);
         Assert.Equal(WorldSaveFormat.SuitVersion, Split(ToBytes(SmallWorld() with { Suit = Suit })).Version);
         Assert.Equal(WorldSaveFormat.ObjectsVersion, Split(ToBytes(SmallWorld())).Version);
         Assert.False(JsonNode.Parse(Split(ToBytes(SmallWorld())).Json)!.AsObject().ContainsKey("suit"));

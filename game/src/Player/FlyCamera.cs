@@ -324,14 +324,14 @@ public partial class FlyCamera : Camera3D
         _windows.OpenCrafting(station, title);
     }
 
-    /// <summary>R/T. Only multi-blocks turn (the chunk grid has no orientation), so with anything else selected the
-    /// key says so instead of claiming a turn nobody can see, and the hidden orientation can't surprise the next
-    /// multi-block's ghost.</summary>
+    /// <summary>R/T. Multi-blocks and turnable single blocks (see <see cref="BlockPalette.IsTurnable"/>) turn; with a
+    /// plain cube or nothing selected the key says so instead of claiming a turn nobody can see.</summary>
     void Turn(Func<Orientation, Orientation> turn)
     {
-        if (!_grids.Palette.IsObject(_mode.SelectedBlock))
+        var selected = _mode.SelectedBlock;
+        if (!_grids.Palette.IsObject(selected) && !_grids.Palette.IsTurnable(selected))
         {
-            _hud.Flash("Only multi-blocks can be turned");
+            _hud.Flash(selected == BlockPalette.Air ? "Nothing selected to turn" : $"{_grids.Palette.Item(selected).Name} looks the same any way round");
             return;
         }
         var orientation = turn(_mode.Orientation);
@@ -403,6 +403,7 @@ public partial class FlyCamera : Camera3D
         PinnedAim = null;
         _hasTarget = false;
         _highlight.Visible = _ghostFootprint.Visible = _ghostModel.Visible = false;
+        if (_facing is not null) _facing.Visible = false;
         _seat = seat;
         _hud.SelectionVisible = false;
         (_mouseDelta, _mouseRate) = (Vector2.Zero, Vector3.Zero);
@@ -672,7 +673,7 @@ public partial class FlyCamera : Camera3D
         CountFrame(delta);
 
         var p = GlobalPosition;
-        bool turnable = _grids.Palette.IsObject(_mode.SelectedBlock);
+        bool turnable = _grids.Palette.IsObject(_mode.SelectedBlock) || _grids.Palette.IsTurnable(_mode.SelectedBlock);
         _hud.SetStatus($"FPS {_fps}   position {p.X:0},{p.Y:0},{p.Z:0}" + _mode.Status +
                        (turnable ? $"   orientation {_mode.Orientation.Describe()}" : "") +
                        (_hasTarget ? $"   looking at {_grids.Palette.Item(_target.Grid.BlockOf(_target)).Name}{ShipNote(_target.Grid)}" : ""));
@@ -777,6 +778,7 @@ public partial class FlyCamera : Camera3D
     {
         var plan = _hasTarget && !WindowOpen ? _mode.PlanObject(GlobalPosition, _aim) : null;
         _ghostFootprint.Visible = _ghostModel.Visible = plan is not null;
+        ShowFacing(plan);
         if (plan is not { } p) return;
         // Built in the grid's local cells, then carried into the world by the grid's transform (a turned ship turns it).
         var frame = p.Grid.GlobalTransform;
@@ -796,6 +798,62 @@ public partial class FlyCamera : Camera3D
         _ghostModel.GlobalTransform = frame * new Transform3D(Basis.Identity.Scaled(scale), p.Origin.ToGodot() + center - center * scale);
         _ghostFootprint.MaterialOverride = p.Placeable ? _ghostWireOk : _ghostWireBad;
         _ghostModel.MaterialOverride = _ghostModelMaterials[p.Placeable ? 1 : 0, _grids.Palette.IsCutout(p.Block) ? 1 : 0];
+    }
+
+    /// <summary>
+    /// The facing arrow of the placement preview, as the original draws one: from the middle of the block to be placed,
+    /// along its up axis (where a cannon fires, where a console's top faces). Shown for multi-blocks and for single
+    /// blocks that can be turned; plain cubes get none.
+    /// </summary>
+    void ShowFacing(ObjectPlan? plan)
+    {
+        _facing ??= FacingArrow();
+        Transform3D? at = null;
+        if (plan is { } p)
+        {
+            var center = p.Shape.ModelBox(p.Origin, p.Orientation).Center.ToGodot();
+            at = p.Grid.GlobalTransform * new Transform3D(TurnBasis(p.Orientation), center);
+        }
+        else if (_hasTarget && !WindowOpen && _aim.Hit != _aim.Before && _grids.Palette.IsTurnable(_mode.SelectedBlock))
+        {
+            var center = (Vector3)_aim.Before + new Vector3(0.5f, 0.5f, 0.5f);
+            at = _aim.Grid.GlobalTransform * new Transform3D(TurnBasis(_mode.Orientation), center);
+        }
+        _facing.Visible = at is not null;
+        if (at is { } transform) _facing.GlobalTransform = transform;
+    }
+
+    static Basis TurnBasis(Orientation o) => new(
+        o.Apply(System.Numerics.Vector3.UnitX).ToGodot(),
+        o.Apply(System.Numerics.Vector3.UnitY).ToGodot(),
+        o.Apply(System.Numerics.Vector3.UnitZ).ToGodot());
+
+    MeshInstance3D? _facing;
+
+    /// <summary>A red shaft with a white head along +Y, drawn over everything so it shows through the ghost.</summary>
+    MeshInstance3D FacingArrow()
+    {
+        static StandardMaterial3D Paint(Color c) => new()
+        {
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+            AlbedoColor = c,
+            NoDepthTest = true,
+            RenderPriority = 10,
+        };
+        var mesh = new ArrayMesh();
+        var shaft = new CylinderMesh { TopRadius = 0.06f, BottomRadius = 0.06f, Height = 1.1f, RadialSegments = 8 };
+        var head = new CylinderMesh { TopRadius = 0f, BottomRadius = 0.2f, Height = 0.4f, RadialSegments = 12 };
+        var st = new SurfaceTool();
+        st.AppendFrom(shaft, 0, new Transform3D(Basis.Identity, new Vector3(0, 0.55f, 0)));
+        st.SetMaterial(Paint(new Color(0.95f, 0.15f, 0.1f)));
+        st.Commit(mesh);
+        st = new SurfaceTool();
+        st.AppendFrom(head, 0, new Transform3D(Basis.Identity, new Vector3(0, 1.3f, 0)));
+        st.SetMaterial(Paint(Colors.White));
+        st.Commit(mesh);
+        var arrow = new MeshInstance3D { Mesh = mesh, TopLevel = true, Visible = false, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        AddChild(arrow);
+        return arrow;
     }
 
     static StandardMaterial3D GhostMaterial(Color color) => new()

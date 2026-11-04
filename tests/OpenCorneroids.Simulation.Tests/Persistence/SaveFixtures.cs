@@ -71,6 +71,7 @@ static class SaveFixtures
         Assert.Equal(expected.Creative, actual.Creative);
         Assert.Equal(expected.TexturePacks, actual.TexturePacks);
         Assert.Equal(expected.Objects, actual.Objects);
+        Assert.Equal(expected.Turned, actual.Turned);
         Assert.Equal(expected.Ships.Count, actual.Ships.Count);
         for (int i = 0; i < expected.Ships.Count; i++) AssertSameShip(expected.Ships[i], actual.Ships[i]);
         Assert.Equal(expected.Suit is null, actual.Suit is null);
@@ -106,6 +107,7 @@ static class SaveFixtures
         Assert.Equal(expected.Palette, actual.Palette);
         Assert.True(expected.Cells.AsSpan().SequenceEqual(actual.Cells), "ship cells differ");
         Assert.Equal(expected.Objects, actual.Objects);
+        Assert.Equal(expected.Turned, actual.Turned);
     }
 
     // ---- raw container pieces, for building damaged files by hand ----

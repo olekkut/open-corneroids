@@ -85,6 +85,12 @@ Tunable, and marked so in code.
 - **Ship guns** fire along their long axis (local +Y, turned with the block) from `barrelLength` beyond the model's
   centre, each on its own `reload`. Until console button binding exists, the pilot's primary button fires all of a
   ship's guns.
+- **Turning single blocks:** a single-cell block can be turned when its top or bottom texture differs from its walls,
+  or it is a gun; plain cubes can't (they would look the same). The turn is kept per cell beside the block grid, saved
+  with the world and its ships (format version 5 only when there are any), carried along by a launch, and dropped
+  when the cell changes. A turned block's faces show the textures the turn brings round, kept upright with it. The
+  preview draws an arrow along the block's up axis, like the original's placement arrows. Single-cell guns fire along
+  that axis too.
 - **Held item:** the selected tool or weapon is drawn in the view, made from its icon pushed out `modelDepth` pixels.
 - **Inventory:** the 8-slot hotbar plus four backpack rows of eight (40 slots). Older saves (36 slots) load unchanged;
   their ninth hotbar slot becomes the first backpack slot.

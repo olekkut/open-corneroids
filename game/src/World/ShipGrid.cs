@@ -243,6 +243,7 @@ public partial class ShipGrid : BlockGrid
             AngularVelocity.ToNumerics(), GridSize, palette, cells)
         {
             Objects = ExportObjects(),
+            Turned = ExportTurned(),
         };
     }
 

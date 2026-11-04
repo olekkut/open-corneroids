@@ -35,8 +35,11 @@ public partial class Projectiles : Node3D
     readonly BlockDamage<(BlockGrid Grid, Vector3I Cell, ushort Block, WorldObject? Object)> _damage = new();
     readonly Dictionary<int, (Mesh Mesh, Material Material)> _looks = new();
     readonly Dictionary<int, Mesh> _sparkMeshes = new();
-    readonly Dictionary<WorldObject, Trigger> _gunTriggers = new();
-    readonly Dictionary<ShipGrid, (int Revision, List<(WorldObject Obj, GunComponent Gun, ProjectileDef Def)> Guns)> _shipGuns = new();
+    /// <summary>A gun on a ship: a multi-block (<see cref="Obj"/>) or a single-cell grid block at <see cref="Cell"/>.</summary>
+    readonly record struct Gun(WorldObject? Obj, Vector3I Cell, GunComponent Data, ProjectileDef Def);
+
+    readonly Dictionary<(ShipGrid Ship, WorldObject? Obj, Vector3I Cell), Trigger> _gunTriggers = new();
+    readonly Dictionary<ShipGrid, (int Revision, List<Gun> Guns)> _shipGuns = new();
     double _sinceTidy;
 
     /// <summary>Raised when a shot breaks a block, with the block's name, for the HUD log.</summary>
@@ -66,7 +69,8 @@ public partial class Projectiles : Node3D
 
     /// <summary>
     /// Fires every gun on <paramref name="ship"/> that has reloaded: along the gun's long axis (its local +Y, turned
-    /// by its orientation), from the end of its barrel. Returns how many fired.
+    /// by its orientation), from the end of its barrel. Multi-block guns and single-cell ones (turned grid blocks, such
+    /// as the vanilla Anti-Personnel Cannon) alike. Returns how many fired.
     /// </summary>
     public int FireGuns(ShipGrid ship, double now)
     {
@@ -74,21 +78,26 @@ public partial class Projectiles : Node3D
         // The guns are looked up again only after the ship was edited, not every frame the button is held.
         if (!_shipGuns.TryGetValue(ship, out var cached) || cached.Revision != ship.Revision)
         {
-            var guns = new List<(WorldObject, GunComponent, ProjectileDef)>();
+            var guns = new List<Gun>();
             foreach (var o in ship.Objects)
                 if (ship.Palette.Item(o.Block).Get<GunComponent>() is { } g && _itemset.Projectiles.TryGetValue(g.ProjectileId, out var d))
-                    guns.Add((o, g, d));
+                    guns.Add(new Gun(o, o.Origin.ToGodot(), g, d));
+            foreach (var (cell, block) in ship.Blocks())
+                if (ship.Palette.Item(block).Get<GunComponent>() is { } g && _itemset.Projectiles.TryGetValue(g.ProjectileId, out var d))
+                    guns.Add(new Gun(null, cell, g, d));
             _shipGuns[ship] = cached = (ship.Revision, guns);
         }
-        foreach (var (obj, gun, def) in cached.Guns)
+        foreach (var gun in cached.Guns)
         {
-            if (!_gunTriggers.TryGetValue(obj, out var trigger)) _gunTriggers[obj] = trigger = new Trigger();
-            if (!trigger.TryFire(now, gun.ReloadMs)) continue;
-            var local = obj.Orientation.Apply(Num.Vector3.UnitY).ToGodot();
-            var box = obj.ModelBox;
-            var muzzle = ship.ToGlobal(box.GetCenter() + local * gun.BarrelLength);
+            var key = (ship, gun.Obj, gun.Cell);
+            if (!_gunTriggers.TryGetValue(key, out var trigger)) _gunTriggers[key] = trigger = new Trigger();
+            if (!trigger.TryFire(now, gun.Data.ReloadMs)) continue;
+            var turn = gun.Obj?.Orientation ?? ship.TurnOf(gun.Cell);
+            var local = turn.Apply(Num.Vector3.UnitY).ToGodot();
+            var center = gun.Obj?.ModelBox.GetCenter() ?? (Vector3)gun.Cell + new Vector3(0.5f, 0.5f, 0.5f);
+            var muzzle = ship.ToGlobal(center + local * gun.Data.BarrelLength);
             var direction = ship.GlobalBasis * local;
-            Fire(def, muzzle, direction, ship.PointVelocity(muzzle));
+            Fire(gun.Def, muzzle, direction, ship.PointVelocity(muzzle));
             fired++;
         }
         return fired;
@@ -116,12 +125,15 @@ public partial class Projectiles : Node3D
             _sinceTidy = 0;
             _damage.ForgetWhere(k => !IsInstanceValid(k.Grid) || !_grids.Contains(k.Grid) ||
                                      (k.Object is { } o ? !k.Grid.Objects.Contains(o) : k.Grid.Get(k.Cell) != k.Block));
-            foreach (var gun in _gunTriggers.Keys.Where(o => !IsAlive(o)).ToList()) _gunTriggers.Remove(gun);
+            foreach (var gun in _gunTriggers.Keys.Where(k => !IsAlive(k)).ToList()) _gunTriggers.Remove(gun);
             foreach (var ship in _shipGuns.Keys.Where(s => !IsInstanceValid(s) || !_grids.Contains(s)).ToList()) _shipGuns.Remove(ship);
         }
     }
 
-    bool IsAlive(WorldObject obj) => _grids.Ships.Any(s => s.Objects.Contains(obj));
+    bool IsAlive((ShipGrid Ship, WorldObject? Obj, Vector3I Cell) gun) =>
+        IsInstanceValid(gun.Ship) && _grids.Contains(gun.Ship) &&
+        (gun.Obj is { } o ? gun.Ship.Objects.Contains(o)
+                          : gun.Ship.Get(gun.Cell) is var b && b != BlockPalette.Air && gun.Ship.Palette.Item(b).Get<GunComponent>() is not null);
 
     /// <summary>Moves a shot through one frame; false when it hit something and is spent.</summary>
     bool Step(Shot shot, float dt)

@@ -96,7 +96,11 @@ Multi-block blocks (doors, thrusters, guns, power blocks, big windows) are place
 aimed face shows a ghost of it: a wire box for its footprint and its textured model, see-through and tinted green when it
 fits and red when it is blocked (outside the world, overlapping blocks or another multi-block's footprint, or in your body).
 Rock in front of the ghost hides it, as it would the placed block.
-R spins it a quarter turn about its up axis and T points its up axis the next way; the HUD shows the orientation. With a single-cell block selected R and T do nothing (the grid has no orientation) and say so.
+R spins it a quarter turn about its up axis and T points its up axis the next way; the HUD shows the orientation.
+Single-cell blocks whose facing matters turn the same way: consoles, crafting stations, torches, cables, containers,
+cameras and the single-cell Anti-Personnel Cannon (anything whose top or bottom differs from its sides, and every gun).
+A red and white arrow in the preview shows the way the block's top faces, which is where a gun fires. Plain cubes
+(rock, armor, windows) look the same any way round, so R and T say so instead.
 Only the model is solid: thruster exhaust and door travel space can be flown through but not built in. Aiming at any part
 of a multi-block's model targets all of it, and breaking it drops the item. Doors slide along their own up axis and close
 again after their time; a door never closes on the player (it stays open and says so). Door speed is read as cells per

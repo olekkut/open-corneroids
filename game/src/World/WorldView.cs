@@ -97,11 +97,15 @@ public partial class WorldView : Node3D
         {
             // Objects whose block is gone, or that no longer fit this world, are dropped and counted like lost cells.
             LostCells = world.Import(saved.Palette, saved.Cells, saved.Size) + world.ImportObjects(saved.Objects);
+            if (world.ImportTurned(saved.Turned) is > 0 and var unturned)
+                GD.PushWarning($"{unturned} turned blocks of the world could not be turned again and face the default way");
             foreach (var savedShip in saved.Ships)
             {
                 var ship = Grids.AddShip(ShipGrid.SizeFor(savedShip.Size));
                 ship.RestoreMotion(savedShip);
                 LostCells += ship.Import(savedShip.Palette, savedShip.Cells, savedShip.Size) + ship.ImportObjects(savedShip.Objects);
+                if (ship.ImportTurned(savedShip.Turned) is > 0 and var shipUnturned)
+                    GD.PushWarning($"{shipUnturned} turned blocks of a ship could not be turned again and face the default way");
                 // Everything it had is gone (counted above): an empty ship is not kept.
                 if (ship.IsEmpty) Grids.RemoveShip(ship);
                 else GD.Print(FormattableString.Invariant(
@@ -252,6 +256,7 @@ public partial class WorldView : Node3D
             Creative = Creative,
             TexturePacks = Info.TexturePackIds,
             Objects = Voxels.ExportObjects(),
+            Turned = Voxels.ExportTurned(),
             Ships = [.. Grids.Ships.Where(s => !s.IsEmpty).Select(s => s.ToSnapshot())],
             Suit = Suit?.Save(),
         };

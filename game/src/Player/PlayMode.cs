@@ -124,7 +124,7 @@ public abstract class PlayMode
     protected bool TryPlace(Vector3 eye, Aim aim, ushort block, Func<bool> pay)
     {
         if (!Palette.IsObject(block))
-            return CanPlaceAt(eye, aim.Grid, aim.Before) && pay() && aim.Grid.Set(aim.Before, block);
+            return CanPlaceAt(eye, aim.Grid, aim.Before) && pay() && aim.Grid.Set(aim.Before, block, Orientation);
 
         if (PlanObject(eye, aim) is not { } plan) return false;
         if (plan.Problem is { } problem)
