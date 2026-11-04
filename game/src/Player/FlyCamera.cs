@@ -916,7 +916,12 @@ public partial class FlyCamera : Camera3D
         var plan = _hasTarget && !WindowOpen ? _mode.PlanObject(GlobalPosition, _aim) : null;
         _ghostFootprint.Visible = _ghostModel.Visible = plan is not null;
         ShowFacing(plan);
-        if (plan is not { } p) return;
+        if (plan is null)
+        {
+            ShowBlockGhost();
+            return;
+        }
+        var p = plan.Value;
         // Built in the grid's local cells, then carried into the world by the grid's transform (a turned ship turns it).
         var frame = p.Grid.GlobalTransform;
         var bounds = p.Shape.RotatedSize(p.Orientation).ToVector3().ToGodot();
@@ -991,6 +996,32 @@ public partial class FlyCamera : Camera3D
         var arrow = new MeshInstance3D { Mesh = mesh, TopLevel = true, Visible = false, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(arrow);
         return arrow;
+    }
+
+    /// <summary>
+    /// The preview of a single-cell block, as the original draws one: the block itself, see-through, in the empty cell in
+    /// front of the aimed face and turned the way it will be placed (green-tinted when it fits, red when it doesn't).
+    /// </summary>
+    void ShowBlockGhost()
+    {
+        var block = _mode.SelectedBlock;
+        if (!_hasTarget || WindowOpen || block == BlockPalette.Air || _grids.Palette.IsObject(block) || _aim.Hit == _aim.Before)
+            return;
+        var turn = _grids.Palette.IsTurnable(block) ? _mode.Orientation : Orientation.Default;
+        if (_ghostMeshFor != (block, turn))
+        {
+            _ghostModel.Mesh = ChunkMesher.SingleBlock(_grids.Palette, block, turn, _ghostModelMaterials[1, 0]);
+            _ghostMeshFor = (block, turn);
+        }
+        // A hair larger than the cell about its centre, so it does not z-fight with the faces around it.
+        const float grow = 1.02f;
+        var cell = (Vector3)_aim.Before;
+        var center = new Vector3(0.5f, 0.5f, 0.5f);
+        _ghostModel.GlobalTransform = _aim.Grid.GlobalTransform *
+                                      new Transform3D(Basis.Identity.Scaled(Vector3.One * grow), cell + center - center * grow);
+        bool fits = _mode.PlacementProblem(GlobalPosition, _aim.Grid, _aim.Before) is null;
+        _ghostModel.MaterialOverride = _ghostModelMaterials[fits ? 1 : 0, _grids.Palette.IsCutout(block) ? 1 : 0];
+        _ghostModel.Visible = true;
     }
 
     static StandardMaterial3D GhostMaterial(Color color) => new()

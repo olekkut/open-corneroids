@@ -82,6 +82,24 @@ public static class ChunkMesher
         throw new InvalidOperationException($"no face of a turned block looks along {normal}");
     }
 
+    /// <summary>
+    /// One grid block on its own, every face drawn, filling the cell from 0 to 1 and turned by <paramref name="turn"/>:
+    /// the placement preview of a single-cell block.
+    /// </summary>
+    public static ArrayMesh SingleBlock(BlockPalette palette, ushort block, Orientation turn, Material material)
+    {
+        var surface = new Surface();
+        var center = new Vector3(0.5f, 0.5f, 0.5f);
+        foreach (var gridFace in Faces)
+        {
+            var face = turn == Orientation.Default ? gridFace : Turned(gridFace.Normal, turn);
+            surface.AddQuad(center + (Vector3)face.Normal * 0.5f, face, palette.Uv(block, face.Uv));
+        }
+        var mesh = new ArrayMesh();
+        surface.AppendTo(mesh, material);
+        return mesh;
+    }
+
     public static ArrayMesh? Build(BlockGrid world, Vector3I origin, int size, Material opaque, Material cutout)
     {
         var palette = world.Palette;

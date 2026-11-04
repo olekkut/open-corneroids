@@ -47,6 +47,40 @@ Anything without a source is our own rule.
 - **[files]** Enemy models and textures: `scavenger`, `needle`, `mineralParasite`, `swarmEgg`; player model
   `astronaut`.
 
+### 1.6 "How To Play Corneroids - HD REDUX" (YouTube `_8CWw365hUU`, v1.0.5 with DarthNox's itemset)
+
+Watched through its narration and stills taken from it (stored outside the repository). **[footage]** unless noted.
+
+- **Menus.** Main menu: Singleplayer, Options, Exit game (1.2.0 adds Multiplayer). Options: Gameplay, Graphics,
+  Controls, Network, Sounds, Back. *Gameplay*: Draw target squares, View bobbing, Fixed camera when aboard, Show hints
+  (checkboxes), Gamma (slider, 0-100, maxed by default; the narrator suggests 3-5). *Graphics*: Resolution (list),
+  Fullscreen, V-Sync, Lighting (checkboxes), SSAO (list: High...), View distance (list: "Far, 150"...), Field of view
+  (slider, 90). Singleplayer: world list, Create new (Name, Author, Itemset list; Ok, Cancel), Remove selected, Back.
+  A new world shows a welcome window ("Welcome to Corneroids!", three special blocks explained, "You can reopen this
+  screen by pressing F1", Start!).
+- **HUD.** A white boot icon right of the hotbar shows the player is "connected" to an asteroid or ship and moves with
+  it. Asteroid markers show distance and mass; ships get an orange marker labelled "ship".
+- **Asteroids move** like ships; the bigger the asteroid, the rarer its minerals (the narrator: look for big ones).
+- **Inventory.** Character window: power sources and armor. The starting drill, crafting table and ore furnace sit in
+  endless slots on the right of the inventory; a trash can above them. Stacks of up to 64, some to 256.
+- **Flashlight** is on at the start; T toggles it.
+- **Mining.** Grey sparks when the drill can mine the block, yellow when it is too weak.
+- **Placing.** The preview shows the block itself with white corner marks, a red arrow with a white head along its up,
+  and a red line from its bottom to the object it will be attached to. Blocks can be placed in empty space: attached to
+  the nearest object, or, with no red line, as a new object floating on its own: that is how a ship is started. Left
+  click places; right click empties the hand ("so you can get a better view").
+- **Crafting.** E on a station; categories, then recipes with a mouse-over of what they need; items on the hotbar
+  can't be used; left click crafts one, right click half.
+- **Power.** F on a power block shows its network ("power balance of 40"). Cables carry power between touching blocks
+  and look grey when unpowered; powered blocks light up.
+- **Thrusters** blow out of their widest opening; R orients them.
+- **Consoles.** E sits you down (WASD stop working, you can only look); F on the console gives the binding tool, F
+  again opens the "Control block" window: coloured groups, each "= None" until a key is set, plus "Set camera" and
+  Back. Clicking a block with the tool cycles it through the colours; right click puts the tool away.
+- **Crashes** do no harm "at this moment": things bounce off in a random direction.
+- **Enemies.** A purple parasite eats asteroids and the player and chases you once shot; a spore spawner fires three
+  homing projectiles and dies.
+
 ## 2. Decisions (2026-11-04)
 
 - **Ship controls: both.** The original's console button binding, and our automatic flight assist, selectable.

@@ -155,6 +155,12 @@ public abstract class PlayMode
     /// check covers the whole 0.6 × 1.8 × 0.6 box, not just the eye cell, so a block can't be placed at the player's
     /// feet and leave them embedded. Each refusal says why, since a reserved cell looks like empty space.
     /// </summary>
+    /// <summary>Why a grid block can't go into <paramref name="cell"/>, or null if it can; the checks of
+    /// <see cref="CanPlaceAt"/> without a message, for the preview.</summary>
+    public string? PlacementProblem(Vector3 eye, BlockGrid grid, Vector3I cell) =>
+        grid.ReservedProblem(cell) ?? Grids.OverlapProblem(grid, [cell]) ??
+        (PlayerMotor.BodyOccupies(grid, eye, cell) ? "No room: you are in the way" : null);
+
     protected bool CanPlaceAt(Vector3 eye, BlockGrid grid, Vector3I cell)
     {
         if ((grid.ReservedProblem(cell) ?? Grids.OverlapProblem(grid, [cell])) is { } problem)

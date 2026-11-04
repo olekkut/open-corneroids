@@ -67,9 +67,17 @@ public sealed class SurvivalMode : PlayMode
     public override bool TryBoost(double delta)
     {
         if (_suit.TrySpend(Simulation.Physics.AstronautMotion.BoostPowerPerSecond * delta)) return true;
-        Hud.Flash("Not enough power to boost", warning: true);
+        // Said every couple of seconds while Shift stays down, not every frame.
+        double now = Time.GetTicksMsec() / 1000.0;
+        if (now - _boostWarned > 2)
+        {
+            Hud.Flash("Not enough power to boost", warning: true);
+            _boostWarned = now;
+        }
         return false;
     }
+
+    double _boostWarned = double.NegativeInfinity;
 
     /// <summary>Releasing the left button: a block in hand is placed, a consumable used (spec 1.1).</summary>
     public override void PrimaryReleased(Vector3 eye, Aim? aim)
