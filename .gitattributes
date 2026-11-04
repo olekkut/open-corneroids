@@ -1,2 +1,5 @@
 *.cmd text eol=crlf
 *.bat text eol=crlf
+
+# Bundled game data is kept byte for byte: the loader recognises vanilla installs by a checksum of their files.
+byoa/** -text
