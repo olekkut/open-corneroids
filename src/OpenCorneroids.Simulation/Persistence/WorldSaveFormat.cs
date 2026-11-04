@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using OpenCorneroids.Content.Itemsets;
+using OpenCorneroids.Simulation.Items;
 using OpenCorneroids.Simulation.Shapes;
 
 namespace OpenCorneroids.Simulation.Persistence;
@@ -42,8 +43,13 @@ public static class WorldSaveFormat
     /// Files without ships keep the older versions.
     /// </summary>
     public const ushort ShipsVersion = 3;
+    /// <summary>
+    /// Version 3 plus <see cref="WorldSnapshot.Suit"/>: a version 3 reader would drop the worn equipment, which are items.
+    /// Files without a suit (creative worlds) keep the older versions.
+    /// </summary>
+    public const ushort SuitVersion = 4;
     /// <summary>The newest version this build reads and writes.</summary>
-    public const ushort CurrentVersion = ShipsVersion;
+    public const ushort CurrentVersion = SuitVersion;
     /// <summary>Largest accepted edge length; 1024³ cells is already 2 GiB in memory.</summary>
     public const int MaxSize = 1024;
     /// <summary>Metadata is small (names, palette, inventory); the cap stops a hostile length from allocating gigabytes.</summary>
@@ -112,7 +118,8 @@ public static class WorldSaveFormat
     public static ushort VersionFor(WorldSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        return snapshot.Ships is { Count: > 0 } ? ShipsVersion
+        return snapshot.Suit is not null ? SuitVersion
+            : snapshot.Ships is { Count: > 0 } ? ShipsVersion
             : snapshot.Objects is { Count: > 0 } ? ObjectsVersion
             : BaseVersion;
     }
@@ -262,6 +269,9 @@ public static class WorldSaveFormat
         if (s.Inventory is null) return "the inventory is missing";
         if (s.TexturePacks is null) return "the texture pack list is missing";
         if (s.TexturePacks.Any(id => id is null)) return "a texture pack id is null";
+        if (s.Suit is { } suit && (!double.IsFinite(suit.Health) || !double.IsFinite(suit.Power) || suit.Equipment is null || suit.Buffs is null
+            || suit.Buffs.Any(b => b is null || !double.IsFinite(b.SecondsLeft))))
+            return "the suit state is incomplete or has a non-finite number";
         return ObjectsProblem(s.Objects, s.Size, "object", "world", "the world") ?? ShipsProblem(s, checkShipCells);
     }
 
@@ -577,6 +587,9 @@ public static class WorldSaveFormat
         // And ships, the same way: a file without them has none.
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ShipDto?[]? Ships { get; set; }
+        // And the suit: a file without it starts a fresh one.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public SuitDto? Suit { get; set; }
 
         public static MetadataDto From(WorldSnapshot s) => new()
         {
@@ -600,6 +613,7 @@ public static class WorldSaveFormat
             Objects = [.. s.Objects.Select(ObjectDto.From)],
             // Left out when there are none, so a world without ships is written exactly as older builds wrote it.
             Ships = s.Ships.Count == 0 ? null : [.. s.Ships.Select(ShipDto.From)],
+            Suit = s.Suit is null ? null : SuitDto.From(s.Suit),
         };
 
         /// <summary>The snapshot without any cells (the world's and the ships' are decoded separately), plus each ship's
@@ -637,6 +651,7 @@ public static class WorldSaveFormat
                 TexturePacks = [.. (TexturePacks ?? []).Select((id, i) => id ?? throw Damaged($"metadata field 'texturePacks[{i}]' is null"))],
                 Objects = PlacedObjects(Objects, "objects"),
                 Ships = [.. ships.Select((ship, i) => ship is null ? throw Damaged($"metadata field 'ships[{i}]' is null") : ship.ToSnapshot(i))],
+                Suit = Suit?.ToState(),
             };
             return (snapshot, [.. ships.Select((ship, i) => ship!.Cells ?? throw Missing($"ships[{i}].cells"))]);
         }
@@ -741,6 +756,41 @@ public static class WorldSaveFormat
             Orientation = o.Orientation,
             Open = o.Open,
         };
+    }
+
+    sealed class SuitDto
+    {
+        public double? Health { get; set; }
+        public double? Power { get; set; }
+        public StackDto?[]? Equipment { get; set; }
+        public BuffDto?[]? Buffs { get; set; }
+
+        public static SuitDto From(SuitState s) => new()
+        {
+            Health = s.Health,
+            Power = s.Power,
+            Equipment = [.. s.Equipment.Select(stack => stack is null ? null : new StackDto { ItemId = stack.ItemId, Quantity = stack.Quantity })],
+            Buffs = [.. s.Buffs.Select(b => new BuffDto { ItemId = b.ItemId, SecondsLeft = b.SecondsLeft, Armor = b.Armor, Power = b.Power })],
+        };
+
+        public SuitState ToState() => new(
+            Health ?? throw MetadataDto.Missing("suit.health"),
+            Power ?? throw MetadataDto.Missing("suit.power"),
+            [.. (Equipment ?? []).Select((slot, i) => slot is null ? null : new ItemStack(
+                slot.ItemId ?? throw MetadataDto.Missing($"suit.equipment[{i}].itemId"),
+                slot.Quantity ?? throw MetadataDto.Missing($"suit.equipment[{i}].quantity")))],
+            [.. (Buffs ?? []).Select((b, i) => b is null ? throw Damaged($"metadata field 'suit.buffs[{i}]' is null") : new SuitBuff(
+                b.ItemId ?? throw MetadataDto.Missing($"suit.buffs[{i}].itemId"),
+                b.SecondsLeft ?? throw MetadataDto.Missing($"suit.buffs[{i}].secondsLeft"),
+                b.Armor ?? 0, b.Power ?? 0))]);
+    }
+
+    sealed class BuffDto
+    {
+        public int? ItemId { get; set; }
+        public double? SecondsLeft { get; set; }
+        public int? Armor { get; set; }
+        public int? Power { get; set; }
     }
 
     sealed class StackDto

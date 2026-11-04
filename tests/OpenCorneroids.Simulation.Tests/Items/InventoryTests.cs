@@ -32,7 +32,7 @@ public class InventoryTests
     }
 
     [Fact]
-    public void Hotbar_is_nine_slots() => Assert.Equal(9, Inventory.HotbarSize);
+    public void Hotbar_is_eight_slots_like_the_original() => Assert.Equal(8, Inventory.HotbarSize);
 
     [Fact]
     public void Zero_slots_is_allowed_and_holds_nothing()

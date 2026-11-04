@@ -48,7 +48,6 @@ public class ShipSaveFormatTests
     public void Saves_with_ships_are_a_newer_version_and_saves_without_keep_the_old_one()
     {
         Assert.Equal(WorldSaveFormat.ShipsVersion, Split(ToBytes(WithShips())).Version);
-        Assert.Equal(WorldSaveFormat.ShipsVersion, WorldSaveFormat.CurrentVersion);
         Assert.Equal(WorldSaveFormat.ShipsVersion, Split(ToBytes(AllAir(2) with { Ships = [Ship()] })).Version);
         // No ships: the file is exactly what the previous version wrote, without even an empty "ships" member.
         Assert.Equal(WorldSaveFormat.ObjectsVersion, Split(ToBytes(SmallWorld())).Version);

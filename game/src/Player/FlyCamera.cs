@@ -215,7 +215,7 @@ public partial class FlyCamera : Camera3D
                         _mode.PrimaryPressed(_hasTarget ? _target : null);
                         break;
                     case MouseButton.Right:
-                        if (_hasTarget) _mode.Place(GlobalPosition, _aim);
+                        if (!_mode.UseSelected() && _hasTarget) _mode.Place(GlobalPosition, _aim);
                         break;
                     case MouseButton.WheelUp: _mode.Cycle(-1); break;
                     case MouseButton.WheelDown: _mode.Cycle(1); break;
@@ -625,7 +625,9 @@ public partial class FlyCamera : Camera3D
             Axis(GameInput.Back, GameInput.Forward));
         var basis = GlobalTransform.Basis;
         var thrust = basis.X * input.X + Vector3.Up * input.Y + basis.Z * input.Z;
-        GlobalPosition = Motor.Step(GlobalPosition, thrust, Held(GameInput.Boost), (float)delta, _grids);
+        // Boosting costs suit power in survival, and only while actually thrusting.
+        bool boost = Held(GameInput.Boost) && thrust != Vector3.Zero && _mode.TryBoost(delta);
+        GlobalPosition = Motor.Step(GlobalPosition, thrust, boost, (float)delta, _grids);
 
         // Doors move whatever the player does; one never moves into the player's body (see StepDoors), checked in
         // each grid's own cells.

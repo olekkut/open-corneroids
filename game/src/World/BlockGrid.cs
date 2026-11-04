@@ -129,6 +129,10 @@ public abstract partial class BlockGrid : Node3D
     /// <summary>The grid block at <paramref name="p"/>; objects are not in the grid, see <see cref="IsSolid"/>.</summary>
     public ushort Get(Vector3I p) => InGrid(p) ? _cells[Index(p)] : BlockPalette.Air;
 
+    /// <summary>Copies every cell, in <c>(z * GridSize + y) * GridSize + x</c> order, into <paramref name="buffer"/>
+    /// (GridSize³ long), for work done off the main thread on a snapshot.</summary>
+    public void CopyCellsTo(ushort[] buffer) => _cells.CopyTo(buffer, 0);
+
     /// <summary>A grid block or an object's model is there: collision, ray casts and mining stop here.</summary>
     public bool IsSolid(Vector3I p) => Get(p) != BlockPalette.Air || _solid.ContainsKey(p);
 

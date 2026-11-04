@@ -16,6 +16,11 @@ static class TestItems
     public const int Single = 12;    // maxStackSize 0 in the data, so 1 in practice
     public const int WeakDrill = 20; // power 2, stack 1
     public const int StrongDrill = 21; // power 5, stack 1
+    public const int Helmet = 30;    // helmet, armor 2, health 10, stack 1
+    public const int Battery = 31;   // power source, recharge 3, stack 1
+    public const int Potion = 40;    // instant, health 25, stack 16
+    public const int Overcharge = 41; // timed 20 s, power 10, stack 16
+    public const int ArmorBoost = 42; // timed 1 s, armor 10, stack 16
     public const int Unknown = 999;
 
     public static ItemsetDef Set(IReadOnlyList<BlueprintDef>? blueprints = null, IReadOnlyList<int>? defaultItems = null)
@@ -30,6 +35,11 @@ static class TestItems
             Item(Single, "ingredient", 0),
             Item(WeakDrill, "drill", 1, components: [new DrillComponent(2)]),
             Item(StrongDrill, "drill", 1, components: [new DrillComponent(5)]),
+            Item(Helmet, "wearable", 1, components: [new WearableComponent(WearableSlot.Helmet, 2, 10, 0)]),
+            Item(Battery, "wearable", 1, components: [new WearableComponent(WearableSlot.PowerSource, 0, 0, 3)]),
+            Item(Potion, "consumable", 16, components: [new ConsumableComponent(ConsumableKind.Instant, 0, 25, 0, 0, default)]),
+            Item(Overcharge, "consumable", 16, components: [new ConsumableComponent(ConsumableKind.TimedBuff, 0, 0, 10, 20000, default)]),
+            Item(ArmorBoost, "consumable", 16, components: [new ConsumableComponent(ConsumableKind.TimedBuff, 10, 0, 0, 1000, default)]),
         ];
         return new ItemsetDef
         {

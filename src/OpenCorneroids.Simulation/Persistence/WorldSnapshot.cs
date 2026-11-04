@@ -1,5 +1,6 @@
 using System.Numerics;
 using OpenCorneroids.Content.Itemsets;
+using OpenCorneroids.Simulation.Items;
 using OpenCorneroids.Simulation.Shapes;
 
 namespace OpenCorneroids.Simulation.Persistence;
@@ -108,6 +109,12 @@ public sealed record WorldSnapshot(
     /// in the file: saves written before ships existed have none.
     /// </summary>
     public IReadOnlyList<ShipSnapshot> Ships { get; init; } = [];
+
+    /// <summary>
+    /// The survival suit: health, power, equipment and running buffs. Optional in the file: saves written before suits
+    /// existed have none, and a loader then starts a fresh suit (full health and power, nothing worn).
+    /// </summary>
+    public SuitState? Suit { get; init; }
 
     /// <summary>Palette index and cell value of air.</summary>
     public const ushort Air = 0;

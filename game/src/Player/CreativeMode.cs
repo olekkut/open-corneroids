@@ -36,9 +36,10 @@ public sealed class CreativeMode : PlayMode
         return true;
     }
 
-    /// <summary>Number keys pick within the current page of nine.</summary>
+    /// <summary>Number keys pick within the current page (the hotbar's width).</summary>
     public override void Select(int slot)
     {
+        if (slot is < 0 or >= Hud.HotbarSlots) return;
         int page = _selected / Hud.HotbarSlots * Hud.HotbarSlots;
         if (page + slot < _blocks.Length) _selected = page + slot;
         ShowHotbar();

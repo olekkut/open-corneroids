@@ -14,23 +14,69 @@ namespace OpenCorneroids.Game.Player;
 public sealed class SurvivalMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · hold LMB drill · RMB place · R/T turn · " +
-        "wheel/1-9 select · F use station/door/console · I/Tab inventory · Esc mouse, Esc again menu";
+        "WASD move · Space/E up · Ctrl/Q down · Shift boost · N noclip · hold LMB drill · RMB place/use · " +
+        "R/T turn · wheel/1-8 select · F use station/door/console · I/Tab inventory · Esc mouse, Esc again menu";
 
     readonly Inventory _inventory;
     readonly ItemsetDef _itemset;
+    readonly Suit _suit;
+    bool _boostSpent;   // power ran out while boosting; no boost until it is back to BoostResume
     int _selected;
     BlockTarget? _drillTarget;
     double _drillTime;
     bool _drillBlocked;   // the target is fully drilled but its drop did not fit
 
-    public SurvivalMode(GridSet grids, Hud hud, Inventory inventory, ItemsetDef itemset) : base(grids, hud)
+    public SurvivalMode(GridSet grids, Hud hud, Inventory inventory, ItemsetDef itemset, Suit suit) : base(grids, hud)
     {
         _inventory = inventory;
         _itemset = itemset;
+        _suit = suit;
         _inventory.Changed += ShowHotbar;
+        _suit.Changed += ShowSuit;
         ShowHotbar();
+        ShowSuit();
     }
+
+    /// <summary>
+    /// RMB with a consumable selected uses it; with something wearable it is put on. Anything else (a block, a tool)
+    /// is left to placing.
+    /// </summary>
+    public override bool UseSelected()
+    {
+        if (_inventory.Slots[_selected] is not { } stack || !_itemset.ItemsById.TryGetValue(stack.ItemId, out var item)) return false;
+        if (item.Get<ConsumableComponent>() is not null)
+        {
+            if (_suit.TryConsume(_inventory, _selected) is { } refusal) Hud.Flash(refusal, warning: true);
+            else Hud.Flash($"Used {item.Name}");
+            return true;
+        }
+        if (item.Get<WearableComponent>() is not null)
+        {
+            if (_suit.TryEquip(_inventory, _selected)) Hud.Flash($"Wearing {item.Name}");
+            else Hud.Flash("No room to take off what you wear there", warning: true);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Power needed before boosting works again once it ran out, so the recharge can't make the boost
+    /// stutter on and off every other frame. Ours, tunable.</summary>
+    const double BoostResume = 20;
+
+    public override bool TryBoost(double delta)
+    {
+        if (_boostSpent)
+        {
+            if (_suit.Power < BoostResume) return false;
+            _boostSpent = false;
+        }
+        if (_suit.TrySpend(Suit.BoostPowerPerSecond * delta)) return true;
+        _boostSpent = true;
+        Hud.Flash("Out of power: no boost until it recharges", warning: true);
+        return false;
+    }
+
+    void ShowSuit() => Hud.ShowSuit(_suit.Health, _suit.MaxHealth, _suit.Power, _suit.MaxPower);
 
     public override bool HasInventory => true;
 
@@ -74,6 +120,7 @@ public sealed class SurvivalMode : PlayMode
     /// </summary>
     public override void Update(double delta, BlockTarget? target, bool drilling)
     {
+        _suit.Tick(delta);
         if (!drilling || target is not { } cell)
         {
             StopDrilling();

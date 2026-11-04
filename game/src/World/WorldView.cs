@@ -33,6 +33,8 @@ public partial class WorldView : Node3D
     public FlyCamera Player { get; private set; } = null!;
     /// <summary>The player's 36 slots. Exists in creative too (empty and unused) so callers never need a null check.</summary>
     public Inventory Inventory { get; private set; } = null!;
+    /// <summary>The survival suit; null in creative.</summary>
+    public Suit? Suit { get; private set; }
     public bool Creative => Info.Creative;
     /// <summary>Name, seed, rules and texture packs: what the save keeps besides the world itself.</summary>
     public WorldInfo Info { get; private set; } = null!;
@@ -112,8 +114,12 @@ public partial class WorldView : Node3D
         AddChild(hud);
         hud.Setup($"{info.Name}  -  {header.Name} by {header.Author}  [{loaded.View.PackId}]{(creative ? "  (creative)" : "")}", Icons);
         _hud = hud;
+        var markers = new SpaceMarkers { Name = "Markers" };
+        hud.AddChild(markers);
+        hud.MoveChild(markers, 0);   // under the rest of the HUD
+        markers.Setup(Grids);
 
-        Inventory = Inventory.ForItemset(itemset, 36);
+        Inventory = Inventory.ForItemset(itemset);
         PlayMode mode;
         GameWindows? windows = null;
         if (creative)
@@ -131,10 +137,20 @@ public partial class WorldView : Node3D
             {
                 RestoreInventory(saved.Inventory);
             }
-            mode = new SurvivalMode(Grids, hud, Inventory, itemset);
+            Suit = new Suit(itemset);
+            if (saved?.Suit is { } suitState && Suit.Restore(suitState) is { Count: > 0 } unworn)
+            {
+                // Equipment this itemset can't wear goes back to the inventory rather than vanishing.
+                long lost = unworn.Sum(stack => (long)Inventory.Add(stack.ItemId, stack.Quantity));
+                var note = $"{unworn.Count} worn items can't be worn with {header.Name} and were moved to the inventory" +
+                           (lost > 0 ? $"; {lost} did not fit and were lost" : "");
+                GD.PushWarning(note);
+                hud.Flash(note, warning: true, seconds: 6);
+            }
+            mode = new SurvivalMode(Grids, hud, Inventory, itemset, Suit);
             windows = new GameWindows { Name = "Windows" };
             AddChild(windows);
-            windows.Setup(Inventory, itemset, Icons);
+            windows.Setup(Inventory, Suit, itemset, Icons);
         }
         hud.SetControls(mode.Controls + "   F5 save");
 
@@ -154,6 +170,7 @@ public partial class WorldView : Node3D
         camera.ExitRequested += () => ExitRequested?.Invoke();
         camera.SaveRequested += () => Save();
         camera.MakeCurrent();
+        camera.AddChild(SpaceDust.Create());
         Player = camera;
         _eye = eye;
         return true;
@@ -228,6 +245,7 @@ public partial class WorldView : Node3D
             TexturePacks = Info.TexturePackIds,
             Objects = Voxels.ExportObjects(),
             Ships = [.. Grids.Ships.Where(s => !s.IsEmpty).Select(s => s.ToSnapshot())],
+            Suit = Suit?.Save(),
         };
     }
 

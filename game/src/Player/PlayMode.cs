@@ -53,7 +53,7 @@ public abstract class PlayMode
     /// <summary>Selects <paramref name="block"/> if this mode can (creative: always; survival: when a hotbar slot holds it).</summary>
     public abstract bool TrySelectBlock(ushort block);
 
-    /// <summary>Picks hotbar slot 0..8 (number keys 1-9).</summary>
+    /// <summary>Picks a hotbar slot from 0 (number keys from 1).</summary>
     public abstract void Select(int slot);
 
     /// <summary>Moves the selection by <paramref name="delta"/> slots (mouse wheel).</summary>
@@ -65,6 +65,15 @@ public abstract class PlayMode
     /// <summary>Called every frame. <paramref name="drilling"/> is true while the primary button is held in play
     /// (not while a window is open); <paramref name="target"/> is the aimed block or null.</summary>
     public virtual void Update(double delta, BlockTarget? target, bool drilling) { }
+
+    /// <summary>
+    /// The secondary button with an item selected that is used rather than placed (a consumable, something to wear).
+    /// Returns true when the press was handled, so it doesn't also try to place; called whether or not a block is aimed at.
+    /// </summary>
+    public virtual bool UseSelected() => false;
+
+    /// <summary>Whether boosting may go on for <paramref name="delta"/> more seconds; survival pays suit power for it.</summary>
+    public virtual bool TryBoost(double delta) => true;
 
     /// <summary>The secondary button: put the selected block against the aimed solid cell, starting in the empty cell
     /// in front of the aimed face, in the aimed grid.</summary>

@@ -43,7 +43,7 @@ public partial class InventoryPanel : PanelContainer
         column.AddChild(backpack);
 
         column.AddChild(new HSeparator());
-        column.AddChild(Hud.Text("Hotbar (1-9)", 14, new Color(0.6f, 0.75f, 1f)));
+        column.AddChild(Hud.Text($"Hotbar (1-{Inventory.HotbarSize})", 14, new Color(0.6f, 0.75f, 1f)));
         var hotbar = Grid();
         for (int i = 0; i < Math.Min(Inventory.HotbarSize, _all.Length); i++) hotbar.AddChild(_all[i] = NewSlot(i));
         column.AddChild(hotbar);
@@ -65,6 +65,9 @@ public partial class InventoryPanel : PanelContainer
         inventory.Changed += Refresh;
         Refresh();
     }
+
+    /// <summary>The slot whose stack is picked up, waiting for a second click; null when nothing is.</summary>
+    public int? PickedSlot => _picked;
 
     /// <summary>Forgets a half-finished move, e.g. when the window closes.</summary>
     public void CancelPick()

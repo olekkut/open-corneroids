@@ -23,6 +23,9 @@ public partial class ItemSlot : PanelContainer
     TextureRect _icon = null!;
     Label _badge = null!, _count = null!;
 
+    /// <summary>Dim text shown while the slot is empty, e.g. which equipment goes there.</summary>
+    public string Placeholder { get; set; } = "";
+
     /// <summary>Raised with the mouse button when the slot is clicked; slots that are only for display ignore clicks.</summary>
     public event Action<MouseButton>? Clicked;
 
@@ -62,7 +65,8 @@ public partial class ItemSlot : PanelContainer
     {
         var icon = item is null ? null : icons.Of(item);
         _icon.Texture = icon;
-        _badge.Text = item is not null && icon is null ? ItemIcons.Badge(item) : "";
+        _badge.Text = item is null ? Placeholder : icon is null ? ItemIcons.Badge(item) : "";
+        _badge.Modulate = new Color(1, 1, 1, item is null ? 0.35f : 1f);
         _count.Text = countText ?? (item is not null && count > 1 ? count.ToString() : "");
         TooltipText = item?.Name ?? "";
     }

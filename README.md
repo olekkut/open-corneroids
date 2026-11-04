@@ -68,13 +68,21 @@ Arguments after `--`:
 | `--quit-after-save` | Save the world started from the command line, then quit (no screenshot). Exit code 1 if nothing was saved. With `--frames`, the world runs that long first |
 | `--screenshot=<file.png>` | Save a screenshot after 240 frames (or `--frames`), then quit (without saving the world). Mouse and keyboard are ignored meanwhile, so stray input can't change the picture. The log has the frame rate measured over the run |
 
-The game starts in survival: you get the itemset's starting kit (`defaultItems`) in a 36-slot inventory whose
-first nine slots are the hotbar.
+The game starts in survival: you get the itemset's starting kit (`defaultItems`) in a 40-slot inventory whose
+first eight slots are the hotbar, as in the original.
+
+Your suit has **Health** and **Power** (the bars above the hotbar). Power recharges by itself (5 per second, more
+with a power source worn); boosting with Shift uses it. Armor and helmets, power sources and the like are worn in the
+**character** window beside the inventory, or put on with right click from the hotbar. Right click with a consumable
+(health potion, power overcharge, armor boost) uses it. Nothing hurts you yet; that comes with combat.
+
+Green markers show each asteroid's distance and mass, white ones each ship's. The log at the left keeps the last
+messages for a few seconds.
 
 Controls (survival): mouse look, WASD move, Space/E up, Ctrl/Q down, Shift boost, N noclip,
 hold left click to drill the targeted block (needs a drill strong enough for it; the bar under the crosshair shows
-progress), right click places the selected hotbar block, mouse wheel or 1–9 selects a hotbar slot,
-F uses the targeted crafting station, opens/closes the targeted door or uses a console (see Ships), I or Tab opens the inventory (click a stack, then click where it goes; put it on the red trash slot to throw it away,
+progress), right click places the selected hotbar block (or uses or wears the selected item), mouse wheel or 1–8 selects a hotbar slot,
+F uses the targeted crafting station, opens/closes the targeted door or uses a console (see Ships), I or Tab opens the inventory and character window (click a stack, then click where it goes, or onto its equipment slot to wear it; put it on the red trash slot to throw it away,
 click the trash to take the last thrown stack back; the next throw destroys it and saves don't keep it),
 Esc closes a window, frees the mouse, and again returns to the menu. Movement stops while a window is open.
 F5 saves the world.

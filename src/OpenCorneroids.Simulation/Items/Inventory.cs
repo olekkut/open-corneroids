@@ -15,8 +15,11 @@ namespace OpenCorneroids.Simulation.Items;
 /// </remarks>
 public sealed class Inventory
 {
-    /// <summary>Slots 0..8 are the hotbar; nine matches the number keys 1-9.</summary>
-    public const int HotbarSize = 9;
+    /// <summary>Slots 0..7 are the hotbar: eight, like the original's, on the number keys 1-8.</summary>
+    public const int HotbarSize = 8;
+
+    /// <summary>The survival inventory: the hotbar and four backpack rows of eight.</summary>
+    public const int DefaultSlotCount = 40;
 
     /// <summary>Stack limit for item ids the itemset does not define, so stray save data still loads somewhere.</summary>
     public const int UnknownItemMaxStack = 64;
@@ -41,7 +44,7 @@ public sealed class Inventory
     public event Action? Changed;
 
     /// <summary>Builds an inventory whose stack limits come from the itemset.</summary>
-    public static Inventory ForItemset(ItemsetDef set, int slotCount = 36)
+    public static Inventory ForItemset(ItemsetDef set, int slotCount = DefaultSlotCount)
     {
         ArgumentNullException.ThrowIfNull(set);
         return new Inventory(slotCount,

@@ -16,13 +16,14 @@ public partial class GameWindows : CanvasLayer
     Control _root = null!;
     InventoryPanel _inventory = null!;
     CraftingPanel _crafting = null!;
+    CharacterPanel _character = null!;
 
     public bool IsOpen => _root.Visible;
 
     /// <summary>The station whose blueprints are on screen, or null when only the inventory is open.</summary>
     public CraftingStation? OpenStation { get; private set; }
 
-    public void Setup(Inventory inventory, ItemsetDef itemset, ItemIcons icons)
+    public void Setup(Inventory inventory, Suit suit, ItemsetDef itemset, ItemIcons icons)
     {
         Layer = 2;   // above the HUD
         _root = new Control { Visible = false, MouseFilter = Control.MouseFilterEnum.Stop };
@@ -44,15 +45,21 @@ public partial class GameWindows : CanvasLayer
         _crafting = new CraftingPanel { Name = "Crafting", Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
         row.AddChild(_crafting);
         _crafting.Setup(inventory, itemset, icons);
+        // The character window shares the row with the inventory, not with a station: three panels would not fit
+        // the 1280-wide layout.
+        _character = new CharacterPanel { Name = "Character", SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
+        row.AddChild(_character);
         _inventory = new InventoryPanel { Name = "Inventory", SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
         row.AddChild(_inventory);
         _inventory.Setup(inventory, itemset, icons);
+        _character.Setup(suit, inventory, _inventory, itemset, icons);
     }
 
     public void OpenInventory()
     {
         OpenStation = null;
         _crafting.Visible = false;
+        _character.Visible = true;
         Reveal();
     }
 
@@ -62,6 +69,7 @@ public partial class GameWindows : CanvasLayer
         OpenStation = station;
         _crafting.ShowStation(station, title);
         _crafting.Visible = true;
+        _character.Visible = false;
         Reveal();
     }
 

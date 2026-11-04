@@ -73,6 +73,13 @@ static class SaveFixtures
         Assert.Equal(expected.Objects, actual.Objects);
         Assert.Equal(expected.Ships.Count, actual.Ships.Count);
         for (int i = 0; i < expected.Ships.Count; i++) AssertSameShip(expected.Ships[i], actual.Ships[i]);
+        Assert.Equal(expected.Suit is null, actual.Suit is null);
+        if (expected.Suit is { } suit)
+        {
+            Assert.Equal((suit.Health, suit.Power), (actual.Suit!.Health, actual.Suit.Power));
+            Assert.Equal(suit.Equipment, actual.Suit.Equipment);
+            Assert.Equal(suit.Buffs, actual.Suit.Buffs);
+        }
     }
 
     /// <summary>A small turned, moving ship with random cells over a palette that includes blockId 0, and objects.</summary>
