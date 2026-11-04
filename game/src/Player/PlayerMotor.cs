@@ -6,42 +6,34 @@ using Num = System.Numerics;
 namespace OpenCorneroids.Game.Player;
 
 /// <summary>
-/// Zero-g astronaut movement: thrusting changes velocity rather than setting it, so the player drifts the
-/// way a body in space should, with just enough damping that letting go of the keys brings you to rest.
-/// Plain C# rather than a Node so the camera stays in charge of input and a save system can read and
-/// restore <see cref="Velocity"/> and <see cref="Noclip"/> without touching the scene tree.
-/// All numbers are ours (tunable; original behaviour unknown).
+/// Zero-g astronaut movement, with the original's rules (see <see cref="AstronautMotion"/>): keys
+/// push at 5 m/s², the speed settles at 4 m/s (8 boosting), and with no key held the player coasts to a stop. The body is
+/// the original's sphere of radius 0.49, approximated here by the cube around it, with the eye at its centre. While the
+/// player rides a ship (<see cref="FlyCamera"/> boards them when they come close, as the original does), velocities are
+/// relative to that ship and it does not shove them. Plain C# rather than a Node so the camera stays in charge of input
+/// and a save can read and restore <see cref="Velocity"/> and <see cref="Noclip"/>.
 /// </summary>
 public sealed class PlayerMotor
 {
-    /// <summary>Thrust in m/s². Reaches cruise speed in about half a second: responsive, still floaty.</summary>
-    public const float Acceleration = 20f;
-    /// <summary>Applies to both thrust and top speed while Shift is held.</summary>
-    public const float BoostMultiplier = 3f;
-    /// <summary>Velocity decay per second when no thrust is given (and while slowing from boost speed).</summary>
-    public const float Damping = 1.5f;
-    public const float MaxSpeed = 12f;
     /// <summary>A long frame (loading hitch, window drag) is treated as several short ones' worth at most,
     /// so a stall cannot fling the player across the asteroid in one step.</summary>
     const float MaxStep = 0.1f;
 
-    /// <summary>Half the body size: 0.6 × 1.8 × 0.6, enough to fit through a one-block gap sideways and a
-    /// two-block gap upright.</summary>
-    public static readonly Num.Vector3 HalfExtents = new(0.3f, 0.9f, 0.3f);
-    /// <summary>The camera sits this far above the body centre, roughly where a helmet visor would be.</summary>
-    public const float EyeHeight = 0.7f;
+    /// <summary>The original's body is a sphere of radius 0.49; collision uses the cube that bounds it.</summary>
+    public const float BodyRadius = 0.49f;
+    public static readonly Num.Vector3 HalfExtents = new(BodyRadius, BodyRadius, BodyRadius);
+    /// <summary>The eye is at the body's centre.</summary>
+    public const float EyeHeight = 0f;
 
     bool _needsFreeSpot = true;
     bool _noclip;
 
-    /// <summary>The whole velocity, world space, m/s: the player's own plus <see cref="Drift"/>.</summary>
+    /// <summary>World space, m/s; relative to the ridden ship while riding one (see <see cref="Step"/>).</summary>
     public Vector3 Velocity { get; set; }
 
     /// <summary>
-    /// The part of <see cref="Velocity"/> that is momentum the player was given (stepping off a moving ship, or shoved by
-    /// one) rather than their own movement: the damping that brings the player's own movement to rest leaves it alone,
-    /// so it is really kept. Thrusting against it eats into it at the thrust's rate, and a wall takes away the part into
-    /// the wall. Ours, tunable.
+    /// Kept for saves written before boarding existed, which stored momentum taken from a ship here. The original
+    /// coasts every motion to a stop, so the motor no longer keeps any: it is always zero after a step.
     /// </summary>
     public Vector3 Drift { get; set; }
 
@@ -58,55 +50,19 @@ public sealed class PlayerMotor
     }
 
     /// <summary>Advances one frame and returns the new eye position.</summary>
-    /// <param name="thrust">Desired direction in world space (camera-relative already); any length, zero for none.</param>
+    /// <param name="input">The movement keys this frame, in world space (see <see cref="AstronautMotion.Input"/>).</param>
+    /// <param name="riding">The ship the player is riding, if any. It has already carried the player along this frame,
+    /// so it is treated as standing still: no shove, but its walls still stop the player.</param>
     /// <remarks>
     /// Collides with the static world first, then with each ship in its own local space, the move each grid allows
     /// being what the next one starts from. In a ship's space the body is the axis-aligned box that bounds it there
-    /// (<see cref="LocalBody"/>): exact while the ship is turned by whole quarter turns from the world (as launched),
-    /// slightly larger otherwise. Our approximation; one move is cut grid by grid, so a corner where a turned ship meets
-    /// rock can stop the player a little early.
+    /// (<see cref="LocalBody"/>).
     /// </remarks>
-    public Vector3 Step(Vector3 eye, Vector3 thrust, bool boost, float delta, GridSet grids)
+    public Vector3 Step(Vector3 eye, AstronautMotion.Input input, float delta, GridSet grids, ShipGrid? riding = null)
     {
         float dt = Mathf.Clamp(delta, 0f, MaxStep);
-        float cap = MaxSpeed * (boost ? BoostMultiplier : 1f);
-        float decay = Mathf.Exp(-Damping * dt);
-        bool thrusting = thrust.LengthSquared() > 1e-6f;
-        var drift = Drift;
-        // The player's own movement; the drift is added back for the move.
-        var velocity = Velocity - drift;
-        float before = velocity.Length();
-        float push = Acceleration * (boost ? BoostMultiplier : 1f) * dt;
-        if (thrusting)
-        {
-            // Thrusting against the drift spends the thrust on it first, so a player can always stop.
-            var direction = thrust.Normalized();
-            float against = -drift.Dot(direction);
-            if (against > 0)
-            {
-                float spent = Mathf.Min(against, push);
-                drift += direction * spent;
-                push -= spent;
-            }
-        }
-
-        // Speed left over from a boost bleeds off at the damping rate instead of snapping back the moment
-        // Shift is released, and thrust is added on top of that, so braking against the motion is faster
-        // than letting go.
-        if (!thrusting)
-            velocity *= decay;
-        else if (before > cap)
-            velocity *= Mathf.Max(cap, before * decay) / before;
-        float allowed = Mathf.Max(cap, velocity.Length());
-
-        if (thrusting)
-            velocity += thrust.Normalized() * push;
-
-        // Thrust may turn or slow the player but never push them past the cap (or past the bleeding boost speed).
-        float speed = velocity.Length();
-        if (speed > allowed)
-            velocity *= allowed / speed;
-        velocity += drift;
+        var velocity = ToGodot(AstronautMotion.Step(ToNumerics(Velocity), input, dt));
+        var drift = Vector3.Zero;
 
         var body = ToNumerics(eye) - new Num.Vector3(0, EyeHeight, 0);
         if (_noclip)
@@ -125,7 +81,7 @@ public sealed class PlayerMotor
             // A ship that moved into the player since the last frame pushes them out first (and along).
             var ships = grids.Ships;
             for (int i = 0; i < ships.Count; i++)
-                body = PushOut(ships[i], body, ref velocity, ref drift, grids);
+                if (ships[i] != riding) body = PushOut(ships[i], body, ref velocity, ref drift, grids);
 
             var start = body;
             var result = VoxelCollider.Move(body, HalfExtents, ToNumerics(velocity) * dt, worldSolid);
@@ -139,7 +95,7 @@ public sealed class PlayerMotor
         }
 
         Velocity = velocity;
-        Drift = drift.LengthSquared() < 1e-6f ? Vector3.Zero : drift;
+        Drift = Vector3.Zero;
         return new Vector3(body.X, body.Y + EyeHeight, body.Z);
     }
 
@@ -243,12 +199,33 @@ public sealed class PlayerMotor
     /// half extents of the axis-aligned box that bounds the turned body (|Rᵀ|·h). For the world grid, and any grid turned
     /// by whole quarter turns, that is the body itself.
     /// </summary>
-    static (Num.Vector3 Center, Num.Vector3 HalfExtents) LocalBody(BlockGrid grid, Vector3 bodyCenter)
+    static (Num.Vector3 Center, Num.Vector3 HalfExtents) LocalBody(BlockGrid grid, Vector3 bodyCenter) =>
+        // The body is the original's sphere, which no turn changes; its stand-in cube is taken in each grid's own axes
+        // rather than bounded after turning, so it fits a one-wide corridor of a ship at any angle.
+        (ToNumerics(grid.ToLocal(bodyCenter)), HalfExtents);
+
+    /// <summary>Whether <paramref name="grid"/> has a solid cell within <paramref name="reach"/> of the eye (a cube of
+    /// that half size, as the body is): the boarding test.</summary>
+    public static bool Touches(BlockGrid grid, Vector3 eye, float reach)
     {
-        var basis = grid.GlobalTransform.Basis.Orthonormalized();
-        var h = ToGodot(HalfExtents);
-        var half = new Vector3(basis.X.Abs().Dot(h), basis.Y.Abs().Dot(h), basis.Z.Abs().Dot(h));
-        return (ToNumerics(grid.ToLocal(bodyCenter)), ToNumerics(half));
+        // A sphere of radius reach around the eye against each solid cell's cube.
+        var p = grid.ToLocal(eye);
+        var solid = grid.SolidQuery;
+        int x0 = Mathf.FloorToInt(p.X - reach), x1 = Mathf.FloorToInt(p.X + reach);
+        int y0 = Mathf.FloorToInt(p.Y - reach), y1 = Mathf.FloorToInt(p.Y + reach);
+        int z0 = Mathf.FloorToInt(p.Z - reach), z1 = Mathf.FloorToInt(p.Z + reach);
+        float r2 = reach * reach;
+        for (int z = z0; z <= z1; z++)
+        for (int y = y0; y <= y1; y++)
+        for (int x = x0; x <= x1; x++)
+        {
+            if (!solid(x, y, z)) continue;
+            float dx = Math.Max(0, Math.Max(x - p.X, p.X - (x + 1)));
+            float dy = Math.Max(0, Math.Max(y - p.Y, p.Y - (y + 1)));
+            float dz = Math.Max(0, Math.Max(z - p.Z, p.Z - (z + 1)));
+            if (dx * dx + dy * dy + dz * dz <= r2) return true;
+        }
+        return false;
     }
 
     /// <summary>Whether any cell of <paramref name="grid"/> that <paramref name="contains"/> accepts (grid-local cells)

@@ -76,6 +76,19 @@ public abstract class PlayMode
     /// <summary>The primary button went down while aiming at <paramref name="target"/> (null when aiming at nothing).</summary>
     public virtual void PrimaryPressed(BlockTarget? target) { }
 
+    /// <summary>The primary button came up; in survival that places a held block or uses a held consumable, as in the
+    /// original.</summary>
+    public virtual void PrimaryReleased(Vector3 eye, Aim? aim) { }
+
+    /// <summary>The secondary button went down. Creative places with it (ours); survival does nothing.</summary>
+    public virtual void SecondaryPressed(Vector3 eye, Aim? aim)
+    {
+        if (!UseSelected() && aim is { } a) Place(eye, a);
+    }
+
+    /// <summary>The secondary button came up; in survival that empties the hand, as in the original.</summary>
+    public virtual void SecondaryReleased() { }
+
     /// <summary>Called every frame. <paramref name="drilling"/> is true while the primary button is held in play
     /// (not while a window is open); <paramref name="target"/> is the aimed block or null.</summary>
     public virtual void Update(double delta, BlockTarget? target, bool drilling) { }

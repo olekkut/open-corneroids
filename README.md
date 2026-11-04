@@ -52,7 +52,7 @@ Arguments after `--`:
 | `--select=<itemId>` | Select the hotbar slot holding that item (survival), e.g. a weapon for a firing test |
 | `--open-doors` | Open every door once the world is up, and keep doors from closing by themselves; a door that would open into the player stays shut (warning in the console); for screenshots |
 | `--demo-ship` | In a new world, build a small ship near the spawn, at the nearest spot with 40 cells of open space in front of it (−Z, where it faces), from the itemset's own blocks, attached to nothing: a hull of the first plain opaque block, the first console in its top front, the strongest power supply on top and two thrusters on each face (exhaust outwards; on the top and bottom on opposite diagonals, so it can pitch and roll both ways), skipping what the itemset lacks. Hull blocks don't conduct power, so the weakest non-supplying single-cell power block (a cable) replaces the hull on the shortest paths from the power block to the console and every thruster. The camera moves to look at it |
-| `--launch` | Press F on a console of the static world: the `--demo-ship` console, or else the one nearest the camera, launching its structure as a ship |
+| `--launch` | Press E on a console of the static world: the `--demo-ship` console, or else the one nearest the camera, launching its structure as a ship |
 | `--turn-ship=<degrees>` | Turn every ship about the world's up axis through its centre of mass (after `--launch`), to check that aiming, the ghost and building follow a ship's own axes |
 | `--place-on-ship=<itemId>` | Select that block (survival: given one) and place it on the first face of a ship, seen from the camera, where it fits, by the normal rules |
 | `--preview-ship=<itemId>` | As `--place-on-ship`, but only aim there, so the highlight and the ghost show on the ship; for screenshots |
@@ -84,19 +84,31 @@ nothing). While piloting, the left button fires every gun on the ship.
 Green markers show each asteroid's distance and mass, white ones each ship's. The log at the left keeps the last
 messages for a few seconds.
 
-Controls (survival): mouse look (free in every direction, as in the original: there is no fixed up), WASD move, Space up and Ctrl down (along your own up), Q/E roll, L level the view again, Shift boost, N noclip,
-hold left click to drill the targeted block (needs a drill strong enough for it; the bar under the crosshair shows
-progress), right click places the selected hotbar block (or uses or wears the selected item), mouse wheel or 1–8 selects a hotbar slot,
-F uses the targeted crafting station, opens/closes the targeted door or uses a console (see Ships), I or Tab opens the inventory and character window (click a stack, then click where it goes, or onto its equipment slot to wear it; put it on the red trash slot to throw it away,
-click the trash to take the last thrown stack back; the next throw destroys it and saves don't keep it),
-Esc closes a window, frees the mouse, and again returns to the menu. Movement stops while a window is open.
-F5 saves the world.
+Controls (survival) follow the original's defaults:
+
+- **Looking:** the mouse turns you freely in every direction (there is no fixed up); Z/X roll; L levels the view again
+  (ours).
+- **Moving:** WASD, Space up and Ctrl down along your own up. Each key pushes at 5 m/s² and you cruise at 4 m/s; Shift
+  boosts along the view at 10 m/s² up to 8 m/s for 20 suit power a second. Let go and you coast to a stop. N is noclip
+  (ours).
+- **Hands:** the left button acts with what you hold. A drill drills and a weapon fires while it is held down; a block
+  is placed and a consumable used (or a wearable put on) when you let go. Letting go of the right button empties your
+  hand. 1–8 or the wheel pick a hotbar slot; R or the middle button turns the block you are about to place.
+- **Blocks:** E uses the block you look at (a console's seat, a crafting station, a door); F edits it (console
+  binding, still to come). T switches the flashlight.
+- **Windows:** C (or I) opens the inventory and character window (click a stack, then click where it goes, or onto
+  its equipment slot to wear it; put it on the red trash slot to throw it away, click the trash to take the last
+  thrown stack back; the next throw destroys it and saves don't keep it). Esc closes a window, frees the mouse, and
+  again returns to the menu. Movement stops while a window is open. F5 saves the world.
+- **Ships:** come within about a metre of a ship's blocks and you are aboard: you move along with it, turning with it,
+  until you are about 2.5 m clear of it again.
 
 Multi-block blocks (doors, thrusters, guns, power blocks, big windows) are placed whole. While one is selected, the
 aimed face shows a ghost of it: a wire box for its footprint and its textured model, see-through and tinted green when it
 fits and red when it is blocked (outside the world, overlapping blocks or another multi-block's footprint, or in your body).
 Rock in front of the ghost hides it, as it would the placed block.
-R spins it a quarter turn about its up axis and T points its up axis the next way; the HUD shows the orientation.
+R or the middle mouse button turns it: its top points to the next of the six directions, and after all six the spin
+moves on, so all 24 orientations come round; the HUD shows the orientation.
 Single-cell blocks whose facing matters turn the same way: consoles, crafting stations, torches, cables, containers,
 cameras and the single-cell Anti-Personnel Cannon (anything whose top or bottom differs from its sides, and every gun).
 A red and white arrow in the preview shows the way the block's top faces, which is where a gun fires. Plain cubes
@@ -110,7 +122,7 @@ second and time as milliseconds open (ours; original behaviour unknown).
 
 A ship (our rules; original behaviour unknown) is the structure attached to a ship console (any block with a console component, the Standard console block in
 vanilla): every block face-connected to it, multi-blocks included, except asteroid rock and minerals, where it stops.
-F on a console that is part of the static world **launches** it: the structure leaves the world and becomes a ship with
+E on a console that is part of the static world **launches** it: the structure leaves the world and becomes a ship with
 its own block grid, at the same world position and world-aligned at first, and the HUD says how many blocks it has and
 its mass (the sum of the blocks' `mass`; a multi-block counts its item's mass once). A console with nothing attached, or
 a structure over 48 cells along any axis (or over 20 000 cells), is refused with a message, and so is a
@@ -125,14 +137,14 @@ it).
 
 ### Flying
 
-F on a ship's console sits the player down at it (Esc or F again stands up). The camera sits just above the console
+E on a ship's console sits the player down at it (Esc or E again stands up, aboard the ship). The camera sits just above the console
 (or, when the ship has a block right there, behind it, so an enclosed cockpit does not look out through its own roof),
 looking along its forward: a console block has no orientation, so its forward is the ship's −Z (the front of the demo
 ship); a console that is a multi-block faces its own turned −Z. Controls while seated:
 
 - W/S forward/back, A/D strafe, Space/Ctrl up/down, along the console's axes; Shift asks for twice the speed
-- mouse (or the arrow keys) pitches and yaws, Q/E roll (instead of moving up and down)
-- Z toggles the inertial dampeners, V switches between the seat and a chase camera behind the ship
+- mouse (or the arrow keys) pitches and yaws, Z/X roll
+- G toggles the inertial dampeners, V switches between the seat and a chase camera behind the ship
 - the HUD shows the position of the centre of mass, speed, heading (compass degrees, 0 along the world's −Z, counting up
   to the right), pitch and roll, the turn rates about the console's axes (°/s; pitch up, yaw right and roll right are
   positive), mass, power supply/demand and the worst network's satisfaction, how many thrusters fire, the dampeners and

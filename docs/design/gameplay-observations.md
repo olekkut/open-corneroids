@@ -57,6 +57,14 @@ Anything without a source is our own rule.
 - **Order:** suit stats and HUD/navigation first, then weapons and combat, single-block rotation, console binding,
   crafting categories, remaining block types, menus and options, then enemies, sound and multiplayer.
 
+## 2a. Rules matched to the original
+
+Where the original's behaviour is known, it replaces the guesses below. Done so far (2026-11-04): controls and
+movement (spec 1.1–1.2). The boost costs 20 power a second, not 10; drilling needs a drill in hand; the left button
+acts with what is held and releasing the right one empties the hand; the player rides along with a ship they are near.
+Still to follow the spec: mining times and drops, crafting limits, health and armor, weapon recoil and spread, ship
+consoles and power networks, consumables, the starting kit.
+
 ## 3. Our rules where the footage is silent
 
 Tunable, and marked so in code.

@@ -4,7 +4,9 @@ namespace OpenCorneroids.Game;
 
 /// <summary>
 /// Input actions, registered in code. Physical keys, so WASD stays under the same fingers on Ukrainian,
-/// Polish or any other keyboard layout.
+/// Polish or any other keyboard layout. The defaults are the original's: Z/X roll, E use, F edit,
+/// C inventory, R orientate the block to place, T flashlight. Keys the original lacks are ours: L levels the view, N
+/// noclip, I opens the inventory too, F5 saves, G toggles the flight assistant's dampeners, V the pilot's view.
 /// </summary>
 public static class GameInput
 {
@@ -16,22 +18,24 @@ public static class GameInput
     public const string Down = "move_down";
     public const string Boost = "move_boost";
     public const string Noclip = "toggle_noclip";
-    /// <summary>Use the targeted block, e.g. open a crafting station. F, because Space/E/Ctrl/Q are movement.</summary>
+    /// <summary>Use the targeted block: a console's seat, a crafting station, a door. E, as in the original.</summary>
     public const string Interact = "interact";
+    /// <summary>Edit the targeted block (a console's bindings). F, as in the original.</summary>
+    public const string Edit = "edit_block";
+    /// <summary>The helmet's flashlight. T, as in the original.</summary>
+    public const string Flashlight = "toggle_flashlight";
     /// <summary>Opens and closes the inventory window.</summary>
     public const string Inventory = "toggle_inventory";
     /// <summary>Turns the astronaut back upright (keeping the heading): no roll, and a level view if within reach.</summary>
     public const string Level = "level_view";
 
-    /// <summary>Spins the multi-block about to be placed a quarter turn about its up axis.</summary>
+    /// <summary>Turns the block about to be placed to its next orientation (R, or the middle mouse button).</summary>
     public const string Spin = "turn_spin";
-    /// <summary>Points the up axis of the multi-block about to be placed to the next of the six directions.</summary>
-    public const string TurnUp = "turn_up";
     /// <summary>Saves the world (quicksave). F5, as in most PC games.</summary>
     public const string Save = "save_world";
 
-    // Piloting a ship. Forward, back and strafing reuse the move actions; up and down get their own actions because
-    // Q and E roll the ship instead.
+    // Piloting a ship with the flight assistant. Forward, back and strafing reuse the move actions; roll is shared
+    // with the astronaut (Z/X).
     /// <summary>Ship up along its own axis (Space).</summary>
     public const string ShipUp = "ship_up";
     /// <summary>Ship down along its own axis (Ctrl).</summary>
@@ -57,22 +61,23 @@ public static class GameInput
         Add(Up, Key.Space);
         Add(Down, Key.Ctrl);
         Add(Level, Key.L);
+        Add(Edit, Key.F);
+        Add(Flashlight, Key.T);
         Add(Boost, Key.Shift);
         Add(Noclip, Key.N);
-        Add(Interact, Key.F);
-        Add(Inventory, Key.I, Key.Tab);
+        Add(Interact, Key.E);
+        Add(Inventory, Key.C, Key.I);
         Add(Spin, Key.R);
-        Add(TurnUp, Key.T);
         Add(Save, Key.F5);
         Add(ShipUp, Key.Space);
         Add(ShipDown, Key.Ctrl);
-        Add(RollLeft, Key.Q);
-        Add(RollRight, Key.E);
+        Add(RollLeft, Key.Z);
+        Add(RollRight, Key.X);
         Add(PitchUp, Key.Up);
         Add(PitchDown, Key.Down);
         Add(YawLeft, Key.Left);
         Add(YawRight, Key.Right);
-        Add(Dampeners, Key.Z);
+        Add(Dampeners, Key.G);
         Add(PilotView, Key.V);
     }
 

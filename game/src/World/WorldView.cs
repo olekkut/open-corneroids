@@ -247,9 +247,9 @@ public partial class WorldView : Node3D
             var toShip = piloted.ToGlobal(piloted.Mass.CenterOfMass.ToGodot()) - eye;
             rotation = FlyCamera.LevelRotation(toShip.LengthSquared() > 0.01f ? toShip : -Player.GlobalTransform.Basis.Z);
         }
-        // Standing up from a ship gives its whole velocity as drift (see FlyCamera.StandUp), so a save made seated does too.
-        var drift = Player.PilotShip is null ? Player.Motor.Drift : velocity;
-        var player = new PlayerState(ToNumerics(eye), ToNumerics(velocity), rotation.X, rotation.Y) { Drift = ToNumerics(drift), Roll = rotation.Z };
+        // Velocity is the world one (aboard a ship, the ship's motion included); a load boards the ship again by proximity
+        // and takes the ship's motion back out, so the player is at rest on it.
+        var player = new PlayerState(ToNumerics(eye), ToNumerics(velocity), rotation.X, rotation.Y) { Roll = rotation.Z };
         IReadOnlyList<ItemStack?> slots = Creative ? [] : Inventory.Slots.ToArray();
         return new WorldSnapshot(Info.Name, DateTimeOffset.Now, Binding, Info.Seed, VoxelWorld.Size, palette, cells, player, slots)
         {

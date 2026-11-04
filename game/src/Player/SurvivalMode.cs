@@ -8,22 +8,22 @@ using OpenCorneroids.Simulation.Items;
 namespace OpenCorneroids.Game.Player;
 
 /// <summary>
-/// Survival rules on top of the Simulation library: blocks take time to drill and need a strong enough drill, what
-/// is mined goes into the inventory, and placing spends the selected hotbar stack. All numbers come from
+/// Survival rules on top of the Simulation library. The mouse works as in the original: the left
+/// button acts with whatever is in hand (a drill drills and a weapon fires while it is held; a block is placed and a
+/// consumable used when it is released), and letting go of the right button empties the hand. Mining numbers come from
 /// <see cref="Mining"/>; this class only turns them into held-button timing and messages.
 /// </summary>
 public sealed class SurvivalMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space up · Ctrl down · Q/E roll · L level · Shift boost · N noclip · hold LMB drill · RMB place/use · " +
-        "R/T turn · wheel/1-8 select · F use station/door/console · I/Tab inventory · Esc mouse, Esc again menu";
+        "WASD move · Space/Ctrl up/down · Z/X roll · Shift boost · LMB use what you hold · RMB empty hand · 1-8/wheel select · " +
+        "R/middle turn block · E use · F edit · C inventory · T light · L level · N noclip · Esc mouse, again menu";
 
     readonly Inventory _inventory;
     readonly ItemsetDef _itemset;
     readonly Suit _suit;
     readonly Dictionary<int, Trigger> _triggers = new();   // one reload per weapon
-    bool _boostSpent;   // power ran out while boosting; no boost until it is back to BoostResume
-    int _selected;
+    int _selected;   // hotbar slot in hand, or -1 for an empty hand
     BlockTarget? _drillTarget;
     double _drillTime;
     bool _drillBlocked;   // the target is fully drilled but its drop did not fit
@@ -39,13 +39,15 @@ public sealed class SurvivalMode : PlayMode
         ShowSuit();
     }
 
+    ItemStack? InHand => _selected >= 0 ? _inventory.Slots[_selected] : null;
+
     /// <summary>
-    /// RMB with a consumable selected uses it; with something wearable it is put on. Anything else (a block, a tool)
-    /// is left to placing.
+    /// A consumable in hand is used; something wearable is put on (ours: the original wears things only in the character
+    /// window). Anything else is not "used".
     /// </summary>
     public override bool UseSelected()
     {
-        if (_inventory.Slots[_selected] is not { } stack || !_itemset.ItemsById.TryGetValue(stack.ItemId, out var item)) return false;
+        if (InHand is not { } stack || !_itemset.ItemsById.TryGetValue(stack.ItemId, out var item)) return false;
         if (item.Get<ConsumableComponent>() is not null)
         {
             if (_suit.TryConsume(_inventory, _selected) is { } refusal) Hud.Flash(refusal, warning: true);
@@ -61,31 +63,48 @@ public sealed class SurvivalMode : PlayMode
         return false;
     }
 
-    /// <summary>Power needed before boosting works again once it ran out, so the recharge can't make the boost
-    /// stutter on and off every other frame. Ours, tunable.</summary>
-    const double BoostResume = 20;
-
+    /// <summary>The boost costs 20 suit power per second and needs this frame's share of it.</summary>
     public override bool TryBoost(double delta)
     {
-        if (_boostSpent)
-        {
-            if (_suit.Power < BoostResume) return false;
-            _boostSpent = false;
-        }
-        if (_suit.TrySpend(Suit.BoostPowerPerSecond * delta)) return true;
-        _boostSpent = true;
-        Hud.Flash("Out of power: no boost until it recharges", warning: true);
+        if (_suit.TrySpend(Simulation.Physics.AstronautMotion.BoostPowerPerSecond * delta)) return true;
+        Hud.Flash("Not enough power to boost", warning: true);
         return false;
     }
+
+    /// <summary>Releasing the left button: a block in hand is placed, a consumable used (spec 1.1).</summary>
+    public override void PrimaryReleased(Vector3 eye, Aim? aim)
+    {
+        if (InHand is not { } stack || !_itemset.ItemsById.TryGetValue(stack.ItemId, out var item)) return;
+        if (item.Block is not null)
+        {
+            if (aim is { } a) Place(eye, a);
+        }
+        else UseSelected();
+    }
+
+    /// <summary>The right button does nothing on its way down; see <see cref="SecondaryReleased"/>.</summary>
+    public override void SecondaryPressed(Vector3 eye, Aim? aim) { }
+
+    /// <summary>Releasing the right button empties the hand (spec 1.1).</summary>
+    public override void SecondaryReleased()
+    {
+        if (_selected < 0) return;
+        _selected = -1;
+        StopDrilling();
+        ShowHotbar();
+    }
+
+    /// <summary>The drill in hand, if any: mining needs one held, as in the original.</summary>
+    int HeldDrillPower => HeldItem?.Get<DrillComponent>()?.Power ?? 0;
 
     void ShowSuit() => Hud.ShowSuit(_suit.Health, _suit.MaxHealth, _suit.Power, _suit.MaxPower);
 
     public override bool HasInventory => true;
 
-    public override string Status => $"   drill power {Mining.DrillPower(_inventory, _itemset)}";
+    public override string Status => HeldDrillPower is > 0 and var power ? $"   drill power {power}" : "";
 
     public override ushort SelectedBlock =>
-        _inventory.Slots[_selected] is { } stack && Palette.IndexOf(stack.ItemId) is { } block ? block : BlockPalette.Air;
+        InHand is { } stack && Palette.IndexOf(stack.ItemId) is { } block ? block : BlockPalette.Air;
 
     public override bool TrySelectBlock(ushort block)
     {
@@ -106,14 +125,16 @@ public sealed class SurvivalMode : PlayMode
         ShowHotbar();
     }
 
+    /// <summary>The wheel steps through the slots and stops at the first and last (spec 1.1); from an empty hand it
+    /// takes the first slot.</summary>
     public override void Cycle(int delta)
     {
-        _selected = ((_selected + delta) % Inventory.HotbarSize + Inventory.HotbarSize) % Inventory.HotbarSize;
+        _selected = _selected < 0 ? 0 : Math.Clamp(_selected + delta, 0, Inventory.HotbarSize - 1);
         ShowHotbar();
     }
 
     public override ItemDef? HeldItem =>
-        _inventory.Slots[_selected] is { } stack && _itemset.ItemsById.TryGetValue(stack.ItemId, out var item) && item.Block is null ? item : null;
+        InHand is { } stack && _itemset.ItemsById.TryGetValue(stack.ItemId, out var item) && item.Block is null ? item : null;
 
     /// <summary>Raised when the held weapon fires, for the first-person kick.</summary>
     public event Action? Fired;
@@ -136,7 +157,8 @@ public sealed class SurvivalMode : PlayMode
             if (drilling) Shoot(held, weapon);
             return;
         }
-        if (!drilling || target is not { } cell)
+        int power = HeldDrillPower;
+        if (!drilling || power == 0 || target is not { } cell)
         {
             StopDrilling();
             return;
@@ -150,13 +172,10 @@ public sealed class SurvivalMode : PlayMode
 
         var item = Palette.Item(cell.Grid.BlockOf(cell));
         var block = item.Block!;
-        int power = Mining.DrillPower(_inventory, _itemset);
         if (!Mining.CanMine(power, block))
         {
             Hud.ShowProgress(null);
-            Hud.Flash(power == 0
-                ? $"You need a drill to mine {item.Name}"
-                : $"{item.Name} needs drill power {block.PowerToDrill} (your best drill: {power})", warning: true);
+            Hud.Flash($"{item.Name} needs drill power {block.PowerToDrill} (this drill: {power})", warning: true);
             return;
         }
 
@@ -203,9 +222,9 @@ public sealed class SurvivalMode : PlayMode
 
     public override void Place(Vector3 eye, Aim aim)
     {
-        if (_inventory.Slots[_selected] is not { } stack)
+        if (InHand is not { } stack)
         {
-            Hud.Flash("Nothing selected to place", warning: true);
+            Hud.Flash("Nothing in hand to place", warning: true);
             return;
         }
         if (!_itemset.ItemsById.TryGetValue(stack.ItemId, out var item) || item.Block is null)
@@ -248,8 +267,8 @@ public sealed class SurvivalMode : PlayMode
             var stack = _inventory.Slots[i];
             slots.Add(stack is not null && _itemset.ItemsById.TryGetValue(stack.ItemId, out var item) ? (item, stack.Quantity) : (null, 0));
         }
-        var selected = _inventory.Slots[_selected];
-        var caption = selected is null ? "Empty slot" : NameOf(selected.ItemId);
+        var selected = InHand;
+        var caption = _selected < 0 ? "Empty hand" : selected is null ? "Empty slot" : NameOf(selected.ItemId);
         Hud.ShowHotbar(slots, _selected, caption);
     }
 }

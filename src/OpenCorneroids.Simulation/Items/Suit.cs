@@ -22,8 +22,6 @@ public sealed class Suit
     public const int BaseMaxPower = 100;
     /// <summary>Power per second with nothing worn: the footage's "Power recharge: 5". Per second is ours.</summary>
     public const int BasePowerRecharge = 5;
-    /// <summary>Power per second while boosting. Ours, tunable.</summary>
-    public const double BoostPowerPerSecond = 10;
     public const int SlotCount = 7;
 
     readonly ItemsetDef itemset;

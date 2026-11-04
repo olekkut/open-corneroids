@@ -19,7 +19,8 @@ namespace OpenCorneroids.Game.Player;
 /// </summary>
 public partial class FlyCamera : Camera3D
 {
-    const float MouseSensitivity = 0.0025f;
+    /// <summary>Radians per pixel: the original's 0.01 times its default sensitivity 0.5.</summary>
+    const float MouseSensitivity = 0.005f;
     const float Reach = 8f;
 
     /// <summary>Exposed so a save system can persist velocity and noclip.</summary>
@@ -51,8 +52,24 @@ public partial class FlyCamera : Camera3D
     /// <summary>Turn rate a held key asks for, and the most the mouse may ask for, rad/s. Ours, tunable.</summary>
     public const float PilotTurnRate = 0.9f, MaxTurnRate = 1.8f;
 
-    /// <summary>How fast Q/E roll a standing (floating) astronaut, rad/s. Ours, tunable.</summary>
-    public const float WalkRollRate = 1.6f;
+    /// <summary>How fast Z/X roll the astronaut, rad/s.</summary>
+    public const float WalkRollRate = 2f;
+
+    /// <summary>The player boards a ship when its blocks come within this of the eye, and leaves it beyond
+    /// <see cref="LeaveReach"/>: 2.5 and 5 body radii.</summary>
+    public const float BoardReach = 2.5f * PlayerMotor.BodyRadius, LeaveReach = 5f * PlayerMotor.BodyRadius;
+
+    ShipGrid? _riding;
+    Transform3D _ridePose;      // the ridden ship's pose at the end of the last frame
+    Vector3 _rideSpeed;         // its motion where the player was then, given back if the ship vanishes
+    bool _secondaryHeld;
+    SpotLight3D? _flashlight;
+
+    /// <summary>The ship the player is aboard (moving with it), or null.</summary>
+    public ShipGrid? Riding => _riding;
+
+    /// <summary>The player's velocity in the world: their own plus, aboard a ship, the ship's motion where they are.</summary>
+    public Vector3 WorldVelocity => _riding is { } ship && IsInstanceValid(ship) ? Motor.Velocity + ship.PointVelocity(GlobalPosition) : Motor.Velocity;
     /// <summary>Time constant smoothing the mouse's turn request, seconds, so a mouse that reports only some frames
     /// still asks for a steady turn.</summary>
     const float MouseSmoothing = 0.08f;
@@ -208,8 +225,15 @@ public partial class FlyCamera : Camera3D
                 // The click that takes the mouse back is not also a mining click.
                 Input.MouseMode = Input.MouseModeEnum.Captured;
                 break;
+            // A release counts only after a press seen in play: the click that took the mouse back, or a press made in
+            // a window or the pilot's seat, does nothing when it comes up.
             case InputEventMouseButton { ButtonIndex: MouseButton.Left, Pressed: false }:
+                if (_primaryHeld) _mode.PrimaryReleased(GlobalPosition, _hasTarget ? _aim : null);
                 _primaryHeld = false;
+                break;
+            case InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: false }:
+                if (_secondaryHeld) _mode.SecondaryReleased();
+                _secondaryHeld = false;
                 break;
             case InputEventMouseButton { Pressed: true } button:
                 switch (button.ButtonIndex)
@@ -219,7 +243,11 @@ public partial class FlyCamera : Camera3D
                         _mode.PrimaryPressed(_hasTarget ? _target : null);
                         break;
                     case MouseButton.Right:
-                        if (!_mode.UseSelected() && _hasTarget) _mode.Place(GlobalPosition, _aim);
+                        _secondaryHeld = true;
+                        _mode.SecondaryPressed(GlobalPosition, _hasTarget ? _aim : null);
+                        break;
+                    case MouseButton.Middle:
+                        Turn(NextOrientation);
                         break;
                     case MouseButton.WheelUp: _mode.Cycle(-1); break;
                     case MouseButton.WheelDown: _mode.Cycle(1); break;
@@ -242,18 +270,20 @@ public partial class FlyCamera : Camera3D
                     OpenInventory();
                 else if (key.IsAction(GameInput.Interact))
                     Interact();
+                else if (key.IsAction(GameInput.Edit))
+                    EditBlock();
+                else if (key.IsAction(GameInput.Flashlight))
+                    ToggleFlashlight();
                 else if (key.IsAction(GameInput.Spin))
-                    Turn(o => o.NextSpin());
-                else if (key.IsAction(GameInput.TurnUp))
-                    Turn(o => o.NextUp());
-                else if (key.PhysicalKeycode is >= Key.Key1 and <= Key.Key9)
+                    Turn(NextOrientation);
+                else if (key.PhysicalKeycode is >= Key.Key1 and <= Key.Key8)
                     _mode.Select((int)(key.PhysicalKeycode - Key.Key1));
                 break;
         }
     }
 
-    /// <summary>Seated: the mouse steers (its motion is collected for <see cref="PilotControls"/>), F or Esc stands up,
-    /// Z toggles the dampeners and V the view. Building is off: the hands are on the controls.</summary>
+    /// <summary>Seated: the mouse steers (its motion is collected for <see cref="PilotControls"/>), E or Esc stands up,
+    /// G toggles the dampeners and V the view. Building is off: the hands are on the controls.</summary>
     void PilotInput(InputEvent @event)
     {
         bool captured = Input.MouseMode == Input.MouseModeEnum.Captured;
@@ -416,8 +446,9 @@ public partial class FlyCamera : Camera3D
         _hud.SelectionVisible = false;
         (_mouseDelta, _mouseRate) = (Vector2.Zero, Vector3.Zero);
         Motor.Velocity = Motor.Drift = Vector3.Zero;
-        _hud.SetControls("Piloting: W/S forward/back · A/D strafe · Space/Ctrl up/down · mouse or arrows pitch/yaw · Q/E roll · " +
-                         "Shift boost · Z dampeners · V view · F or Esc stand up   F5 save");
+        _riding = null;
+        _hud.SetControls("Piloting: W/S forward/back · A/D strafe · Space/Ctrl up/down · mouse or arrows pitch/yaw · Z/X roll · " +
+                         "Shift boost · G dampeners · V view · E or Esc stand up · LMB fire guns   F5 save");
         _hud.Flash(FormattableString.Invariant($"Piloting {ship.Name}: {ship.BlockCount} blocks, mass {ship.Mass.Mass:0.#}"), seconds: 3);
         FollowShip();
         return true;
@@ -434,23 +465,104 @@ public partial class FlyCamera : Camera3D
 
     /// <summary>
     /// Leaves the seat: the player stands at the nearest free spot beside the console (<see cref="StandingSpot"/>),
-    /// moving with the ship's velocity there, looking the way the camera did (without roll). That velocity is the
-    /// motor's <see cref="PlayerMotor.Drift"/>, which is not damped, so the player keeps drifting with the ship (until
-    /// they thrust against it or hit something) instead of being left behind within a second.
+    /// aboard the ship and at rest on it, so they move with it, looking the way the camera did.
     /// </summary>
     public void StandUp()
     {
-        if (_seat is null) return;
-        var (eye, velocity) = StandingSpot();
-        var forward = -GlobalTransform.Basis.Z;
+        if (_seat is not { } seat) return;
+        var (eye, _) = StandingSpot();
         _seat = null;
         _hud.SelectionVisible = true;
         GlobalPosition = eye;
         // Facing the way the seat did, roll and all: there is no "level" in space to snap back to (L levels on request).
         GlobalBasis = new Basis(GlobalBasis.GetRotationQuaternion());
-        Motor.Velocity = Motor.Drift = velocity;
+        Motor.Velocity = Motor.Drift = Vector3.Zero;
+        // A button held to fire the guns must not place or use anything when it comes up on foot.
+        _primaryHeld = _secondaryHeld = false;
+        _riding = seat.Ship;
+        RememberRide();
         _hud.SetControls(_mode.Controls + "   F5 save");
         _hud.Flash("Standing");
+    }
+
+    /// <summary>Moves the player with the ship they are aboard: where it went since last frame, turned with it, their own
+    /// velocity turned with it too.</summary>
+    void CarryWithShip()
+    {
+        if (_riding is not { } ship) return;
+        if (!IsInstanceValid(ship) || !_grids.Contains(ship))
+        {
+            Motor.Velocity += _rideSpeed;
+            _riding = null;
+            return;
+        }
+        // The ship's own move since last frame, applied to the player as they are now, so mouse look, levelling and
+        // recoil from between frames are kept.
+        var moved = ship.GlobalTransform * _ridePose.AffineInverse();
+        var carried = moved * GlobalTransform;
+        GlobalTransform = new Transform3D(carried.Basis.Orthonormalized(), carried.Origin);
+        Motor.Velocity = moved.Basis * Motor.Velocity;
+    }
+
+    /// <summary>
+    /// Boards a ship whose blocks come within <see cref="BoardReach"/>, leaves the one aboard once its blocks are further
+    /// than <see cref="LeaveReach"/>. Boarding takes the ship's motion out of the player's velocity,
+    /// leaving gives it back, so nothing jumps.
+    /// </summary>
+    void UpdateBoarding()
+    {
+        if (_riding is { } ship && !PlayerMotor.Touches(ship, GlobalPosition, LeaveReach))
+        {
+            Motor.Velocity += ship.PointVelocity(GlobalPosition);
+            _riding = null;
+        }
+        if (_riding is null)
+        {
+            var ships = _grids.Ships;
+            for (int i = 0; i < ships.Count; i++)
+            {
+                var (center, radius) = ships[i].WorldExtent;
+                if (GlobalPosition.DistanceSquaredTo(center) > (radius + BoardReach + 1) * (radius + BoardReach + 1)) continue;
+                if (!PlayerMotor.Touches(ships[i], GlobalPosition, BoardReach)) continue;
+                Motor.Velocity -= ships[i].PointVelocity(GlobalPosition);
+                _riding = ships[i];
+                break;
+            }
+        }
+        RememberRide();
+    }
+
+    void RememberRide()
+    {
+        if (_riding is not { } ship) return;
+        _ridePose = ship.GlobalTransform;
+        _rideSpeed = ship.PointVelocity(GlobalPosition);
+    }
+
+    /// <summary>R and the middle button: the block's top turns to the next of the six directions, and after all six the
+    /// spin moves on, so every press changes the facing and all 24 orientations come round (our order; the original's
+    /// is not known).</summary>
+    static Orientation NextOrientation(Orientation o) =>
+        o.NextUp().Up == Orientation.Default.Up ? o.NextUp().NextSpin() : o.NextUp();
+
+    /// <summary>F: edit the aimed block. Console button binding is the next milestone; until then F says so.</summary>
+    void EditBlock()
+    {
+        if (!_hasTarget) return;
+        var item = _grids.Palette.Item(_target.Grid.BlockOf(_target));
+        _hud.Flash(item.Get<ConsoleComponent>() is not null ? "Binding blocks to a console's buttons is not built yet" : $"{item.Name} has nothing to edit");
+    }
+
+    /// <summary>T: the helmet light, a spot along the view.</summary>
+    void ToggleFlashlight()
+    {
+        if (_flashlight is null)
+        {
+            _flashlight = new SpotLight3D { SpotRange = 24, SpotAngle = 28, LightEnergy = 2.2f, ShadowEnabled = false, Visible = false };
+            AddChild(_flashlight);
+        }
+        _flashlight.Visible = !_flashlight.Visible;
+        _hud.Flash(_flashlight.Visible ? "Flashlight on" : "Flashlight off");
     }
 
     /// <summary>Pitch and yaw (no roll) that look along <paramref name="forward"/>, as mouse look keeps them.</summary>
@@ -467,7 +579,7 @@ public partial class FlyCamera : Camera3D
     /// </summary>
     public (Vector3 Eye, Vector3 Velocity) StandingSpot()
     {
-        if (_seat is not { } seat) return (GlobalPosition, Motor.Velocity);
+        if (_seat is not { } seat) return (GlobalPosition, WorldVelocity);
         var ship = seat.Ship;
         var frame = ConsoleFrame(seat);
         var center = SeatCenter(seat);
@@ -617,7 +729,7 @@ public partial class FlyCamera : Camera3D
     /// <summary>A window opening mid-drill must not leave the drill running behind it.</summary>
     void StopActions()
     {
-        _primaryHeld = false;
+        _primaryHeld = _secondaryHeld = false;
         _mode.Update(0, null, drilling: false);
     }
 
@@ -640,7 +752,10 @@ public partial class FlyCamera : Camera3D
             return;
         }
 
-        // Movement keys are ignored while a window is open (the player drifts to a stop), so typing in a window
+        // Aboard a ship the player goes where it went this frame (ShipPhysics has already moved it), turning with it.
+        CarryWithShip();
+
+        // Movement keys are ignored while a window is open (the player coasts to a stop), so typing in a window
         // can never fly the player into something unseen.
         bool windowOpen = WindowOpen;
         var input = new Vector3(
@@ -649,7 +764,7 @@ public partial class FlyCamera : Camera3D
             Axis(GameInput.Back, GameInput.Forward));
         var basis = GlobalTransform.Basis;
         // Up and down are the astronaut's own, like everything else once the view can roll.
-        var thrust = basis.X * input.X + basis.Y * input.Y + basis.Z * input.Z;
+        var keys = basis.X * input.X + basis.Y * input.Y + basis.Z * input.Z;
         float roll = Axis(GameInput.RollLeft, GameInput.RollRight);
         if (roll != 0)
         {
@@ -657,9 +772,14 @@ public partial class FlyCamera : Camera3D
             RotateObjectLocal(Vector3.Back, roll * WalkRollRate * (float)delta);
             Orthonormalize();
         }
-        // Boosting costs suit power in survival, and only while actually thrusting.
-        bool boost = Held(GameInput.Boost) && thrust != Vector3.Zero && _mode.TryBoost(delta);
-        GlobalPosition = Motor.Step(GlobalPosition, thrust, boost, (float)delta, _grids);
+        // The boost pushes along the view even without W (spec 1.2) and costs suit power in survival. Unlike the
+        // original, a boost the suit can't pay for leaves plain W working.
+        bool boost = Held(GameInput.Boost) && _mode.TryBoost(delta);
+        var motion = new Simulation.Physics.AstronautMotion.Input(keys.ToNumerics(), (-basis.Z).ToNumerics(), Held(GameInput.Forward), boost);
+        // Board or leave first, so the step (and its 20 m/s limit) works in the frame the player is in.
+        UpdateBoarding();
+        GlobalPosition = Motor.Step(GlobalPosition, motion, (float)delta, _grids, _riding);
+        RememberRide();
 
         // Doors move whatever the player does; one never moves into the player's body (see StepDoors), checked in
         // each grid's own cells.
@@ -684,14 +804,14 @@ public partial class FlyCamera : Camera3D
 
         bool captured = Input.MouseMode == Input.MouseModeEnum.Captured;
         if (!captured) _primaryHeld = false;
-        _mode.View = (GlobalPosition, -GlobalTransform.Basis.Z, Motor.Velocity);
+        _mode.View = (GlobalPosition, -GlobalTransform.Basis.Z, WorldVelocity);
         _mode.Update(delta, _hasTarget ? _target : null, drilling: PrimaryDown && !windowOpen);
 
         CountFrame(delta);
 
         var p = GlobalPosition;
         bool turnable = _grids.Palette.IsObject(_mode.SelectedBlock) || _grids.Palette.IsTurnable(_mode.SelectedBlock);
-        _hud.SetStatus($"FPS {_fps}   position {p.X:0},{p.Y:0},{p.Z:0}" + _mode.Status +
+        _hud.SetStatus($"FPS {_fps}   position {p.X:0},{p.Y:0},{p.Z:0}" + (_riding is { } aboard ? $"   aboard {aboard.Name}" : "") + _mode.Status +
                        (turnable ? $"   orientation {_mode.Orientation.Describe()}" : "") +
                        (_hasTarget ? $"   looking at {_grids.Palette.Item(_target.Grid.BlockOf(_target)).Name}{ShipNote(_target.Grid)}" : ""));
     }
