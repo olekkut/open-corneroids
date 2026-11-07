@@ -42,6 +42,8 @@ public interface IDebugConsoleHost
     string SpawnDemoShip();
     string LaunchTargetedOrNearestShip();
     int ClearShips();
+    string ImportShip(string path);
+    string ExportShip(string? selector, string path);
     string? SaveWorld();
 }
 
@@ -80,6 +82,8 @@ public sealed class DebugConsole
         new("fixedcam", "fixedcam [on|off]", "Toggle or set fixed camera orientation when aboard a ship."),
         new("ships", "ships", "List active ships in the world with block count, mass, position and speed."),
         new("spawnship", "spawnship", "Build and launch a ready-to-fly demo ship near the player.", "demoship"),
+        new("importship", "importship <path.sbs>", "Import and spawn a Spacebox structure (.sbs) into the world.", "sbsimport", "import"),
+        new("exportship", "exportship [ship#|name] <path.sbs>", "Export a ship to a Spacebox structure file (.sbs).", "sbsexport", "export"),
         new("launch", "launch", "Launch the aimed structure (or nearest world console) as a ship."),
         new("clearships", "clearships", "Remove all floating ships from the world."),
         new("save", "save", "Save the world immediately."),
@@ -244,6 +248,12 @@ public sealed class DebugConsole
 
             case "spawnship" or "demoship":
                 return ([host.SpawnDemoShip()], false, false);
+
+            case "importship" or "sbsimport" or "import":
+                return RunImportShip(args, host);
+
+            case "exportship" or "sbsexport" or "export":
+                return RunExportShip(args, host);
 
             case "launch":
                 return ([host.LaunchTargetedOrNearestShip()], false, false);
@@ -608,6 +618,53 @@ public sealed class DebugConsole
                 $"  #{i + 1} {s.Name}: {s.BlockCount} blocks, mass {s.Mass:0.#}, pos ({s.Position.X:0.#}, {s.Position.Y:0.#}, {s.Position.Z:0.#}), speed {s.Speed:0.##} m/s"));
         }
         return (lines, false, false);
+    }
+
+    static (IReadOnlyList<string>, bool, bool) RunImportShip(List<string> args, IDebugConsoleHost host)
+    {
+        if (args.Count == 0)
+            return (["Usage: importship <path.sbs>"], true, false);
+
+        string path = string.Join(' ', args);
+        var message = host.ImportShip(path);
+        bool isError = message.StartsWith("Error", StringComparison.OrdinalIgnoreCase) ||
+                       message.StartsWith("File not found", StringComparison.OrdinalIgnoreCase) ||
+                       message.StartsWith("Could not", StringComparison.OrdinalIgnoreCase) ||
+                       message.StartsWith("Failed", StringComparison.OrdinalIgnoreCase);
+        return ([message], isError, false);
+    }
+
+    static (IReadOnlyList<string>, bool, bool) RunExportShip(List<string> args, IDebugConsoleHost host)
+    {
+        if (args.Count == 0)
+            return (["Usage: exportship [ship#|name] <path.sbs>"], true, false);
+
+        string? selector = null;
+        string path;
+        if (args.Count == 1)
+        {
+            path = args[0];
+        }
+        else
+        {
+            if (args[0].StartsWith('#') || int.TryParse(args[0], CultureInfo.InvariantCulture, out _))
+            {
+                selector = args[0];
+                path = string.Join(' ', args.Skip(1));
+            }
+            else
+            {
+                selector = args[0];
+                path = string.Join(' ', args.Skip(1));
+            }
+        }
+
+        var message = host.ExportShip(selector, path);
+        bool isError = message.StartsWith("Error", StringComparison.OrdinalIgnoreCase) ||
+                       message.StartsWith("No ship", StringComparison.OrdinalIgnoreCase) ||
+                       message.StartsWith("Could not", StringComparison.OrdinalIgnoreCase) ||
+                       message.StartsWith("Failed", StringComparison.OrdinalIgnoreCase);
+        return ([message], isError, false);
     }
 
     static bool TryParseBool(string token, out bool value)

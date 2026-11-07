@@ -46,6 +46,10 @@ dropped in next to them.
     <td><img src="docs/media/help.webp" alt="The F1 Help and Controls window" width="100%"><br><sub><b>Help &amp; Controls</b> (<code>F1</code>): quick in-game reference for movement, building and ships</sub></td>
     <td><img src="docs/media/debug-console.webp" alt="The in-game Debug Console opened with the backtick key" width="100%"><br><sub><b>Debug Console</b> (<code>`</code>): switch modes, change speed, teleport, spawn items and inspect ships</sub></td>
   </tr>
+  <tr>
+    <td><img src="docs/media/legacy-wrl-adjuster.webp" alt="Legacy .wrl map Adjuster loaded with custom ship and community itemset" width="100%"><br><sub><b>Legacy .wrl maps</b> (experimental): loading original 2012 Corneroids worlds (e.g. <code>Adjuster.wrl</code>) with community itemsets</sub></td>
+    <td><img src="docs/media/spacebox-import.webp" alt="Spacebox structure imported into OpenCorneroids in front of player" width="100%"><br><sub><b>Spacebox structure bridge</b> (<code>importship</code> / <code>exportship</code>): importing native <code>.sbs</code> ships from <a href="https://pasterlak.itch.io/spacebox">Spacebox</a></sub></td>
+  </tr>
 </table>
 
 ## Features
@@ -69,8 +73,11 @@ dropped in next to them.
   original's.
 - **Saves.** Worlds save their blocks, ships in flight, console bindings, your suit and inventory, and remember which
   itemset they need.
-- **Tested.** The content loader and the game rules live in plain C# libraries with 670+ automated tests; Godot only
+- **Tested.** The content loader and the game rules live in plain C# libraries with 1,270+ automated tests; Godot only
   draws and takes input.
+- **Backward compatibility & modding.** Loads original 2012 Corneroids `.wrl` SQLite 3 maps seamlessly alongside native
+  `.ocworld` saves, discovers and loads mod packages directly from `.zip` archives in BYOA folders without manual
+  extraction, and provides in-game import and export for Spacebox structure files (`.sbs`).
 
 ## Download and play
 
@@ -93,7 +100,7 @@ Each download is the game with its data included, so there is nothing to install
 | Use a block / edit it | `E` (consoles, crafting stations, doors) / `F` (console binding & key setup, power network info) |
 | Inventory | `C` |
 | Flashlight / fixed camera aboard | `T` / `K` |
-| Debug console | `` ` `` (`mode`, `speed`, `tp`, `give`, `noclip`, `god`, `heal`, `spawnship`, `help`) |
+| Debug console | `` ` `` (`mode`, `speed`, `tp`, `give`, `noclip`, `god`, `heal`, `spawnship`, `importship`, `exportship`, `help`) |
 | Help / debug readout / hide HUD / save | `F1` / `F3` / `F6` / `F5` |
 
 Flying a ship: by default, bound console group keys fire their thrusters and cannons while held (`V` seat/camera or
@@ -139,7 +146,9 @@ flowchart LR
 
 ## Roadmap
 
-- [x] Loading the original itemsets, mods and texture packs
+- [x] Loading the original itemsets, mods and texture packs (including direct `.zip` mod loading)
+- [x] Backward compatibility: loading original Corneroids `.wrl` SQLite 3 maps
+- [x] Spacebox structure import/export bridge (`.sbs` GZIP NBT)
 - [x] Survival: mining, drops, crafting, inventory, suit, equipment
 - [x] Building with orientations, multi-blocks and doors
 - [x] Ships: launching, piloting, power, collisions, riding along

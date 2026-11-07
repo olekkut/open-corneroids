@@ -33,14 +33,26 @@ public sealed class AtlasCatalog
         var catalog = new AtlasCatalog();
         foreach (var layer in view.Layers.Reverse())
         {
-            Read(layer, BlockRegistryPath, "blockTextureAtlases", AtlasKind.Blocks, catalog._blocks, diagnostics);
-            Read(layer, SpriteRegistryPath, "spriteTextureAtlases", AtlasKind.Sprites, catalog._sprites, diagnostics);
+            Read(layer, BlockRegistryPath, "blockTextureAtlases", AtlasKind.Blocks, catalog._blocks, diagnostics, optional: false);
+            Read(layer, SpriteRegistryPath, "spriteTextureAtlases", AtlasKind.Sprites, catalog._sprites, diagnostics, optional: false);
+
+            // Also discover any additional atlases defined in sibling XML files (e.g. PasterLakBlocks.xml, PasterLakSprites.xml)
+            foreach (var path in layer.List("Textures/Blocks", ".xml"))
+            {
+                if (!string.Equals(path, BlockRegistryPath, StringComparison.OrdinalIgnoreCase))
+                    Read(layer, path, "blockTextureAtlases", AtlasKind.Blocks, catalog._blocks, diagnostics, optional: true);
+            }
+            foreach (var path in layer.List("Textures/Sprites", ".xml"))
+            {
+                if (!string.Equals(path, SpriteRegistryPath, StringComparison.OrdinalIgnoreCase))
+                    Read(layer, path, "spriteTextureAtlases", AtlasKind.Sprites, catalog._sprites, diagnostics, optional: true);
+            }
         }
         return catalog;
     }
 
     static void Read(IContentSource layer, string path, string rootName, AtlasKind kind,
-        Dictionary<string, AtlasDef> into, DiagnosticBag diagnostics)
+        Dictionary<string, AtlasDef> into, DiagnosticBag diagnostics, bool optional)
     {
         if (!layer.Exists(path)) return;
         var file = $"{layer.PackId}:{path}";
@@ -52,7 +64,8 @@ public sealed class AtlasCatalog
         var r = new FieldReader(file, diagnostics);
         if (root.Name.LocalName != rootName)
         {
-            r.Report(Severity.Error, Codes.UnexpectedRoot, $"expected <{rootName}>, found <{root.Name.LocalName}>", root);
+            if (!optional)
+                r.Report(Severity.Error, Codes.UnexpectedRoot, $"expected <{rootName}>, found <{root.Name.LocalName}>", root);
             return;
         }
         foreach (var atlas in root.Elements("atlas"))

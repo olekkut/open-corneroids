@@ -177,12 +177,12 @@ public static class ItemsetParser
 
             if (byId.ContainsKey(item.ItemId))
             {
-                r.Report(Severity.Error, Codes.DuplicateItemId, $"itemId {item.ItemId} is already used by '{byId[item.ItemId].Name}'; '{item.Name}' skipped", element);
+                r.Report(Severity.Warning, Codes.DuplicateItemId, $"itemId {item.ItemId} is already used by '{byId[item.ItemId].Name}'; '{item.Name}' skipped", element);
                 continue;
             }
             if (item.Block is { } block && byBlockId.TryGetValue(block.BlockId, out var other))
             {
-                r.Report(Severity.Error, Codes.DuplicateBlockId, $"blockId {block.BlockId} is already used by '{other.Name}'; '{item.Name}' skipped", element);
+                r.Report(Severity.Warning, Codes.DuplicateBlockId, $"blockId {block.BlockId} is already used by '{other.Name}'; '{item.Name}' skipped", element);
                 continue;
             }
             byId.Add(item.ItemId, item);

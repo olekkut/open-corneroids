@@ -188,17 +188,26 @@ Two control schemes are available while seated (`H` toggles between them on flig
 Standing up puts the player at the nearest free spot beside the console moving with the ship's velocity as drift.
 Console colour-group keys, bound targets and bound cameras are saved with both the static world and every ship.
 
-## Worlds
+## Worlds and Backward Compatibility
 
 Worlds are saved to `user://worlds` (`%APPDATA%\OpenCorneroids\worlds` on Windows), one `.ocworld` file per world:
 on F5, when returning to the menu, and when the window is closed. If that save fails (a locked file, a full disk), the
 game stays open and asks before leaving or quitting without saving. A world always saves back to the file it was loaded
-from, so a copied or renamed `.ocworld` file is a separate world and never overwrites the original. The menu's
-**Continue** list loads or deletes them (saves whose header can't be read are listed too, so they can be deleted);
-**New world** picks an itemset, texture packs, a name, a seed and creative or survival rules, all of which the save
-remembers. Multi-blocks are saved whole (block, footprint origin, orientation and how far a door is open); a door saved
-part-open finishes closing on load. Ships are saved with their position, rotation, velocities, cells, multi-blocks and
-console bindings; older saves without console bindings keep loading unchanged.
+from, so a copied or renamed `.ocworld` file is a separate world and never overwrites the original.
+
+The **Continue** menu lists both native `.ocworld` saves and legacy 2012 Corneroids `.wrl` SQLite 3 maps.
+When loading a `.wrl` file:
+- Player coordinates, Euler angles and boarded entity status are restored.
+- 16×16×16 voxel chunks with 512-byte MSB-first bitmasks and chiral quarter-turn rotations are loaded into entity grids.
+- Control consoles, 10-color group key mappings and cameras are bound.
+- Saving a loaded `.wrl` map writes to `.ocworld`, preserving the native high-performance format.
+
+In addition, mod packs can be placed as raw `.zip` archives directly in BYOA folders (e.g. `%APPDATA%\OpenCorneroids\byoa`
+or the game's `byoa/` folder) without manual extraction. Uncompressed folders shadow same-named `.zip` archives.
+
+For interoperability with Spacebox, structures can be imported and exported via the debug console (`` ` ``):
+- `importship <path.sbs>`: reads a GZIP-compressed NBT `.sbs` structure file and spawns it in front of the astronaut.
+- `exportship [ship#|name] <path.sbs>`: serializes the targeted or piloted ship to a Spacebox `.sbs` structure file.
 
 A world is bound to the exact itemset it was made with (key, pack and content fingerprint). On load:
 

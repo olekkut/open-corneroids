@@ -157,7 +157,14 @@ public sealed class ContentLibrary
     {
         if (key is null) return null;
         if (atlases.TryGetValue(key, out var def)) return AtlasGrid.Load(def, view, diagnostics);
-        diagnostics.Report(Severity.Error, Codes.AtlasMissing, $"{kind} atlas '{key}' isn't declared anywhere in {view.PackId}", file);
+        diagnostics.Report(Severity.Warning, Codes.AtlasMissing, $"{kind} atlas '{key}' isn't declared anywhere in {view.PackId}; attempting fallback", file);
+        string defaultKey = kind == "block" ? "DefaultBlocks" : "DefaultSprites";
+        if (!atlases.TryGetValue(defaultKey, out var fallbackDef))
+            fallbackDef = atlases.Values.FirstOrDefault();
+        if (fallbackDef is not null)
+        {
+            return AtlasGrid.Load(fallbackDef, view, diagnostics);
+        }
         return null;
     }
 }

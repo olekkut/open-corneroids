@@ -1,4 +1,4 @@
-﻿using OpenCorneroids.Simulation.Persistence;
+using OpenCorneroids.Simulation.Persistence;
 using static OpenCorneroids.Simulation.Tests.Persistence.SaveFixtures;
 
 namespace OpenCorneroids.Simulation.Tests.Persistence;
@@ -182,5 +182,41 @@ public sealed class WorldStoreTests : IDisposable
         // The header still lists, which is why callers need Verify to know the body is gone.
         Assert.Contains(WorldStore.List(_root), s => s.FilePath == Path.GetFullPath(half));
         Assert.Throws<WorldSaveException>(() => WorldStore.Verify(half));
+    }
+
+    [Fact]
+    public void List_and_Load_supports_legacy_wrl_files()
+    {
+        Directory.CreateDirectory(_root);
+        var wrlPath = Path.Combine(_root, "LegacyShip.wrl");
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={wrlPath};Pooling=false"))
+        {
+            connection.Open();
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                CREATE TABLE worldinfo (name VARCHAR(50), version FLOAT, seed INT, itemsetKey VARCHAR(50), timestamp LONG, token VARCHAR(20));
+                CREATE TABLE players (id INT PRIMARY KEY, name VARCHAR(50), posx LONG, posy LONG, posz LONG, orx FLOAT, ory FLOAT, orz FLOAT, orw FLOAT, boardedEntity INT, boundEntities BLOB, token VARCHAR(20));
+                CREATE TABLE entities (id INT PRIMARY KEY, loaded BOOLEAN, posx LONG, posy LONG, posz LONG, orx FLOAT, ory FLOAT, orz FLOAT, orw FLOAT, sectorx INT, sectory INT, sectorz INT);
+                CREATE TABLE blocksectors (ownerId INT, posx INT, posy INT, posz INT, formation BLOB, blockIds BLOB, orientations BLOB, PRIMARY KEY (ownerId, posx, posy, posz));
+                CREATE TABLE controlledblocks (id INT, boundTo INT, bindingColor INT, ownerEntityId INT, posx FLOAT, posy FLOAT, posz FLOAT);
+                CREATE TABLE controlblocks (id INT, bindingId INT, ownerEntityId INT, posx FLOAT, posy FLOAT, posz FLOAT);
+                CREATE TABLE keyColorMappings (ownerEntityId INT, blockId INT, color INT, key INT);
+                INSERT INTO worldinfo VALUES ('Legacy World', 1.2, 42, 'Default', 1350000000000, 'tok');
+                INSERT INTO players VALUES (1, 'Genius', 83886080, 0, 0, 0, 0, 0, 1, 0, null, 'tok');
+                """;
+            cmd.ExecuteNonQuery();
+        }
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+        var list = WorldStore.List(_root);
+        var entry = Assert.Single(list);
+        Assert.Equal("Legacy World", entry.Name);
+        Assert.Equal(Path.GetFullPath(wrlPath), entry.FilePath);
+        Assert.Equal("Default", entry.Itemset.Key);
+
+        var loaded = WorldStore.Load(wrlPath);
+        Assert.Equal("Legacy World", loaded.Name);
+        Assert.Equal(42, loaded.Seed);
+        Assert.Equal(10.0f, loaded.Player.Position.X, 0.001f);
     }
 }

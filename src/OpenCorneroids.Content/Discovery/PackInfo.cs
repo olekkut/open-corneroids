@@ -12,8 +12,8 @@ public enum PackKind
     TexturePack,
 }
 
-/// <summary>One dropped folder. <see cref="RootPath"/> is the folder itself; <see cref="Source"/> is its content.</summary>
-public sealed record PackInfo(string Id, PackKind Kind, string RootPath, IndexedSource Source, Version? VanillaVersion)
+/// <summary>One dropped folder or archive. <see cref="RootPath"/> is the folder or archive itself; <see cref="Source"/> is its content.</summary>
+public sealed record PackInfo(string Id, PackKind Kind, string RootPath, IContentSource Source, Version? VanillaVersion)
 {
     public bool IsVanilla => VanillaVersion is not null;
 

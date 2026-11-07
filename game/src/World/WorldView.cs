@@ -536,6 +536,87 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         return all.Count;
     }
 
+    string IDebugConsoleHost.ImportShip(string path)
+    {
+        try
+        {
+            var resolved = Path.GetFullPath(path);
+            if (!File.Exists(resolved))
+                return $"File not found: {path}";
+
+            using var stream = File.OpenRead(resolved);
+            var snapshot = SpaceboxStructureBridge.Import(stream, Path.GetFileNameWithoutExtension(resolved));
+
+            var forward = -Player.GlobalTransform.Basis.Z;
+            float distance = Math.Max(12f, snapshot.Size + 6f);
+            var spawnPos = Player.GlobalPosition + forward * distance;
+
+            var ship = Grids.AddShip(ShipGrid.SizeFor(snapshot.Size));
+            ship.GlobalPosition = spawnPos;
+            ship.RestoreMotion(snapshot with { Position = spawnPos.ToNumerics() });
+            ship.Import(snapshot.Palette, snapshot.Cells, snapshot.Size);
+            ship.ImportObjects(snapshot.Objects);
+            ship.ImportTurned(snapshot.Turned);
+            ship.ImportConsoles(snapshot.Consoles);
+
+            if (ship.IsEmpty)
+            {
+                Grids.RemoveShip(ship);
+                return "Imported structure was empty (no blocks loaded).";
+            }
+
+            return FormattableString.Invariant($"Imported {ship.Name} ({ship.BlockCount} blocks) from {Path.GetFileName(resolved)}.");
+        }
+        catch (Exception ex)
+        {
+            return $"Failed to import ship: {ex.Message}";
+        }
+    }
+
+    string IDebugConsoleHost.ExportShip(string? selector, string path)
+    {
+        try
+        {
+            ShipGrid? chosen = null;
+            if (string.IsNullOrWhiteSpace(selector))
+            {
+                chosen = Player.PilotShip ?? (Grids.Ships.Count > 0 ? Grids.Ships[0] : null);
+            }
+            else if (int.TryParse(selector.TrimStart('#'), System.Globalization.CultureInfo.InvariantCulture, out int index) && index >= 1 && index <= Grids.Ships.Count)
+            {
+                chosen = Grids.Ships[index - 1];
+            }
+            else
+            {
+                chosen = Grids.Ships.FirstOrDefault(s => s.Name.ToString().Equals(selector, StringComparison.OrdinalIgnoreCase))
+                    ?? Grids.Ships.FirstOrDefault(s => s.Name.ToString().Contains(selector, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (chosen is null)
+                return string.IsNullOrWhiteSpace(selector)
+                    ? "No ship to export (pilot a ship or specify ship name / #index)."
+                    : $"Ship '{selector}' not found. Use 'ships' to see active ships.";
+
+            var resolved = Path.GetFullPath(path);
+            if (!resolved.EndsWith(".sbs", StringComparison.OrdinalIgnoreCase))
+                resolved += ".sbs";
+
+            var dir = Path.GetDirectoryName(resolved);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+
+            var snapshot = chosen.ToSnapshot();
+            using var stream = File.Create(resolved);
+            SpaceboxStructureBridge.Export(snapshot, stream, "OpenCorneroids");
+
+            return FormattableString.Invariant($"Exported {chosen.Name} ({chosen.BlockCount} blocks) to {Path.GetFileName(resolved)}.");
+        }
+        catch (Exception ex)
+        {
+            return $"Failed to export ship: {ex.Message}";
+        }
+    }
+
     string? IDebugConsoleHost.SaveWorld() => Save();
 
     public void Showcase()

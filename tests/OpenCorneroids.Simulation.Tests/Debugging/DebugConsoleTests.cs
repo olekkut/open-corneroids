@@ -75,6 +75,19 @@ public class DebugConsoleTests
             return n;
         }
 
+        public string ImportShip(string path)
+        {
+            if (path.Contains("invalid")) return "Failed to import ship: file corrupted";
+            ShipList.Add(new("ImportedShip", 50, 150f, Position, 0f));
+            return $"Imported structure from {path}.";
+        }
+
+        public string ExportShip(string? selector, string path)
+        {
+            if (ShipList.Count == 0) return "No ship found to export.";
+            return $"Exported {ShipList[0].Name} to {path}.";
+        }
+
         public string? SaveError { get; set; }
         public int SaveCount { get; private set; }
         public string? SaveWorld()
@@ -200,5 +213,35 @@ public class DebugConsoleTests
 
         Assert.Equal("noclip ", console.Autocomplete("noc"));
         Assert.Equal("spawnship ", console.Autocomplete("spawn"));
+        Assert.Equal("importship ", console.Autocomplete("imports"));
+        Assert.Equal("exportship ", console.Autocomplete("exports"));
+    }
+
+    [Fact]
+    public void ImportShip_and_ExportShip_execute_and_report_status()
+    {
+        var console = new DebugConsole();
+        var host = new FakeConsoleHost();
+
+        var resUsage = console.Execute("importship", host);
+        Assert.True(resUsage.IsError);
+        Assert.Contains("Usage", resUsage.Lines[0]);
+
+        var resImport = console.Execute("importship ship.sbs", host);
+        Assert.False(resImport.IsError);
+        Assert.Contains("Imported", resImport.Lines[0]);
+        Assert.Equal(2, host.Ships.Count);
+
+        var resExport = console.Execute("exportship ship.sbs", host);
+        Assert.False(resExport.IsError);
+        Assert.Contains("Exported", resExport.Lines[0]);
+
+        var resExportWithSelector = console.Execute("exportship #1 out.sbs", host);
+        Assert.False(resExportWithSelector.IsError);
+        Assert.Contains("Exported", resExportWithSelector.Lines[0]);
+
+        var resError = console.Execute("importship invalid.sbs", host);
+        Assert.True(resError.IsError);
+        Assert.Contains("Failed", resError.Lines[0]);
     }
 }

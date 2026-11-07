@@ -126,7 +126,7 @@ public class ItemsetParserTests
 
         Assert.Equal("Light rock", set.ItemsById[0].Name);
         Assert.False(set.ItemsByBlockId.ContainsKey(9));
-        Assert.Single(diagnostics, d => d.Code == Codes.DuplicateItemId && d.Severity == Severity.Error);
+        Assert.Single(diagnostics, d => d.Code == Codes.DuplicateItemId && d.Severity == Severity.Warning);
     }
 
     [Fact]

@@ -1,4 +1,4 @@
-﻿using System.Buffers;
+using System.Buffers;
 using System.Text;
 
 namespace OpenCorneroids.Simulation.Persistence;
@@ -95,6 +95,8 @@ public static class WorldStore
     /// <exception cref="WorldSaveException">The file is not a readable world save.</exception>
     public static WorldSnapshot Load(string path)
     {
+        if (Path.GetExtension(path).Equals(".wrl", StringComparison.OrdinalIgnoreCase))
+            return CorneroidsWrlReader.Read(path);
         using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         return WorldSaveFormat.Read(file);
     }
@@ -103,6 +105,11 @@ public static class WorldStore
     /// <exception cref="WorldSaveException">The file is not a readable world save.</exception>
     public static void Verify(string path)
     {
+        if (Path.GetExtension(path).Equals(".wrl", StringComparison.OrdinalIgnoreCase))
+        {
+            CorneroidsWrlReader.Read(path);
+            return;
+        }
         using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         WorldSaveFormat.Verify(file);
     }
@@ -117,17 +124,32 @@ public static class WorldStore
         if (!Directory.Exists(directory)) return [];
 
         var summaries = new List<WorldSummary>();
-        foreach (var path in Directory.EnumerateFiles(directory, "*" + Extension))
+        foreach (var path in Directory.EnumerateFiles(directory, "*.*"))
         {
-            if (!Path.GetExtension(path).Equals(Extension, StringComparison.OrdinalIgnoreCase)) continue;
-            try
+            var ext = Path.GetExtension(path);
+            if (ext.Equals(Extension, StringComparison.OrdinalIgnoreCase))
             {
-                using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                summaries.Add(WorldSaveFormat.ReadSummary(file) with { FilePath = Path.GetFullPath(path) });
+                try
+                {
+                    using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    summaries.Add(WorldSaveFormat.ReadSummary(file) with { FilePath = Path.GetFullPath(path) });
+                }
+                catch (Exception e) when (e is WorldSaveException or IOException or UnauthorizedAccessException)
+                {
+                    // Skipped; see the summary.
+                }
             }
-            catch (Exception e) when (e is WorldSaveException or IOException or UnauthorizedAccessException)
+            else if (ext.Equals(".wrl", StringComparison.OrdinalIgnoreCase))
             {
-                // Skipped; see the summary.
+                try
+                {
+                    var snap = CorneroidsWrlReader.Read(path);
+                    summaries.Add(new WorldSummary(snap.Name, snap.SavedAt, snap.Itemset, Path.GetFullPath(path)) { Creative = snap.Creative });
+                }
+                catch (Exception e) when (e is WorldSaveException or IOException or UnauthorizedAccessException)
+                {
+                    // Skipped; see the summary.
+                }
             }
         }
 

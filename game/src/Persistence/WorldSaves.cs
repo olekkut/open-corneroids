@@ -78,8 +78,9 @@ public static class WorldSaves
             if (Directory.Exists(Folder))
             {
                 var known = readable.Select(w => w.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
-                damaged.AddRange(Directory.EnumerateFiles(Folder, "*" + WorldStore.Extension)
-                    .Where(f => Path.GetExtension(f).Equals(WorldStore.Extension, StringComparison.OrdinalIgnoreCase))
+                damaged.AddRange(Directory.EnumerateFiles(Folder)
+                    .Where(f => Path.GetExtension(f).Equals(WorldStore.Extension, StringComparison.OrdinalIgnoreCase) ||
+                                Path.GetExtension(f).Equals(".wrl", StringComparison.OrdinalIgnoreCase))
                     .Select(Path.GetFullPath)
                     .Where(f => !known.Contains(f))
                     .Order(StringComparer.OrdinalIgnoreCase)
@@ -116,8 +117,14 @@ public static class WorldSaves
         var path = Path.GetFullPath(PathFor(name));
         var match = worlds.FirstOrDefault(w => w.Name == name && w.FilePath.Equals(path, StringComparison.OrdinalIgnoreCase))
                     ?? worlds.FirstOrDefault(w => w.Name == name)
-                    ?? worlds.FirstOrDefault(w => w.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        return match?.FilePath ?? (File.Exists(path) ? path : null);
+                    ?? worlds.FirstOrDefault(w => w.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    ?? worlds.FirstOrDefault(w => Path.GetFileNameWithoutExtension(w.FilePath).Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (match != null) return match.FilePath;
+        if (File.Exists(path)) return path;
+        var wrlDirect = Path.Combine(Folder, name.EndsWith(".wrl", StringComparison.OrdinalIgnoreCase) ? name : name + ".wrl");
+        if (File.Exists(wrlDirect)) return wrlDirect;
+        if (File.Exists(name)) return Path.GetFullPath(name);
+        return null;
     }
 
     /// <summary>"Asteroid 1", "Asteroid 2", ...: the first one no save uses yet.</summary>
