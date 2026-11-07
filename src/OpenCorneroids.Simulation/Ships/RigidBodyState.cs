@@ -5,8 +5,7 @@ namespace OpenCorneroids.Simulation.Ships;
 /// <summary>
 /// Where a rigid body is and how it moves, in world space. <see cref="Position"/> is the world position of the centre
 /// of mass, so the body turns about it; a point at local (grid) coordinate p is at
-/// <c>Position + rotate(Orientation, p − centreOfMass)</c> (see <see cref="ToWorld"/>). Our own integrator; the original
-/// game's physics is unknown.
+/// <c>Position + rotate(Orientation, p − centreOfMass)</c> (see <see cref="ToWorld"/>).
 /// </summary>
 public sealed class RigidBodyState
 {
@@ -30,6 +29,24 @@ public sealed class RigidBodyState
 
     /// <summary>Suggested angular damping, per second; see <see cref="DefaultLinearDamping"/>. Ours, tunable.</summary>
     public const float DefaultAngularDamping = 0.05f;
+
+    /// <summary>Maximum ship linear speed in units per second, as in the original.</summary>
+    public const float MaxLinearSpeed = 20f;
+
+    /// <summary>Maximum ship angular speed in radians per second, as in the original.</summary>
+    public const float MaxAngularSpeed = 1.5f;
+
+    /// <summary>Linear coasting deceleration in units/s² when no thruster is firing, as in the original.</summary>
+    public const float CoastLinearDeceleration = 0.25f;
+
+    /// <summary>Linear speed threshold below which a coasting ship stops completely, as in the original.</summary>
+    public const float CoastLinearStop = 0.025f;
+
+    /// <summary>Angular coasting deceleration in rad/s² when no thruster is firing, as in the original.</summary>
+    public const float CoastAngularDeceleration = 0.03f;
+
+    /// <summary>Angular speed threshold below which a coasting ship stops rotating, as in the original.</summary>
+    public const float CoastAngularStop = 0.003f;
 
     public Vector3 Position { get; set; }
     public Quaternion Orientation { get; set; } = Quaternion.Identity;
@@ -128,6 +145,64 @@ public sealed class RigidBodyState
             AngularVelocity = w;
             Orientation = q;
         }
+    }
+
+    /// <summary>
+    /// Advances by <paramref name="dt"/> seconds using the original's ship motion rules: linear speed capped at
+    /// <see cref="MaxLinearSpeed"/> (20 u/s), angular speed capped at <see cref="MaxAngularSpeed"/> (1.5 rad/s), and
+    /// linear/angular coasting slowdown when <paramref name="thrustersFiring"/> is <c>false</c>.
+    /// </summary>
+    public void StepOriginal(Vector3 force, Vector3 torque, MassProperties mass, float dt, bool thrustersFiring)
+    {
+        ArgumentNullException.ThrowIfNull(mass);
+        if (!float.IsFinite(dt) || dt <= 0) return;
+        dt = Math.Min(dt, MaxStep);
+        force = Finite(force);
+        torque = Finite(torque);
+
+        int steps = Math.Max(1, (int)MathF.Ceiling(dt / MaxSubStep - 1e-4f));
+        float h = dt / steps;
+        bool dynamic = !mass.IsMassless;
+
+        for (int i = 0; i < steps; i++)
+        {
+            var v = LinearVelocity;
+            var w = AngularVelocity;
+            var q = Orientation;
+            if (dynamic)
+            {
+                v += force * (mass.InverseMass * h);
+                w += mass.ApplyWorldInverseInertia(q, torque * h);
+            }
+            if (!thrustersFiring)
+            {
+                v = SlowDown(v, CoastLinearDeceleration * h, CoastLinearStop);
+                w = SlowDown(w, CoastAngularDeceleration * h, CoastAngularStop);
+            }
+            v = ClampMagnitude(v, MaxLinearSpeed);
+            w = ClampMagnitude(w, MaxAngularSpeed);
+            Position += v * h;
+            q = Turn(q, w, h);
+            LinearVelocity = v;
+            AngularVelocity = w;
+            Orientation = q;
+        }
+    }
+
+    static Vector3 SlowDown(Vector3 v, float delta, float stopThreshold)
+    {
+        float length = v.Length();
+        if (length <= stopThreshold || length - delta <= stopThreshold)
+            return Vector3.Zero;
+        return v * ((length - delta) / length);
+    }
+
+    static Vector3 ClampMagnitude(Vector3 v, float maxLength)
+    {
+        float lengthSq = v.LengthSquared();
+        if (lengthSq > maxLength * maxLength)
+            return v * (maxLength / MathF.Sqrt(lengthSq));
+        return v;
     }
 
     /// <summary>Kinetic energy, translational plus rotational: ½·m·v² + ½·ω·I_world·ω.</summary>

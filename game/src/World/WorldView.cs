@@ -16,7 +16,7 @@ namespace OpenCorneroids.Game.World;
 
 /// <summary>
 /// One play session: space environment, asteroids (generated, or restored from a save), ships, the player camera, the
-/// HUD and, in survival, the inventory and its windows. It can turn itself back into a <see cref="WorldSnapshot"/>.
+/// HUD and the in-world windows. It can turn itself back into a <see cref="WorldSnapshot"/>.
 /// </summary>
 public partial class WorldView : Node3D
 {
@@ -99,6 +99,7 @@ public partial class WorldView : Node3D
             LostCells = world.Import(saved.Palette, saved.Cells, saved.Size) + world.ImportObjects(saved.Objects);
             if (world.ImportTurned(saved.Turned) is > 0 and var unturned)
                 GD.PushWarning($"{unturned} turned blocks of the world could not be turned again and face the default way");
+            world.ImportConsoles(saved.Consoles);
             foreach (var savedShip in saved.Ships)
             {
                 var ship = Grids.AddShip(ShipGrid.SizeFor(savedShip.Size));
@@ -106,6 +107,7 @@ public partial class WorldView : Node3D
                 LostCells += ship.Import(savedShip.Palette, savedShip.Cells, savedShip.Size) + ship.ImportObjects(savedShip.Objects);
                 if (ship.ImportTurned(savedShip.Turned) is > 0 and var shipUnturned)
                     GD.PushWarning($"{shipUnturned} turned blocks of a ship could not be turned again and face the default way");
+                ship.ImportConsoles(savedShip.Consoles);
                 // Everything it had is gone (counted above): an empty ship is not kept.
                 if (ship.IsEmpty) Grids.RemoveShip(ship);
                 else GD.Print(FormattableString.Invariant(
@@ -125,10 +127,12 @@ public partial class WorldView : Node3D
 
         Inventory = Inventory.ForItemset(itemset);
         PlayMode mode;
-        GameWindows? windows = null;
+        var windows = new GameWindows { Name = "Windows" };
+        AddChild(windows);
         if (creative)
         {
             mode = new CreativeMode(Grids, hud);
+            windows.Setup(null, null, itemset, Icons, []);
         }
         else
         {
@@ -152,8 +156,6 @@ public partial class WorldView : Node3D
                 hud.Flash(note, warning: true, seconds: 6);
             }
             mode = new SurvivalMode(Grids, hud, Inventory, itemset, Suit);
-            windows = new GameWindows { Name = "Windows" };
-            AddChild(windows);
             windows.Setup(Inventory, Suit, itemset, Icons, StartingKit.Endless(itemset));
         }
         hud.SetControls(mode.Controls + "   F5 save");
@@ -207,12 +209,6 @@ public partial class WorldView : Node3D
         _shipPhysics.Advance(delta, Grids, Player.PilotShip, Player.PilotControls((float)delta));
     }
 
-    /// <summary>
-    /// Slots go back where they were. Items this itemset no longer defines are kept, as the inventory allows, so loading
-    /// with the right itemset later shows them again. A stack above this itemset's max stack size is split rather than
-    /// cut down (<see cref="Inventory.SetSlot"/> would clamp it): the rest goes to other slots. Whatever still does not
-    /// fit, or is unknown, ends up in <see cref="InventoryNote"/> for the player, not just the log.
-    /// </summary>
     void RestoreInventory(IReadOnlyList<ItemStack?> slots)
     {
         int unknown = 0, split = 0;
@@ -246,9 +242,6 @@ public partial class WorldView : Node3D
     public WorldSnapshot ToSnapshot()
     {
         var (palette, cells) = Voxels.Export();
-        // The pilot's seat is not saved: a world saved while flying loads with the player standing beside the console,
-        // moving with the ship (see FlyCamera.StandingSpot), and looking at the ship's centre of mass, so the ship is the
-        // first thing they see whichever view the save was made from.
         var (eye, velocity) = Player.StandingSpot();
         var rotation = Player.Rotation;
         if (Player.PilotShip is { } piloted)
@@ -256,8 +249,6 @@ public partial class WorldView : Node3D
             var toShip = piloted.ToGlobal(piloted.Mass.CenterOfMass.ToGodot()) - eye;
             rotation = FlyCamera.LevelRotation(toShip.LengthSquared() > 0.01f ? toShip : -Player.GlobalTransform.Basis.Z);
         }
-        // Velocity is the world one (aboard a ship, the ship's motion included); a load boards the ship again by proximity
-        // and takes the ship's motion back out, so the player is at rest on it.
         var player = new PlayerState(ToNumerics(eye), ToNumerics(velocity), rotation.X, rotation.Y) { Roll = rotation.Z };
         IReadOnlyList<ItemStack?> slots = Creative ? [] : Inventory.Slots.ToArray();
         return new WorldSnapshot(Info.Name, DateTimeOffset.Now, Binding, Info.Seed, VoxelWorld.Size, palette, cells, player, slots)
@@ -266,14 +257,12 @@ public partial class WorldView : Node3D
             TexturePacks = Info.TexturePackIds,
             Objects = Voxels.ExportObjects(),
             Turned = Voxels.ExportTurned(),
+            Consoles = Voxels.ExportConsoles(),
             Ships = [.. Grids.Ships.Where(s => !s.IsEmpty).Select(s => s.ToSnapshot())],
             Suit = Suit?.Save(),
         };
     }
 
-    /// <summary>Writes the world to <see cref="WorldInfo.FilePath"/>. Never throws: a failure is shown on the HUD and
-    /// returned, so a full disk or a locked file can't crash the game on its way to the menu.</summary>
-    /// <returns>Null on success, otherwise what went wrong.</returns>
     public string? Save()
     {
         if (HoldSaves)
@@ -297,13 +286,11 @@ public partial class WorldView : Node3D
         }
     }
 
-    /// <summary>Shows a message on the HUD, e.g. a warning about how the save was loaded.</summary>
     public void Flash(string text, bool warning = false, double seconds = 2) => _hud.Flash(text, warning, seconds);
 
     static Vector3 ToGodot(Num.Vector3 v) => new(v.X, v.Y, v.Z);
     static Num.Vector3 ToNumerics(Vector3 v) => new(v.X, v.Y, v.Z);
 
-    /// <summary>Adds items to the inventory (<c>--give</c>). Unknown ids are skipped with a warning.</summary>
     public void Give(IEnumerable<(int ItemId, int Count)> items)
     {
         foreach (var (itemId, count) in items)
@@ -318,8 +305,7 @@ public partial class WorldView : Node3D
         }
     }
 
-    /// <summary>Opens a window right after loading (<c>--open</c>), for screenshots. "crafting" shows the first
-    /// crafting-table station without the player having to aim at one.</summary>
+    /// <summary>Opens a window right after loading (<c>--open</c>), for screenshots: "inventory", "crafting", "console", or "power".</summary>
     public void OpenWindow(string which)
     {
         switch (which)
@@ -331,19 +317,51 @@ public partial class WorldView : Node3D
                 var table = Itemset.Items.FirstOrDefault(i => i.Get<CraftingStationComponent>()?.Station == CraftingStation.CraftingTable);
                 Player.OpenCrafting(CraftingStation.CraftingTable, table?.Name ?? "Crafting table");
                 break;
+            case "console":
+                foreach (var grid in Grids.Ships.Cast<BlockGrid>().Append(Voxels))
+                {
+                    foreach (var (cell, block) in grid.Blocks())
+                        if (grid.Palette.Item(block).Get<ConsoleComponent>() is { } comp)
+                        {
+                            Player.OpenConsoleWindow(grid, cell, comp);
+                            return;
+                        }
+                    foreach (var obj in grid.Objects)
+                        if (grid.Palette.Item(obj.Block).Get<ConsoleComponent>() is { } comp)
+                        {
+                            Player.OpenConsoleWindow(grid, obj.Origin.ToGodot(), comp);
+                            return;
+                        }
+                }
+                GD.PushWarning("--open=console: no console block in the world or ships (try --demo-ship)");
+                break;
+            case "power":
+                foreach (var grid in Grids.Ships.Cast<BlockGrid>().Append(Voxels))
+                {
+                    foreach (var (cell, block) in grid.PoweredBlocks())
+                        if (grid.Systems.NetworkOf(new BlockTarget(grid, cell, null)) is { } net)
+                        {
+                            Player.OpenPowerWindow(net);
+                            return;
+                        }
+                    foreach (var obj in grid.Objects)
+                        if (grid.Palette.IsPowered(obj.Block) && grid.Systems.NetworkOf(new BlockTarget(grid, obj.Origin.ToGodot(), obj)) is { } net)
+                        {
+                            Player.OpenPowerWindow(net);
+                            return;
+                        }
+                }
+                GD.PushWarning("--open=power: no powered block in the world or ships (try --demo-ship)");
+                break;
+            case "help":
+                Player.OpenHelp();
+                break;
             default:
-                GD.PushWarning($"--open: unknown window '{which}', expected inventory or crafting");
+                GD.PushWarning($"--open: unknown window '{which}', expected inventory, crafting, console, power or help");
                 break;
         }
     }
 
-    /// <summary>
-    /// Lays out every placeable block in front of the player: the single-cell blocks in a spaced grid (through the same
-    /// <see cref="VoxelWorld.Set"/> path as the player, so meshing, cutouts and block lights are exercised), and below it
-    /// every multi-block, upright, in shelves spaced by its size so nothing overlaps. The shelf width is picked so the
-    /// whole layout needs the shortest camera distance, and the player moves back (towards the world's +Z edge) to see
-    /// all of it at once; rock between the camera and the layout is cleared so the asteroid can't hide anything.
-    /// </summary>
     public void Showcase()
     {
         var palette = Voxels.Palette;
@@ -353,15 +371,11 @@ public partial class WorldView : Node3D
             .OrderByDescending(o => o.Size.Y).ThenBy(o => palette.Item(o.Block).ItemId).ToList();
         if (singles.Count == 0 && objects.Count == 0) return;
 
-        // Roughly screen-shaped (16:9), at least ten across, blocks two apart.
         int columns = Math.Max(10, (int)Math.Ceiling(Math.Sqrt(singles.Count * 16.0 / 9)));
         int rows = (singles.Count + columns - 1) / columns;
         int gridWidth = 2 * columns - 1, gridHeight = singles.Count == 0 ? 0 : 2 * rows - 1;
         const int Gap = 2;
 
-        // The default 75 degree vertical FOV sees about 0.77 up per unit away; holding the half height to about 0.43 per
-        // unit leaves the HUD's top text and the hotbar clear. Sideways a 16:9 screen sees about 1.36 per unit, so 1.0
-        // keeps a margin at the edges.
         static float Distance(int width, int height) => Math.Max(10, Math.Max(height * 1.15f, width * 0.5f + 0.5f));
         var shelves = Shelves(objects.Select(o => o.Size).ToList(), Math.Max(gridWidth, objects.Count == 0 ? 0 : objects.Max(o => o.Size.X)));
         for (int width = shelves.Width + 1; objects.Count > 0 && width <= gridWidth * 4 + 64; width++)
@@ -376,16 +390,12 @@ public partial class WorldView : Node3D
         int distance = (int)Math.Ceiling(Distance(totalWidth, totalHeight));
         int cameraZ = VoxelWorld.Size - 2;
         int z = Math.Max(2, cameraZ - distance);
-        int left = Mathf.RoundToInt(_eye.X - totalWidth / 2f), top = Mathf.RoundToInt(_eye.Y + totalHeight / 2f);   // top is exclusive
+        int left = Mathf.RoundToInt(_eye.X - totalWidth / 2f), top = Mathf.RoundToInt(_eye.Y + totalHeight / 2f);
 
-        // Clear the view: everything between the layout's plane and the camera, a cell wider than the layout.
         for (int cz = z + 1; cz <= cameraZ + 1; cz++)
         for (int cy = top - totalHeight - 1; cy <= top; cy++)
         for (int cx = left - 1; cx <= left + totalWidth; cx++)
             Voxels.SetRaw(new Vector3I(cx, cy, cz), BlockPalette.Air);
-        // And behind the multi-block shelves, as deep as the deepest footprint: each object clears its own footprint,
-        // which left the parts above its model (door travel space, empty bounds) as narrow pockets in the rock behind
-        // the layout, seen as dark slits. One even backdrop instead.
         int depth = objects.Count == 0 ? 0 : objects.Max(o => o.Size.Z);
         int shelvesTop = top - gridHeight - (gridHeight > 0 ? Gap : 0);
         for (int cz = z + 1 - depth; cz <= z; cz++)
@@ -403,23 +413,15 @@ public partial class WorldView : Node3D
         {
             var (block, size) = objects[i];
             var at = shelves.At[i];
-            // Front faces line up with the single blocks' (z + 1), so the footprint reaches back into the clearing's far side.
             var origin = new Int3(areaLeft + at.X, areaTop - at.Y, z + 1 - size.Z);
             if (Voxels.AddObject(block, origin, Orientation.Default, clearGrid: true) is null)
                 GD.PushWarning($"Showcase: no room for {palette.Item(block).Name} at {origin}");
         }
 
         Player.Position = new Vector3(_eye.X, _eye.Y, cameraZ + 0.5f);
-        // Aimed a little below the middle: the hotbar and its caption take more of the screen than the text above.
         Player.LookAt(new Vector3(left + totalWidth / 2f, top - totalHeight / 2f - totalHeight * 0.03f, z + 0.5f), Vector3.Up);
     }
 
-    /// <summary>
-    /// Shelf packing: boxes left to right one cell apart, a new shelf one cell below the tallest box of the last one when
-    /// the next box would pass <paramref name="width"/>. Boxes stand on their shelf's floor, so models that sit at the
-    /// bottom of their bounds (thrusters, closed doors) line up. Returns each box's x and the depth of its shelf's floor
-    /// below the top, and the bounds used.
-    /// </summary>
     static (List<Int3> At, int Width, int Height) Shelves(List<Int3> sizes, int width)
     {
         var at = new List<Int3>(sizes.Count);
@@ -446,8 +448,6 @@ public partial class WorldView : Node3D
         return (at, used, shelfTop + shelfHeight);
     }
 
-    /// <summary><c>--open-doors</c>: every door fully open, and kept open so a later screenshot still shows it. A door
-    /// that would open into the player stays shut (the rule doors follow in play) and is reported.</summary>
     public void OpenDoors()
     {
         int refused = 0;
@@ -459,7 +459,6 @@ public partial class WorldView : Node3D
         if (refused > 0) GD.PushWarning($"--open-doors: {refused} door(s) left shut because the player is in the way");
     }
 
-    /// <summary><c>--drop</c>: leaves items floating a metre in front of the player.</summary>
     public void DropInFront(IEnumerable<(int ItemId, int Count)> items)
     {
         if (_drops is null) return;
@@ -469,7 +468,6 @@ public partial class WorldView : Node3D
 
     FloatingItems? _drops;
 
-    /// <summary>Selects the hotbar slot that holds <paramref name="itemId"/> (<c>--select</c>).</summary>
     public void SelectItem(int itemId)
     {
         for (int i = 0; i < Inventory.HotbarSize; i++)
@@ -481,13 +479,6 @@ public partial class WorldView : Node3D
         GD.PushWarning($"--select: item {itemId} is not in the hotbar");
     }
 
-    /// <summary>
-    /// <c>--preview</c>: selects the item's block (survival gets one if no hotbar slot holds it), finds a face of the
-    /// asteroid where it fits, pins the aim to that face (<see cref="FlyCamera.PinnedAim"/>) and stands the camera back
-    /// at an angle so the ghost's whole footprint is in the picture. A single-cell block gets the same treatment as a
-    /// 1×1×1 footprint (it has no ghost, only the highlight).
-    /// </summary>
-    /// <returns>Whether a face was found to aim at.</returns>
     public bool Preview(int itemId)
     {
         if (Voxels.Palette.IndexOf(itemId) is not { } block)
@@ -500,8 +491,6 @@ public partial class WorldView : Node3D
             Inventory.Add(itemId, 1);
             if (!Player.Mode.TrySelectBlock(block)) GD.PushWarning($"--preview: could not put item {itemId} in the hotbar");
         }
-        // Rays fanning out from the view direction, nearest first; the first face where the block fits wins, so the
-        // ghost shows green when the asteroid allows it. Otherwise the first face found, shown red.
         var eye = Player.GlobalPosition;
         var basis = Player.GlobalTransform.Basis;
         (Vector3I Hit, Vector3I Before)? fallback = null;
@@ -512,7 +501,6 @@ public partial class WorldView : Node3D
             var direction = (-basis.Z + basis.X * Mathf.Tan(radius) * Mathf.Cos(angle) + basis.Y * Mathf.Tan(radius) * Mathf.Sin(angle)).Normalized();
             if (!VoxelRaycast.Cast(Voxels, eye, direction, 4 * VoxelWorld.Size, out var hit, out var before) || hit == before) continue;
             fallback ??= (hit, before);
-            // Placeable from somewhere: the body check is redone from where the camera ends up.
             if (Player.Mode.PlanObject(new Vector3(-100, -100, -100), new Aim(Voxels, hit, before)) is not { Placeable: true }) continue;
             if (Frame(hit, before, requirePlaceable: true)) return true;
         }
@@ -522,10 +510,53 @@ public partial class WorldView : Node3D
     }
 
     /// <summary>
-    /// Pins the aim to the face between <paramref name="hit"/> and <paramref name="before"/> and puts the camera where it
-    /// sees the selected block's whole footprint (see <see cref="BestView"/>). A viewpoint where the player's body would
-    /// block the placement is skipped.
+    /// <c>--preview-space</c>: selects <paramref name="itemId"/> and positions the camera aiming into empty space near
+    /// the first ship (if any, so the red attachment line to its centre of mass shows clearly) or into open space.
     /// </summary>
+    public bool PreviewSpace(int itemId)
+    {
+        if (Voxels.Palette.IndexOf(itemId) is not { } block)
+        {
+            GD.PushWarning($"--preview-space: item {itemId} is not a placeable block in {Itemset.Header.Name}");
+            return false;
+        }
+        if (!Player.Mode.TrySelectBlock(block))
+        {
+            Inventory.Add(itemId, 1);
+            if (!Player.Mode.TrySelectBlock(block)) GD.PushWarning($"--preview-space: could not put item {itemId} in the hotbar");
+        }
+        Player.PinnedAim = null;
+        if (Grids.Ships.Count > 0)
+        {
+            var ship = Grids.Ships[^1];
+            var com = ship.GlobalTransform * ship.Mass.CenterOfMass.ToGodot();
+            float rad = ship.LocalExtent.Radius;
+            // Stand near the front-right of the ship and aim alongside its hull into empty space (~7 m off the hull,
+            // well within the 16-unit attachment range, without hitting any block along the placement ray).
+            var camPos = com + new Vector3(rad + 1.5f, 1.5f, rad + 2.5f);
+            var aimPoint = com + new Vector3(rad + 1.2f, 0.5f, 0f);
+            LookFrom(camPos, aimPoint);
+            Player.Mode.View = (Player.GlobalPosition, -Player.GlobalTransform.Basis.Z, Vector3.Zero);
+            return true;
+        }
+        // Without a ship, step into open space (> 16 units from rock) so --place starts a new floating ship.
+        var openSpot = new Vector3(8f, 8f, 8f);
+        if (!PlayerMotor.BodyOverlaps(openSpot, Voxels.IsSolid))
+            LookFrom(openSpot, openSpot + new Vector3(0, 0, -4f));
+        Player.Mode.View = (Player.GlobalPosition, -Player.GlobalTransform.Basis.Z, Vector3.Zero);
+        return true;
+    }
+
+    public void PlaceSpacePreviewed()
+    {
+        int shipsBefore = Grids.Ships.Count;
+        Player.Mode.View = (Player.GlobalPosition, -Player.GlobalTransform.Basis.Z, Vector3.Zero);
+        Player.Mode.PlaceInSpace(Player.GlobalPosition);
+        GD.Print(Grids.Ships.Count > shipsBefore
+            ? $"--place: started floating ship {Grids.Ships[^1].Name} at {Grids.Ships[^1].Position}"
+            : "--place: placed block in space attached to nearest grid");
+    }
+
     bool Frame(Vector3I hit, Vector3I before, bool requirePlaceable)
     {
         Vector3 min, size;
@@ -549,11 +580,6 @@ public partial class WorldView : Node3D
         return true;
     }
 
-    /// <summary>
-    /// <c>--focus</c>: moves the camera close to the first placed multi-block of that item, on the side the camera is
-    /// already on (in front, for the showcase), looking at it almost square on so model-box offsets and face
-    /// textures can be checked by eye. Its footprint is framed, so travel space and exhaust room are in the picture.
-    /// </summary>
     public bool Focus(int itemId)
     {
         var block = Voxels.Palette.IndexOf(itemId);
@@ -568,7 +594,6 @@ public partial class WorldView : Node3D
         var max = cells.Aggregate((a, c) => new Vector3I(Math.Max(a.X, c.X), Math.Max(a.Y, c.Y), Math.Max(a.Z, c.Z)));
         var size = (Vector3)(max - min + Vector3I.One);
         var center = (Vector3)min + size * 0.5f;
-        // The axis towards the camera's current side: the face it was already looking at.
         var toCamera = Player.GlobalPosition - center;
         var axis = toCamera.Abs().MaxAxisIndex();
         var normal = Vector3I.Zero;
@@ -583,22 +608,12 @@ public partial class WorldView : Node3D
         return true;
     }
 
-    /// <summary>
-    /// A camera position that sees the box at <paramref name="center"/>: out along <paramref name="normal"/> at each of
-    /// <paramref name="elevations"/> (degrees off the surface, first preferred) and a few azimuths around it, far enough
-    /// for the box's bounding sphere to fit the view. The viewpoint that sees most of the box past the rock wins; one
-    /// outside the world, inside rock or refused by <paramref name="accept"/> is skipped.
-    /// </summary>
     (Vector3 Position, int Seen, bool MostlySeen)? BestView(Vector3 center, Vector3 size, Vector3 normal, float[] elevations, Func<Vector3, bool> accept)
     {
-        // The default 75 degree vertical FOV: a sphere of radius r fits at r / sin(37.5°); a quarter more leaves the HUD
-        // text and the hotbar clear.
         float distance = Math.Max(4f, size.Length() * 0.5f / Mathf.Sin(Mathf.DegToRad(37.5f)) * 1.25f);
         var t1 = Mathf.Abs(normal.Y) > 0.5f ? Vector3.Right : Vector3.Up;
         var t2 = normal.Cross(t1);
 
-        // Points of the box to keep in sight: its centre and its corners pulled a little inwards (the corners
-        // themselves touch the surface the block stands on).
         var points = new List<Vector3> { center };
         for (int i = 0; i < 8; i++)
             points.Add(center + new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1) * (size * 0.5f - Vector3.One * 0.3f));
@@ -620,7 +635,6 @@ public partial class WorldView : Node3D
         return best is { } b ? (b.Position, b.Seen, b.Seen > points.Count / 2) : null;
     }
 
-    /// <summary>"61.2, 71, 83.4" whatever the system locale: a decimal comma would run the numbers together.</summary>
     static string Coordinates(Vector3 p) => FormattableString.Invariant($"{p.X:0.#}, {p.Y:0.#}, {p.Z:0.#}");
 
     void LookFrom(Vector3 position, Vector3 target)
@@ -630,8 +644,6 @@ public partial class WorldView : Node3D
         Player.LookAt(target, Mathf.Abs(view.Y) > 0.99f ? Vector3.Forward : Vector3.Up);
     }
 
-    /// <summary><c>--place</c>: a right click at the previewed spot, through the normal placing rules (survival spends
-    /// the item). The aim is let go afterwards, so the screenshot shows the placed block rather than a red ghost over it.</summary>
     public void PlacePreviewed()
     {
         int before = Voxels.Objects.Count;
@@ -644,19 +656,6 @@ public partial class WorldView : Node3D
 
     // ---- ship hooks ----
 
-    /// <summary>
-    /// <c>--demo-ship</c>: a small preset ship near the spawn, facing open space (<see cref="FindFreeBox"/>), built in
-    /// the static world from the itemset's own blocks
-    /// and touching nothing else, so <c>--launch</c> (or F on its console) can launch it. Picked by component, so any
-    /// itemset gets what it has: a hull box of the first plain opaque single-cell block, the first console (embedded in
-    /// the hull's top front, the front being −Z), the strongest power supply on top, and two thrusters on each of the
-    /// six faces, each turned so its exhaust points away from the hull (<see cref="ThrusterMount"/>'s rule), so the
-    /// ship can push and turn every way (on the top and bottom faces on opposite diagonals). Hull blocks don't conduct power, so the weakest single-cell power block that
-    /// supplies nothing (a cable) replaces the hull cells on the shortest paths from the power block to the console
-    /// and to every thruster (<see cref="WireDemoShip"/>). What the itemset lacks is skipped with a warning. The camera
-    /// moves to look at it.
-    /// </summary>
-    /// <returns>Whether a ship was built.</returns>
     public bool DemoShip()
     {
         var palette = Voxels.Palette;
@@ -669,8 +668,14 @@ public partial class WorldView : Node3D
             GD.PushWarning("--demo-ship: the itemset has no plain opaque single-cell block to build a hull from");
             return false;
         }
-        var console = palette.Indices.Where(Has<ConsoleComponent>).OrderBy(b => palette.IsObject(b)).ThenBy(b => palette.Item(b).ItemId)
-            .Select(b => (ushort?)b).FirstOrDefault();
+        var console = palette.Indices
+            .Where(b => palette.Item(b).Get<ConsoleComponent>() is { GunsOnly: false })
+            .OrderBy(b => palette.IsObject(b))
+            .ThenByDescending(b => palette.Item(b).Get<ConsoleComponent>()!.Buttons)
+            .ThenBy(b => palette.Item(b).ItemId)
+            .Select(b => (ushort?)b).FirstOrDefault()
+            ?? palette.Indices.Where(Has<ConsoleComponent>).OrderBy(b => palette.IsObject(b)).ThenBy(b => palette.Item(b).ItemId)
+                .Select(b => (ushort?)b).FirstOrDefault();
         var power = palette.Indices.Where(b => palette.Item(b).Block!.Power > 0).OrderByDescending(b => palette.Item(b).Block!.Power)
             .ThenBy(b => palette.Item(b).ItemId).Select(b => (ushort?)b).FirstOrDefault();
         var thruster = palette.ObjectIndices.Where(Has<ThrusterComponent>)
@@ -679,7 +684,6 @@ public partial class WorldView : Node3D
         if (power is null) GD.PushWarning("--demo-ship: the itemset has no power supply block");
         if (thruster is null) GD.PushWarning("--demo-ship: the itemset has no multi-block thruster");
 
-        // Hull 5 wide (X), 3 high (Y), 7 long (Z). Thrusters and the power block stick out by at most their longest edge.
         var hullSize = new Vector3I(5, 3, 7);
         int reach = 1 + new[] { thruster, power }.OfType<ushort>().Select(b => palette.Shape(b) is { } shape ? Math.Max(shape.Size.X, Math.Max(shape.Size.Y, shape.Size.Z)) : 1)
             .DefaultIfEmpty(1).Max();
@@ -696,6 +700,7 @@ public partial class WorldView : Node3D
             cells.Add((min + new Vector3I(x, y, z), hullBlock));
         int cx = min.X + hullSize.X / 2, top = min.Y + hullSize.Y - 1, cy = min.Y + hullSize.Y / 2;
         var consoleCell = new Vector3I(cx, top, min.Z);
+        var consoleOrigin = consoleCell;
         if (console is { } c && !palette.IsObject(c)) cells[cells.FindIndex(e => e.Item1 == consoleCell)] = (consoleCell, c);
         if (power is { } pw && !palette.IsObject(pw))
         {
@@ -706,34 +711,41 @@ public partial class WorldView : Node3D
 
         int placed = 0, wanted = 0;
         var placedObjects = new List<WorldObject>();
-        void PlaceAgainst(ushort block, Vector3I placeCell, Vector3I normal, Orientation o)
+        WorldObject? PlaceAgainst(ushort block, Vector3I placeCell, Vector3I normal, Orientation o)
         {
             wanted++;
             var origin = palette.Shape(block)!.AnchorFor(placeCell.ToInt3(), normal.ToInt3(), o);
             if (Voxels.ObjectProblem(block, origin, o) is { } problem)
+            {
                 GD.PushWarning($"--demo-ship: {palette.Item(block).Name} at {origin}: {problem}");
-            else if (Voxels.AddObject(block, origin, o) is { } added)
+                return null;
+            }
+            if (Voxels.AddObject(block, origin, o) is { } added)
             {
                 placed++;
                 placedObjects.Add(added);
+                return added;
             }
+            return null;
         }
         if (console is { } co && palette.IsObject(co))
         {
-            PlaceAgainst(co, consoleCell + Vector3I.Up, Vector3I.Up, Orientation.Default);
-            consoleCell = Voxels.Objects.MaxBy(obj => obj.Id)?.ModelCells.First() ?? consoleCell;
+            if (PlaceAgainst(co, consoleCell + Vector3I.Up, Vector3I.Up, Orientation.Default) is { } consoleObj)
+            {
+                consoleOrigin = consoleObj.Origin.ToGodot();
+                consoleCell = consoleObj.ModelCells.First();
+            }
         }
         if (power is { } p && palette.IsObject(p))
             PlaceAgainst(p, new Vector3I(cx, top + 1, min.Z + hullSize.Z / 2 - 1), Vector3I.Up, Orientation.Default);
+
+        var mountedThrusters = new Dictionary<Vector3I, List<WorldObject>>();
         if (thruster is { } t)
         {
             var mounts = new (Vector3I Normal, Vector3I[] Cells)[]
             {
                 (Vector3I.Right, [new(min.X + hullSize.X, cy, min.Z + 1), new(min.X + hullSize.X, cy, min.Z + hullSize.Z - 2)]),
                 (Vector3I.Left, [new(min.X - 1, cy, min.Z + 1), new(min.X - 1, cy, min.Z + hullSize.Z - 2)]),
-                // Top and bottom pairs sit on opposite diagonals, so the vertical thrusters can pitch and roll the ship
-                // both ways (pairs on one end only could pitch it one way, and forward thrust below the centre of mass
-                // could never be trimmed).
                 (Vector3I.Up, [new(min.X, top + 1, min.Z + hullSize.Z - 2), new(min.X + hullSize.X - 1, top + 1, min.Z + 1)]),
                 (Vector3I.Down, [new(min.X, min.Y - 1, min.Z + 1), new(min.X + hullSize.X - 1, min.Y - 1, min.Z + hullSize.Z - 2)]),
                 (Vector3I.Back, [new(min.X + 1, cy, min.Z + hullSize.Z), new(min.X + hullSize.X - 2, cy, min.Z + hullSize.Z)]),
@@ -743,19 +755,53 @@ public partial class WorldView : Node3D
             var component = palette.Item(t).Get<ThrusterComponent>()!;
             foreach (var (normal, at) in mounts)
             {
-                // Exhaust outwards: the turn whose flame points along the face normal.
                 var outward = normal.ToInt3().ToVector3();
                 var turned = Orientation.All.FirstOrDefault(turn =>
                     System.Numerics.Vector3.Distance(ThrusterMount.FromShape(shape, Int3.Zero, turn, component).LocalFlameDirection, outward) < 1e-3f);
-                foreach (var cell in at) PlaceAgainst(t, cell, normal, turned);
+                var list = new List<WorldObject>();
+                foreach (var cell in at)
+                    if (PlaceAgainst(t, cell, normal, turned) is { } addedThruster)
+                        list.Add(addedThruster);
+                mountedThrusters[normal] = list;
             }
         }
         _demoConsole = console is null ? null : consoleCell;
         int cables = WireDemoShip(cells.Where(c => c.Item2 == hullBlock).Select(c => c.Item1).ToHashSet(),
             cells.Where(c => c.Item2 != hullBlock).Select(c => c.Item1).Concat(placedObjects.SelectMany(o => o.ModelCells)));
 
+        // Pre-bind the demo ship's console colour groups so W/S/A/D/Space fly and yaw it immediately in original console mode.
+        if (console is { } cIdx && palette.Item(cIdx).Get<ConsoleComponent>() is { GunsOnly: false } cComp)
+        {
+            var cid = consoleOrigin.ToInt3();
+            int buttons = cComp.Buttons;
+            void BindGroup(int groupIdx, string key, params WorldObject?[] targets)
+            {
+                if (groupIdx >= ConsoleBinding.ClampGroupCount(buttons)) return;
+                Voxels.Consoles.AssignKey(cid, buttons, false, groupIdx, key);
+                var state = Voxels.Consoles.GetOrCreate(cid, buttons, false);
+                foreach (var targetObj in targets)
+                {
+                    if (targetObj is null) continue;
+                    // Cycle until it lands in groupIdx.
+                    while (state.GroupOf(targetObj.Origin) != groupIdx)
+                        if (Voxels.Consoles.CycleTarget(cid, buttons, false, targetObj.Origin, isThruster: true, isGun: false) < 0)
+                            break;
+                }
+            }
+            if (mountedThrusters.TryGetValue(Vector3I.Back, out var back))
+                BindGroup(0, "W", [.. back]);
+            if (mountedThrusters.TryGetValue(Vector3I.Forward, out var front))
+                BindGroup(1, "S", [.. front]);
+            if (mountedThrusters.TryGetValue(Vector3I.Right, out var right) && mountedThrusters.TryGetValue(Vector3I.Left, out var left))
+            {
+                BindGroup(2, "A", right.ElementAtOrDefault(0), left.ElementAtOrDefault(1));
+                BindGroup(3, "D", left.ElementAtOrDefault(0), right.ElementAtOrDefault(1));
+            }
+            if (mountedThrusters.TryGetValue(Vector3I.Down, out var down))
+                BindGroup(4, "Space", [.. down]);
+        }
+
         var center = (Vector3)min + (Vector3)hullSize * 0.5f;
-        // From the front-right and a little above, far enough to see the thrusters around the hull.
         var eyeAt = center + new Vector3(0.55f, 0.45f, 1).Normalized() * 20;
         if (VoxelWorld.InBounds((Vector3I)eyeAt.Floor()) && !PlayerMotor.BodyOverlaps(eyeAt, Voxels.IsSolid))
             LookFrom(eyeAt, center);
@@ -766,12 +812,6 @@ public partial class WorldView : Node3D
         return true;
     }
 
-    /// <summary>
-    /// Connects the demo ship's power: hull blocks don't conduct (only blocks with a power value do), so cells of
-    /// <paramref name="hull"/> on the shortest paths from the power supply to every other powered block among
-    /// <paramref name="poweredCells"/> become the itemset's weakest non-supplying single-cell power block (a cable).
-    /// Blocks are joined nearest first, each through whatever is already connected. Returns how many cables were laid.
-    /// </summary>
     int WireDemoShip(HashSet<Vector3I> hull, IEnumerable<Vector3I> poweredCells)
     {
         var palette = Voxels.Palette;
@@ -785,7 +825,6 @@ public partial class WorldView : Node3D
             return 0;
         }
 
-        // Group the powered cells into blocks: grid cells alone, objects by their model.
         var groups = new List<(HashSet<Vector3I> Cells, int Power)>();
         foreach (var cell in poweredCells.Distinct())
         {
@@ -822,8 +861,6 @@ public partial class WorldView : Node3D
 
     static readonly Vector3I[] FaceSteps = [Vector3I.Right, Vector3I.Left, Vector3I.Up, Vector3I.Down, Vector3I.Back, Vector3I.Forward];
 
-    /// <summary>The fewest <paramref name="through"/> cells that join <paramref name="from"/> to a face of
-    /// <paramref name="to"/> (breadth-first), empty when they already touch, or null when no path exists.</summary>
     static List<Vector3I>? Route(HashSet<Vector3I> from, HashSet<Vector3I> through, HashSet<Vector3I> to)
     {
         bool Touches(Vector3I c) => FaceSteps.Any(s => to.Contains(c + s));
@@ -848,16 +885,8 @@ public partial class WorldView : Node3D
         return null;
     }
 
-    /// <summary>How far ahead (−Z) of the demo ship <see cref="FindFreeBox"/> wants open space, in cells, so the first
-    /// seat view is not a wall of rock and the ship can speed up before it reaches anything. Ours.</summary>
     const int DemoClearAhead = 40;
 
-    /// <summary>
-    /// The minimum corner of a box of <paramref name="size"/> near the spawn whose cells, and <paramref name="margin"/>
-    /// around them, are empty and unreserved in the world: in front of the spawn view and to its left first, then
-    /// further out. The nearest such box with <see cref="DemoClearAhead"/> cells of open space in front of it (−Z, the
-    /// way the ship faces; the world's edge counts as open) wins; when there is none, the nearest free box.
-    /// </summary>
     Vector3I? FindFreeBox(Vector3I size, int margin)
     {
         var basis = Player.GlobalTransform.Basis;
@@ -893,10 +922,6 @@ public partial class WorldView : Node3D
         return nearest;
     }
 
-    /// <summary>
-    /// <c>--launch</c>: F on a console of the static world, as the player would press it: <see cref="DemoShip"/>'s
-    /// console, or else the world's console block nearest the camera.
-    /// </summary>
     public void LaunchConsole()
     {
         var palette = Voxels.Palette;
@@ -920,10 +945,6 @@ public partial class WorldView : Node3D
         GD.Print(Grids.Ships.Count > ships ? $"--launch: launched {Grids.Ships[^1].Name}" : "--launch: nothing launched (see the HUD message)");
     }
 
-    /// <summary>
-    /// <c>--turn-ship</c>: turns every ship by <paramref name="degrees"/> about the world's up axis through its centre
-    /// of mass, to see building and aiming follow a ship's own axes.
-    /// </summary>
     public void TurnShips(float degrees)
     {
         foreach (var ship in Grids.Ships)
@@ -935,10 +956,6 @@ public partial class WorldView : Node3D
         }
     }
 
-    /// <summary>
-    /// <c>--pilot</c>: sits at the first ship's console (its first console grid block, else its first console object)
-    /// with the given view, as F there would.
-    /// </summary>
     public bool PilotFirstShip(FlyCamera.PilotView view)
     {
         if (Grids.Ships.Count == 0)
@@ -954,18 +971,67 @@ public partial class WorldView : Node3D
         Player.View = view;
         if (console is not { } cell || !Player.Sit(ship, cell))
         {
-            GD.PushWarning($"--pilot: {ship.Name} has no console");
+            GD.PushWarning($"--pilot: {ship.Name} has no powered console");
             return false;
         }
         GD.Print($"--pilot: piloting {ship.Name} from its console at {cell}, {view} view");
         return true;
     }
 
-    /// <summary>
-    /// <c>--preview-ship</c> / <c>--place-on-ship</c>: selects the item's block (survival gets one if needed) and pins
-    /// the aim to the first face of a ship, seen from the camera, where it fits, scanning rays that fan out from the
-    /// camera towards the ship's centre; then, with <paramref name="place"/>, places it there by the normal rules.
-    /// </summary>
+    public bool BindFirstConsole(bool closeUp)
+    {
+        foreach (var grid in Grids.Ships.Cast<BlockGrid>().Append(Voxels))
+        {
+            Vector3I? consoleCell = null;
+            ConsoleComponent? comp = null;
+            foreach (var (cell, block) in grid.Blocks())
+                if (grid.Palette.Item(block).Get<ConsoleComponent>() is { } c)
+                {
+                    (consoleCell, comp) = (cell, c);
+                    break;
+                }
+            if (consoleCell is null)
+            {
+                foreach (var obj in grid.Objects)
+                    if (grid.Palette.Item(obj.Block).Get<ConsoleComponent>() is { } c)
+                    {
+                        (consoleCell, comp) = (obj.Origin.ToGodot(), c);
+                        break;
+                    }
+            }
+            if (consoleCell is not { } foundCell || comp is null) continue;
+
+            Player.EquipConsoleBindTool(grid, foundCell, comp);
+            if (grid is ShipGrid ship)
+            {
+                var com = ship.ToGlobal(ship.Mass.CenterOfMass.ToGodot());
+                if (closeUp)
+                {
+                    var consoleCenter = ship.ToGlobal((Vector3)foundCell + new Vector3(0.5f, 0.5f, 0.5f));
+                    var deckEye = consoleCenter + new Vector3(0f, 1.15f, 1.0f);
+                    var thrusterObj = ship.Objects
+                        .Where(o => ship.Palette.Item(o.Block).Get<ThrusterComponent>() is not null)
+                        .OrderBy(o => ship.ToGlobal(o.ModelBox.GetCenter()).DistanceSquaredTo(deckEye))
+                        .FirstOrDefault();
+                    if (thrusterObj is not null)
+                    {
+                        var targetWorld = ship.ToGlobal(thrusterObj.ModelBox.GetCenter());
+                        LookFrom(deckEye, targetWorld);
+                    }
+                }
+                else
+                {
+                    var eyePos = com + new Vector3(0.65f, 0.42f, 0.85f).Normalized() * (ship.LocalExtent.Radius * 1.45f + 2.2f);
+                    LookFrom(eyePos, com);
+                }
+            }
+            GD.Print($"--bind-console: equipped binding tool for console at {foundCell} ({(closeUp ? "close" : "wide")})");
+            return true;
+        }
+        GD.PushWarning("--bind-console: no console block in the world or ships (try --demo-ship)");
+        return false;
+    }
+
     public bool AimAtShip(int itemId, bool place)
     {
         if (Grids.Ships.Count == 0)

@@ -181,8 +181,9 @@ public partial class Main : Node
         return world;
     }
 
-    /// <summary>--open, --orientation, --launch, --turn-ship, --dampeners, --pilot, --hold, --open-doors, --preview, --place, --place-on-ship, --preview-ship and
-    /// --focus apply to the first world, new or loaded, so a loaded world can be screenshotted the same way.</summary>
+    /// <summary>--open, --orientation, --launch, --turn-ship, --flight-assist, --fixed-camera, --dampeners, --pilot, --hold,
+    /// --open-doors, --preview, --preview-space, --place, --place-on-ship, --preview-ship and --focus apply to the first
+    /// world, new or loaded, so a loaded world can be screenshotted the same way.</summary>
     void ApplyHooks(WorldView world)
     {
         if (_hooksApplied) return;
@@ -190,17 +191,25 @@ public partial class Main : Node
         // A screenshot run takes no input: stray mouse or wheel events reaching the window would change the selection
         // or the view, and two runs with the same arguments would differ.
         if (_args.ScreenshotPath is not null || (_args.QuitAfterSave && (_args.Frames is not null || _args.Seconds is not null))) world.Player.InputLocked = true;
+        if (_args.DebugHud) world.Player.DebugHud = true;
         if (_args.Orientation is { } orientation) world.Player.Mode.Orientation = Simulation.Shapes.Orientation.FromIndex(orientation);
         if (_args.Launch) world.LaunchConsole();
         if (_args.TurnShip is { } degrees) world.TurnShips(degrees);
+        if (_args.BindConsole is { } bindMode) world.BindFirstConsole(bindMode == "close");
         if (_args.PlaceOnShip is { } onShip) world.AimAtShip(onShip, place: true);
         if (_args.OpenDoors) world.OpenDoors();
         if (_args.Preview is { } item && world.Preview(item) && _args.Place) world.PlacePreviewed();
-        else if (_args.Place) GD.PushWarning("--place: needs a --preview that found a face to aim at");
+        else if (_args.PreviewSpace is { } spaceItem && world.PreviewSpace(spaceItem))
+        {
+            if (_args.Place) world.PlaceSpacePreviewed();
+        }
+        else if (_args.Place) GD.PushWarning("--place: needs a --preview or --preview-space");
         if (_args.PreviewShip is { } shipItem) world.AimAtShip(shipItem, place: false);
         if (_args.Focus is { } focus) world.Focus(focus);
         if (_args.Select is { } selected) world.SelectItem(selected);
         // Piloting last: the hooks above aim and place from where the player stands.
+        if (_args.FlightAssist is { } flightAssist) world.Player.FlightAssist = flightAssist;
+        if (_args.FixedCamera is { } fixedCam) world.Player.FixedCamera = fixedCam;
         if (_args.Dampeners is { } dampeners) world.Player.Dampeners = dampeners;
         if (_args.Pilot is { } view)
             world.PilotFirstShip(view switch { "chase" => FlyCamera.PilotView.Chase, "fixed" => FlyCamera.PilotView.Fixed, _ => FlyCamera.PilotView.Seat });
@@ -290,9 +299,11 @@ public partial class Main : Node
         int cells = 0;
         var question = new List<string>();
         if (match.OtherPack)
+        {
             question.Add($"'{saved.Name}' was made with {saved.Itemset.Name} from '{saved.Itemset.PackId}', which is not installed. " +
                          $"{entry.Header.Name} from '{entry.Pack.Id}' uses the same itemset key ({entry.Header.Key}) but is another " +
                          "pack: blocks and items keep their ids, but may behave differently or be different things.");
+        }
         else if (check.Status != BindingStatus.Exact)
             question.Add($"'{saved.Name}' was saved with a different version of {saved.Itemset.Name} from '{saved.Itemset.PackId}'.");
         if (check.Status == BindingStatus.Incompatible)

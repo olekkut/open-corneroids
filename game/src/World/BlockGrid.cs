@@ -3,6 +3,7 @@ using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Game.Content;
 using OpenCorneroids.Simulation.Persistence;
 using OpenCorneroids.Simulation.Shapes;
+using OpenCorneroids.Simulation.Ships;
 using Orientation = OpenCorneroids.Simulation.Shapes.Orientation;
 
 namespace OpenCorneroids.Game.World;
@@ -70,6 +71,9 @@ public abstract partial class BlockGrid : Node3D
     /// structure shows the same textures before and after it is launched.</summary>
     public GridSystems Systems { get; }
 
+    /// <summary>Console colour-group bindings, key assignments, and bound cameras on this grid.</summary>
+    public ShipConsoleBindings Consoles { get; } = new();
+
     /// <summary>Edge length of the cubic grid, in cells.</summary>
     public int GridSize { get; }
 
@@ -120,6 +124,65 @@ public abstract partial class BlockGrid : Node3D
 
     /// <summary>The world centre of the grid's cube and its bounding-sphere radius, for cheap "can this matter" tests.</summary>
     public (Vector3 Center, float Radius) Bounds => (ToGlobal(Vector3.One * (GridSize * 0.5f)), GridSize * 0.8661f);
+
+    /// <summary>
+    /// Finds the closest solid cell (grid block or object model cell) within <paramref name="maxDistance"/> of
+    /// <paramref name="localPos"/> (grid-local coordinates). Empty chunks are skipped in one check.
+    /// </summary>
+    public (Vector3I Cell, float Distance)? NearestSolidBlock(Vector3 localPos, float maxDistance)
+    {
+        float bestDistSq = maxDistance * maxDistance;
+        Vector3I? bestCell = null;
+
+        int minCx = Math.Max(0, Mathf.FloorToInt((localPos.X - maxDistance) / ChunkSize));
+        int maxCx = Math.Min(_chunks - 1, Mathf.FloorToInt((localPos.X + maxDistance) / ChunkSize));
+        int minCy = Math.Max(0, Mathf.FloorToInt((localPos.Y - maxDistance) / ChunkSize));
+        int maxCy = Math.Min(_chunks - 1, Mathf.FloorToInt((localPos.Y + maxDistance) / ChunkSize));
+        int minCz = Math.Max(0, Mathf.FloorToInt((localPos.Z - maxDistance) / ChunkSize));
+        int maxCz = Math.Min(_chunks - 1, Mathf.FloorToInt((localPos.Z + maxDistance) / ChunkSize));
+
+        int loX = Math.Max(0, Mathf.FloorToInt(localPos.X - maxDistance));
+        int hiX = Math.Min(GridSize - 1, Mathf.FloorToInt(localPos.X + maxDistance));
+        int loY = Math.Max(0, Mathf.FloorToInt(localPos.Y - maxDistance));
+        int hiY = Math.Min(GridSize - 1, Mathf.FloorToInt(localPos.Y + maxDistance));
+        int loZ = Math.Max(0, Mathf.FloorToInt(localPos.Z - maxDistance));
+        int hiZ = Math.Min(GridSize - 1, Mathf.FloorToInt(localPos.Z + maxDistance));
+
+        for (int cz = minCz; cz <= maxCz; cz++)
+        for (int cy = minCy; cy <= maxCy; cy++)
+        for (int cx = minCx; cx <= maxCx; cx++)
+        {
+            if (_chunkNodes[(cz * _chunks + cy) * _chunks + cx] is null) continue;
+            int z0 = Math.Max(loZ, cz * ChunkSize), z1 = Math.Min(hiZ, (cz + 1) * ChunkSize - 1);
+            int y0 = Math.Max(loY, cy * ChunkSize), y1 = Math.Min(hiY, (cy + 1) * ChunkSize - 1);
+            int x0 = Math.Max(loX, cx * ChunkSize), x1 = Math.Min(hiX, (cx + 1) * ChunkSize - 1);
+            for (int z = z0; z <= z1; z++)
+            for (int y = y0; y <= y1; y++)
+            for (int x = x0; x <= x1; x++)
+            {
+                if (_cells[(z * GridSize + y) * GridSize + x] == BlockPalette.Air) continue;
+                float d2 = localPos.DistanceSquaredTo(new Vector3(x + 0.5f, y + 0.5f, z + 0.5f));
+                if (d2 <= bestDistSq)
+                {
+                    bestDistSq = d2;
+                    bestCell = new Vector3I(x, y, z);
+                }
+            }
+        }
+
+        foreach (var obj in _objects.Values)
+            foreach (var cell in obj.ModelCells)
+            {
+                float d2 = localPos.DistanceSquaredTo(new Vector3(cell.X + 0.5f, cell.Y + 0.5f, cell.Z + 0.5f));
+                if (d2 <= bestDistSq)
+                {
+                    bestDistSq = d2;
+                    bestCell = cell;
+                }
+            }
+
+        return bestCell is { } found ? (found, MathF.Sqrt(bestDistSq)) : null;
+    }
 
     // ---- cells ----
 
@@ -228,6 +291,14 @@ public abstract partial class BlockGrid : Node3D
     /// <summary>The object whose model covers <paramref name="p"/>, if any.</summary>
     public WorldObject? ObjectAt(Vector3I p) => _solid.GetValueOrDefault(p);
 
+    /// <summary>The object whose full footprint (model, exhaust wash or door travel) covers <paramref name="p"/>, if any.</summary>
+    public WorldObject? FootprintObjectAt(Vector3I p) => _footprints.GetValueOrDefault(p);
+
+    /// <summary>The object whose placement <see cref="WorldObject.Origin"/> is <paramref name="origin"/>, if any.
+    /// Console bindings record an object's origin, which for some orientations is an empty exhaust cell rather than a solid cell.</summary>
+    public WorldObject? ObjectAtOrigin(Vector3I origin) =>
+        _footprints.TryGetValue(origin, out var obj) && obj.Origin == origin.ToInt3() ? obj : null;
+
     /// <summary>What a ray stopping at the solid cell <paramref name="hit"/> targets.</summary>
     public BlockTarget TargetAt(Vector3I hit) =>
         ObjectAt(hit) is { } obj ? new BlockTarget(this, obj.Origin.ToGodot(), obj) : new BlockTarget(this, hit, null);
@@ -266,6 +337,7 @@ public abstract partial class BlockGrid : Node3D
     public void SetRaw(Vector3I p, ushort block)
     {
         if (!InGrid(p)) return;
+        if (_cells[Index(p)] != block) Consoles.RemoveBlock(p.ToInt3());
         _cells[Index(p)] = block;
         _turned.Remove(p);
         TrackPower(p, block);
@@ -280,6 +352,7 @@ public abstract partial class BlockGrid : Node3D
     public bool Set(Vector3I p, ushort block, Orientation o)
     {
         if (!InGrid(p) || (block != BlockPalette.Air && _palette.IsObject(block))) return false;
+        if (_cells[Index(p)] != block) Consoles.RemoveBlock(p.ToInt3());
         _cells[Index(p)] = block;
         Turn(p, block, o);
         Revision++;
@@ -311,6 +384,7 @@ public abstract partial class BlockGrid : Node3D
         foreach (var (p, block) in cells)
         {
             if (!InGrid(p) || (block != BlockPalette.Air && _palette.IsObject(block)) || _cells[Index(p)] == block) continue;
+            Consoles.RemoveBlock(p.ToInt3());
             _cells[Index(p)] = block;
             _turned.Remove(p);
             UpdateLight(p, block);
@@ -394,6 +468,7 @@ public abstract partial class BlockGrid : Node3D
     public void RemoveObject(WorldObject obj)
     {
         if (!_objects.Remove(obj.Id)) return;
+        Consoles.RemoveBlock(obj.Origin);
         foreach (var p in obj.Footprint) _footprints.Remove(p);
         foreach (var p in obj.ModelCells) _solid.Remove(p);
         foreach (var p in obj.FullCells) _fullCells.Remove(p);
@@ -534,6 +609,23 @@ public abstract partial class BlockGrid : Node3D
     /// <summary>The turned cells for a save.</summary>
     public List<TurnedCell> ExportTurned() =>
         [.. _turned.OrderBy(t => t.Key.Z).ThenBy(t => t.Key.Y).ThenBy(t => t.Key.X).Select(t => new TurnedCell(t.Key.ToInt3(), t.Value.Index))];
+
+    /// <summary>The console bindings for a save.</summary>
+    public IReadOnlyList<SavedConsole> ExportConsoles() => Consoles.ToSnapshot();
+
+    /// <summary>Restores saved console bindings after cells and objects have been imported.</summary>
+    public void ImportConsoles(IReadOnlyList<SavedConsole> saved)
+    {
+        Consoles.LoadSnapshot(saved, cell =>
+        {
+            var p = cell.ToGodot();
+            var block = Get(p);
+            if (block == BlockPalette.Air && _footprints.TryGetValue(p, out var obj) && obj.Origin == cell)
+                block = obj.Block;
+            return block != BlockPalette.Air && _palette.Item(block).Get<ConsoleComponent>() is { } c
+                ? (c.Buttons, c.GunsOnly) : null;
+        });
+    }
 
     /// <summary>
     /// Places saved objects after <see cref="Import"/>. Objects whose block this palette lacks (or now treats as a

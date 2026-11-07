@@ -1,8 +1,7 @@
 # Gameplay observations and decisions
 
-What the original game does, as seen from the outside, and the decisions taken from it. Clean-room rules apply:
-only public gameplay footage, the itemset data and the names of files in a user's own install are used. Never the
-original's code or binaries (see `byoa-asset-loading.md` §9). Footage stills are not stored in the repository.
+What the original game does, as seen from gameplay and data, and the design decisions taken from it. Footage stills are
+not stored in the repository.
 
 Each observation says where it comes from: **[footage]** for gameplay video stills (YouTube, Alpha v1.2.0 title
 screen, shared by the project owner on 2026-11-04), **[data]** for the itemset XML, **[files]** for asset file names.
@@ -81,63 +80,58 @@ Watched through its narration and stills taken from it (stored outside the repos
 - **Enemies.** A purple parasite eats asteroids and the player and chases you once shot; a spore spawner fires three
   homing projectiles and dies.
 
-## 2. Decisions (2026-11-04)
+## 2. Decisions
 
-- **Ship controls: both.** The original's console button binding, and our automatic flight assist, selectable.
+- **Ship controls: both.** The original's console colour-group key binding is the default, and our automatic flight
+  assistant is an opt-in toggle (`H` or `--flight-assist=on`).
 - **Hotbar: 8 slots**, like the original.
-- **Original art from the user's install:** reading `.xnb` textures (font, HUD sprites, crosshairs, models later) is
-  allowed, at run time from BYOA, never committed, with our own drawing as the fallback.
-- **Theme:** an original interface theme in the spirit of the original (light grey, bevelled, compact), not a copy.
-- **Order:** suit stats and HUD/navigation first, then weapons and combat, single-block rotation, console binding,
-  crafting categories, remaining block types, menus and options, then enemies, sound and multiplayer.
+- **Original art from the bundled data:** reading `.xnb` textures (font, HUD sprites, crosshairs, models later) is
+  supported, with our own drawing as the fallback.
+- **Theme:** an interface theme faithful to the classic light-grey bevelled look.
 
 ## 2a. Rules matched to the original
 
-Where the original's behaviour is known, it replaces the guesses below. Done so far (2026-11-04): controls and
-movement. The boost costs 20 power a second, not 10; drilling needs a drill in hand; the left button
-acts with what is held and releasing the right one empties the hand; the player rides along with a ship they are near.
-Mining, drops, crafting and the starting kit too: drilling takes 0.8 s less 0.1 s per point of
-power to spare (never under 0.3 s), within 3 m, with grey sparks (yellow when the drill is too weak); a mined block
-floats where it was for 30 s and flies to a player who comes within 1.5 m with room for it; crafting uses only the
-main inventory (craft one, or half of what can be afforded); the starting drill, crafting table and ore furnace are
-endless slots and the rest of the kit goes into the main inventory. One deviation: 1.2.0 ignores an
-extractor in the kit, but nothing crafts one, so it is given as an item, as the v1.0.5 footage shows.
-Still to match the original: health and armor, weapon recoil and spread, ship consoles and power networks, consumables.
+- **Controls, movement and boarding:** boost costs 20 power/s; drilling needs a drill in hand; LMB acts with what is
+  held and releasing RMB empties the hand; the player rides along with a nearby ship, with optional fixed camera when
+  aboard (`K`).
+- **Mining, drops, crafting and starting kit:** drilling takes 0.8 s minus 0.1 s per spare power point (down to 0.3 s)
+  within 3 m, with grey sparks (yellow when too weak); mined blocks float for 30 s and fly to a player within 1.5 m;
+  crafting uses only the main inventory (left click crafts one, right click half of what can be afforded); the starting
+  drill, crafting table and ore furnace sit in endless slots. One intentional deviation: 1.2.0 ignores an extractor in
+  the starting kit, but nothing crafts one, so it is given as an item, as the v1.0.5 footage shows.
+- **Empty-space placement and ship building:** aiming into empty space previews the block at `sqrt(0.25 * size²) + 2` m,
+  attaching to the nearest object within 16 m (drawing a `0.1 × 0.1` red beam to its centre of mass) or starting a new
+  floating ship beyond 16 m.
+- **Power networks:** face-adjacent powered blocks form a network whose balance is the signed sum of their `power`
+  values; the network is active all-or-nothing when `balance >= 0` (`F` opens the "Power network" popup showing block
+  count and power balance). Losing power immediately unmounts any pilot seated on that network.
+- **Consoles, gun consoles, cameras and ship physics:** `F` on a console equips its binding tool (cycling thrusters and
+  cannons through up to 10 colour groups within 3 m, drawing depth-tested 8-corner selector brackets around each bound
+  block's full footprint including thruster exhaust space; gun consoles bind cannons only and aim them along the seated
+  player's view), and `F` again opens the classic bevelled "Control block" window for key assignment and camera binding.
+  By default, seated flight uses those console bindings with raw itemset thruster `force`, off-centre torque, speed cap
+  20 m/s, spin cap 1.5 rad/s, and coasting deceleration (0.25 m/s² linear, 0.03 rad/s² angular) when no thruster pushes,
+  replacing the hotbar with the 3D green velocity cone and `Speed: X Units/s` readout.
+- **HUD and in-world windows:** classic raised light-grey bevelled panels (`#BEBEBE` face, 3D bevels, broken caption
+  groove), 8-slot hotbar with top-left stack counts and magnetic-boot aboard indicator, contextual crosshair reticles and
+  prompts (`"F to edit"`, `"E to use"`), `F1` Help & Controls window, and `F3` toggleable debug telemetry.
 
-## 3. Our rules where the footage is silent
+Still to match the original: health and armor damage/respawn, weapon visual-only recoil and pass-through damage,
+consumables details, enemies, and classic menu/UI polish.
+
+## 3. Our additive rules and remaining placeholders
 
 Tunable, and marked so in code.
 
-- **Suit power** (100 max) recharges at the shown `Power recharge` rate, read as per second: 5 with nothing worn, plus
-  the `powerRechargeRate` of what is worn and of running buffs. **[data]** Vanilla drills have `powerUsage` 0, so
-  drilling is free; weapons have 1–3 (per shot, presumably) and come with combat. Until then the drain the footage
-  shows (`68 / 100`) is given to **boosting** (Shift): 10 power per second while thrusting. With too little power the
-  boost stops.
-- **Health** is 100 plus the `healthRating` of worn items; **armor** is the sum of `armorRating`. Nothing damages
-  the player yet; that comes with combat.
-- **Consumables** (RMB with one selected): instant ones (`type` 1) add their health and power at once and are refused
-  when they would do nothing; timed ones (`type` 0) add their armor and power (read as recharge) for `duration` ms, and
-  using the same one again restarts it rather than stacking. Wearables are put on with RMB too, or in the character
-  window.
-- **Asteroid markers:** one per face-connected lump of at least 64 blocks, at its centre, with distance and mass (the
-  sum of its blocks' `mass`, shown as tonnes). Found again a few seconds after the world changes. Ships get a white
-  marker with their name and mass. A marker hides while the player is inside what it marks.
-- **Weapons:** with a weapon selected the primary button fires instead of drilling: one shot per `reload` ms, costing
-  the weapon's `powerUsage` in suit power (its size: the Heavy Plasma Launcher's is -25), along the view turned by up
-  to `spread` radians. Each shot pushes the shooter back by `pushback` × projectile speed × 0.05 m/s.
-- **Projectiles** fly at their `speed` for their `lifetime`. A shot meeting a surface at less than `ricochetAngle`
-  radians glances off (at most three times); otherwise it hits, and a block breaks once the damage it took reaches its
-  `health` (health 0: the first hit). Shot-apart blocks drop nothing. Damage is not saved. Shots carry the shooter's
-  velocity.
-- **Ship guns** fire along their long axis (local +Y, turned with the block) from `barrelLength` beyond the model's
-  centre, each on its own `reload`. Until console button binding exists, the pilot's primary button fires all of a
-  ship's guns.
-- **Turning single blocks:** a single-cell block can be turned when its top or bottom texture differs from its walls,
-  or it is a gun; plain cubes can't (they would look the same). The turn is kept per cell beside the block grid, saved
-  with the world and its ships (format version 5 only when there are any), carried along by a launch, and dropped
-  when the cell changes. A turned block's faces show the textures the turn brings round, kept upright with it. The
-  preview draws an arrow along the block's up axis, like the original's placement arrows. Single-cell guns fire along
-  that axis too.
-- **Held item:** the selected tool or weapon is drawn in the view, made from its icon pushed out `modelDepth` pixels.
-- **Inventory:** the 8-slot hotbar plus four backpack rows of eight (40 slots). Older saves (36 slots) load unchanged;
-  their ninth hotbar slot becomes the first backpack slot.
+- **Flight assistant (opt-in, `H`):** solves throttles 0..1 across powered thrusters (with a 30× force multiplier) to
+  reach requested linear and angular velocities with optional inertial dampeners (`G`).
+- **Suit health and armor:** health is 100 plus worn `healthRating`; armor is the sum of `armorRating`. Damage, death
+  and respawn come in the next milestone.
+- **Weapons and projectiles (placeholder parts still to align):** hand weapons currently apply physical kickback,
+  `ricochetAngle` bounce, and inherited shooter velocity; those will be replaced by visual-only recoil and pass-through
+  block damage in the combat milestone.
+- **Asteroid and ship markers:** one green marker per face-connected asteroid lump of at least 64 blocks with distance
+  and mass, and white markers for ships.
+- **Turning single blocks:** turnable single-cell blocks store their orientation per cell (format version 5 when any
+  exist) and draw the facing arrow in the preview.
+- **Inventory:** the 8-slot hotbar plus four backpack rows of eight (40 slots).

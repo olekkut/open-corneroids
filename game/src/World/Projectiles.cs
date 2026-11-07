@@ -1,6 +1,8 @@
 using Godot;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Simulation.Combat;
+using OpenCorneroids.Simulation.Shapes;
+using OpenCorneroids.Simulation.Ships;
 using Num = System.Numerics;
 
 namespace OpenCorneroids.Game.World;
@@ -75,6 +77,32 @@ public partial class Projectiles : Node3D
     public int FireGuns(ShipGrid ship, double now)
     {
         int fired = 0;
+        foreach (var gun in GunsOn(ship))
+        {
+            if (FireGun(ship, gun, aimForwardWorld: null, now)) fired++;
+        }
+        return fired;
+    }
+
+    /// <summary>
+    /// Fires every gun on <paramref name="ship"/> whose canonical cell is in <paramref name="boundTargets"/>, if its
+    /// power network is active and it has reloaded. When <paramref name="aimForwardWorld"/> is provided (seated at a
+    /// gun console), aims the shot toward the player's view direction within the gun's hemisphere as in the original.
+    /// </summary>
+    public int FireBoundGuns(ShipGrid ship, IReadOnlySet<Int3> boundTargets, Vector3? aimForwardWorld, double now)
+    {
+        if (boundTargets.Count == 0) return 0;
+        int fired = 0;
+        foreach (var gun in GunsOn(ship))
+        {
+            if (!boundTargets.Contains(gun.Cell.ToInt3())) continue;
+            if (FireGun(ship, gun, aimForwardWorld, now)) fired++;
+        }
+        return fired;
+    }
+
+    IReadOnlyList<Gun> GunsOn(ShipGrid ship)
+    {
         // The guns are looked up again only after the ship was edited, not every frame the button is held.
         if (!_shipGuns.TryGetValue(ship, out var cached) || cached.Revision != ship.Revision)
         {
@@ -87,20 +115,25 @@ public partial class Projectiles : Node3D
                     guns.Add(new Gun(null, cell, g, d));
             _shipGuns[ship] = cached = (ship.Revision, guns);
         }
-        foreach (var gun in cached.Guns)
-        {
-            var key = (ship, gun.Obj, gun.Cell);
-            if (!_gunTriggers.TryGetValue(key, out var trigger)) _gunTriggers[key] = trigger = new Trigger();
-            if (!trigger.TryFire(now, gun.Data.ReloadMs)) continue;
-            var turn = gun.Obj?.Orientation ?? ship.TurnOf(gun.Cell);
-            var local = turn.Apply(Num.Vector3.UnitY).ToGodot();
-            var center = gun.Obj?.ModelBox.GetCenter() ?? (Vector3)gun.Cell + new Vector3(0.5f, 0.5f, 0.5f);
-            var muzzle = ship.ToGlobal(center + local * gun.Data.BarrelLength);
-            var direction = ship.GlobalBasis * local;
-            Fire(gun.Def, muzzle, direction, ship.PointVelocity(muzzle));
-            fired++;
-        }
-        return fired;
+        return cached.Guns;
+    }
+
+    bool FireGun(ShipGrid ship, Gun gun, Vector3? aimForwardWorld, double now)
+    {
+        if (!ship.Systems.IsBlockActive(new BlockTarget(ship, gun.Cell, gun.Obj))) return false;
+        var key = (ship, gun.Obj, gun.Cell);
+        if (!_gunTriggers.TryGetValue(key, out var trigger)) _gunTriggers[key] = trigger = new Trigger();
+        if (!trigger.TryFire(now, gun.Data.ReloadMs)) return false;
+        var turn = gun.Obj?.Orientation ?? ship.TurnOf(gun.Cell);
+        var local = turn.Apply(Num.Vector3.UnitY).ToGodot();
+        var center = gun.Obj?.ModelBox.GetCenter() ?? (Vector3)gun.Cell + new Vector3(0.5f, 0.5f, 0.5f);
+        var muzzle = ship.ToGlobal(center + local * gun.Data.BarrelLength);
+        var barrelWorld = ship.GlobalBasis * local;
+        var direction = aimForwardWorld is { } aim
+            ? ConsoleBinding.GunAimDirection(barrelWorld.ToNumerics(), aim.ToNumerics()).ToGodot()
+            : barrelWorld;
+        Fire(gun.Def, muzzle, direction, ship.PointVelocity(muzzle));
+        return true;
     }
 
     public override void _Process(double delta)

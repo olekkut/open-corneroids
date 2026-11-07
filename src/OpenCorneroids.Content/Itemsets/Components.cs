@@ -14,7 +14,7 @@ public sealed record AsteroidComponent(AsteroidType AsteroidType) : IItemCompone
 
 public sealed record MineralComponent(AsteroidType AsteroidType, int Rarity) : IItemComponent;
 
-public sealed record ConsoleComponent(int Buttons) : IItemComponent;
+public sealed record ConsoleComponent(int Buttons, bool GunsOnly = false) : IItemComponent;
 
 public sealed record CraftingStationComponent(CraftingStation Station) : IItemComponent;
 

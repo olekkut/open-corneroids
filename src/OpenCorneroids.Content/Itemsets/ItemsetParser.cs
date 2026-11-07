@@ -32,7 +32,7 @@ public static class ItemsetParser
         ["consoles/console"] = new(["buttons"], (e, r) => [new ConsoleComponent(r.Int(e, "buttons"))]),
         ["crafting/crafting"] = new([], (e, r) => [new CraftingStationComponent(Station(e, r))]),
         ["doors/door"] = new(["door"], (e, r) => [Door(e.Element("door"), r)]),
-        ["gunConsoles/gunConsole"] = new(["buttons"], (e, r) => [new ConsoleComponent(r.Int(e, "buttons"))]),
+        ["gunConsoles/gunConsole"] = new(["buttons"], (e, r) => [new ConsoleComponent(r.Int(e, "buttons"), GunsOnly: true)]),
         ["guns/gun"] = new(["barrelLength", "reloadTime", "projectileId"],
             (e, r) => [new GunComponent(r.Float(e, "barrelLength"), r.Int(e, "reloadTime"), r.Int(e, "projectileId"))]),
         ["pointLights/pointLight"] = new(["light"], Lights),

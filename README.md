@@ -31,7 +31,7 @@ dropped in next to them.
     <td width="50%"><img src="docs/media/mining.webp" alt="Mining rock with an iron drill" width="100%"><br><sub><b>Mining</b> with the iron drill; mined blocks float until you pick them up</sub></td>
   </tr>
   <tr>
-    <td><img src="docs/media/placing.webp" alt="Placing a thruster, with a see-through preview and a facing arrow" width="100%"><br><sub><b>Building</b>: a turned thruster's preview and the arrow showing where it faces</sub></td>
+    <td><img src="docs/media/placing.webp" alt="Placing a thruster, with 8-corner footprint brackets and a facing arrow" width="100%"><br><sub><b>Building</b>: a turned thruster's preview, footprint brackets and facing arrow</sub></td>
     <td><img src="docs/media/combat.webp" alt="Firing a minigun at an asteroid" width="100%"><br><sub><b>Weapons</b>: the Thulium Minigun shooting rock apart</sub></td>
   </tr>
   <tr>
@@ -49,16 +49,19 @@ dropped in next to them.
   crafting table, ore furnace and mineral extractor, and keep your suit's health and power up with armor, power
   sources and consumables.
 - **Building.** Place single blocks and multi-block parts (thrusters, cannons, power blocks, doors) in any of 24
-  orientations, with a see-through preview and a facing arrow.
-- **Ships.** Launch what you built as a ship and fly it from its console, with a seat and a chase camera. A
-  flight assistant works out which thrusters to fire; power networks feed them; ships collide with rock and each
-  other, and you ride along when you stand inside one.
+  orientations, with 8-corner footprint brackets, an outward facing/exhaust arrow, and empty-space placement that
+  attaches to the nearest structure within 16 m (shown by a red attachment beam) or starts a new floating ship beyond it.
+- **Ships.** Launch what you built or build straight in space, wire all-or-nothing power networks (`F` shows block count
+  and power balance), and bind thrusters, cannons and cameras to colour-coded console groups (`F` on a console, then `F`
+  again to assign keys). Fly with the original's console bindings by default, or press `H` for the optional automatic
+  flight assistant; ships collide with rock and each other, and you ride along when you stand inside one.
 - **Weapons.** Hand weapons and ship cannons fire the itemset's projectiles, which break blocks once they've done
-  enough damage.
+  enough damage; gun consoles aim bound cannons where you look.
 - **Free flight.** Full six-degree movement in zero g: no fixed up, roll on Z and X, controls modelled on the
   original's.
-- **Saves.** Worlds save their blocks, ships in flight, your suit and inventory, and remember which itemset they need.
-- **Tested.** The content loader and the game rules live in plain C# libraries with 650+ automated tests; Godot only
+- **Saves.** Worlds save their blocks, ships in flight, console bindings, your suit and inventory, and remember which
+  itemset they need.
+- **Tested.** The content loader and the game rules live in plain C# libraries with 670+ automated tests; Godot only
   draws and takes input.
 
 ## Download and play
@@ -79,13 +82,15 @@ Each download is the game with its data included, so there is nothing to install
 | Use what you hold | left mouse button (drill, shoot, place, consume); right button empties your hand |
 | Hotbar | `1`–`8` or the mouse wheel |
 | Turn the block to place | `R` or the middle mouse button |
-| Use a block / edit it | `E` (consoles, crafting stations, doors) / `F` |
+| Use a block / edit it | `E` (consoles, crafting stations, doors) / `F` (console binding & key setup, power network info) |
 | Inventory | `C` |
-| Flashlight | `T` |
-| Save | `F5` |
+| Flashlight / fixed camera aboard | `T` / `K` |
+| Help / debug readout / hide HUD / save | `F1` / `F3` / `F6` / `F5` |
 
-Flying a ship: `W` `S` forward and back, `A` `D` strafe, `Space` `Ctrl` up and down, the mouse to pitch and yaw,
-`Z` `X` to roll, `G` dampeners, `V` seat or chase view, left mouse button to fire the guns, `E` to stand up.
+Flying a ship: by default, bound console group keys fire their thrusters and cannons while held (`V` seat/camera or
+chase view, `E` to stand up, gun consoles aim bound cannons with the mouse). Press `H` to toggle the optional flight
+assistant (`W` `S` forward/back, `A` `D` strafe, `Space` `Ctrl` up/down, mouse pitch/yaw, `Z` `X` roll, `G` dampeners,
+left mouse button to fire all guns).
 
 ## Building from source
 
@@ -110,7 +115,7 @@ flowchart LR
     content --> sim["OpenCorneroids.Simulation<br/>mining, crafting, suit, ships,<br/>weapons, saves"]
     content --> game["game/ (Godot 4)<br/>rendering, input, UI"]
     sim --> game
-    tests["tests/<br/>650+ xUnit tests"] -.-> content
+    tests["tests/<br/>670+ xUnit tests"] -.-> content
     tests -.-> sim
 ```
 
@@ -130,7 +135,7 @@ flowchart LR
 - [x] Building with orientations, multi-blocks and doors
 - [x] Ships: launching, piloting, power, collisions, riding along
 - [x] Weapons and ship cannons
-- [ ] Console button binding and placing blocks in empty space, as the original builds ships
+- [x] Console button binding and placing blocks in empty space, as the original builds ships
 - [ ] Damage to the player, death and respawn
 - [ ] Enemies
 - [ ] Options menu, sound

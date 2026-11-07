@@ -49,8 +49,8 @@ public static class WorldSaveFormat
     /// </summary>
     public const ushort SuitVersion = 4;
     /// <summary>
-    /// Version 4 plus <see cref="WorldSnapshot.Turned"/> and <see cref="ShipSnapshot.Turned"/>: a version 4 reader would
-    /// load every turned console, station and cannon facing the default way, and save it so.
+    /// Version 4 plus <see cref="WorldSnapshot.Turned"/>, <see cref="ShipSnapshot.Turned"/>, and console bindings: a
+    /// version 4 reader would load every turned console, station and cannon facing the default way, and save it so.
     /// </summary>
     public const ushort TurnedVersion = 5;
     /// <summary>The newest version this build reads and writes.</summary>
@@ -123,7 +123,8 @@ public static class WorldSaveFormat
     public static ushort VersionFor(WorldSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        return snapshot.Turned is { Count: > 0 } || snapshot.Ships is { } ships && ships.Any(s => s.Turned is { Count: > 0 }) ? TurnedVersion
+        return snapshot.Turned is { Count: > 0 } || snapshot.Consoles is { Count: > 0 }
+            || snapshot.Ships is { } ships && ships.Any(s => s.Turned is { Count: > 0 } || s.Consoles is { Count: > 0 }) ? TurnedVersion
             : snapshot.Suit is not null ? SuitVersion
             : snapshot.Ships is { Count: > 0 } ? ShipsVersion
             : snapshot.Objects is { Count: > 0 } ? ObjectsVersion
@@ -278,7 +279,7 @@ public static class WorldSaveFormat
         if (s.Suit is { } suit && (!double.IsFinite(suit.Health) || !double.IsFinite(suit.Power) || suit.Equipment is null || suit.Buffs is null
             || suit.Buffs.Any(b => b is null || !double.IsFinite(b.SecondsLeft))))
             return "the suit state is incomplete or has a non-finite number";
-        return ObjectsProblem(s.Objects, s.Size, "object", "world", "the world") ?? ShipsProblem(s, checkShipCells) ?? AllTurnedProblem(s);
+        return ObjectsProblem(s.Objects, s.Size, "object", "world", "the world") ?? ShipsProblem(s, checkShipCells) ?? AllTurnedProblem(s) ?? AllConsolesProblem(s);
     }
 
     /// <summary>Checked after the ships, so a missing ship list or a bad ship size is reported as that.</summary>
@@ -303,6 +304,38 @@ public static class WorldSaveFormat
         }
         return null;
     }
+
+    static string? AllConsolesProblem(WorldSnapshot s)
+    {
+        if (ConsolesProblem(s.Consoles, s.Size, "the world") is { } consoles) return consoles;
+        for (int i = 0; i < s.Ships.Count; i++)
+            if (ConsolesProblem(s.Ships[i].Consoles, s.Ships[i].Size, $"ship {i}") is { } shipConsoles) return shipConsoles;
+        return null;
+    }
+
+    static string? ConsolesProblem(IReadOnlyList<SavedConsole>? consoles, int size, string where)
+    {
+        if (consoles is null) return $"{where}'s console list is missing";
+        foreach (var c in consoles)
+        {
+            if (c is null) return $"{where} has a null console";
+            if (!InGrid(c.Cell, size)) return $"{where} has a console at {c.Cell}, outside its {size}-cell grid";
+            if (c.Camera is { } cam && !InGrid(cam, size)) return $"{where} has a console camera at {cam}, outside its {size}-cell grid";
+            if (c.Groups is null) return $"{where} has a console with a null group list";
+            foreach (var g in c.Groups)
+            {
+                if (g is null) return $"{where} has a console with a null group";
+                if (g.Index < 0 || g.Index >= 10) return $"{where} has a console group with index {g.Index}, outside 0..9";
+                if (g.Key is null) return $"{where} has a console group with a null key";
+                if (g.Targets is null) return $"{where} has a console group with a null target list";
+                foreach (var t in g.Targets)
+                    if (!InGrid(t, size)) return $"{where} has a console target at {t}, outside its {size}-cell grid";
+            }
+        }
+        return null;
+    }
+
+    static bool InGrid(Int3 p, int size) => p.X >= 0 && p.Y >= 0 && p.Z >= 0 && p.X < size && p.Y < size && p.Z < size;
 
     /// <param name="what">"the palette" or "ship 3's palette", for the whole-palette messages.</param>
     /// <param name="entry">"palette entry" or "ship 3 palette entry", for the per-entry messages.</param>
@@ -622,6 +655,9 @@ public static class WorldSaveFormat
         // And turned grid blocks, each [x, y, z, orientation]; left out when there are none.
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int[]?[]? Turned { get; set; }
+        // And console bindings; left out when there are none.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ConsoleDto?[]? Consoles { get; set; }
 
         public static MetadataDto From(WorldSnapshot s) => new()
         {
@@ -648,6 +684,7 @@ public static class WorldSaveFormat
             Ships = s.Ships.Count == 0 ? null : [.. s.Ships.Select(ShipDto.From)],
             Suit = s.Suit is null ? null : SuitDto.From(s.Suit),
             Turned = TurnedDto(s.Turned),
+            Consoles = ConsolesDto(s.Consoles),
         };
 
         public static int[]?[]? TurnedDto(IReadOnlyList<TurnedCell> turned) =>
@@ -657,6 +694,25 @@ public static class WorldSaveFormat
             [.. (turned ?? []).Select((t, i) => t is [var x, var y, var z, var o]
                 ? new TurnedCell(new Int3(x, y, z), o)
                 : throw Damaged($"metadata field '{field}[{i}]' is not four integers"))];
+
+        public static ConsoleDto?[]? ConsolesDto(IReadOnlyList<SavedConsole> consoles) =>
+            consoles.Count == 0 ? null : [.. consoles.Select(ConsoleDto.From)];
+
+        public static List<SavedConsole> SavedConsoles(ConsoleDto?[]? consoles, string field) =>
+            [.. (consoles ?? []).Select((c, i) => c is null
+                ? throw Damaged($"metadata field '{field}[{i}]' is null")
+                : new SavedConsole(
+                    Int3Cell(c.Cell, $"{field}[{i}].cell"),
+                    [.. (c.Groups ?? []).Select((g, j) => g is null
+                        ? throw Damaged($"metadata field '{field}[{i}].groups[{j}]' is null")
+                        : new SavedConsoleGroup(
+                            g.Index ?? throw Missing($"{field}[{i}].groups[{j}].index"),
+                            g.Key ?? throw Missing($"{field}[{i}].groups[{j}].key"),
+                            [.. (g.Targets ?? []).Select((t, k) => Int3Cell(t, $"{field}[{i}].groups[{j}].targets[{k}]"))]))],
+                    c.Camera is null ? null : Int3Cell(c.Camera, $"{field}[{i}].camera")))];
+
+        public static Int3 Int3Cell(int[]? xyz, string field) =>
+            xyz is [var x, var y, var z] ? new Int3(x, y, z) : throw Damaged($"metadata field '{field}' is not three integers");
 
         /// <summary>The snapshot without any cells (the world's and the ships' are decoded separately), plus each ship's
         /// still encoded cells, in ship order.</summary>
@@ -696,6 +752,7 @@ public static class WorldSaveFormat
                 Ships = [.. ships.Select((ship, i) => ship is null ? throw Damaged($"metadata field 'ships[{i}]' is null") : ship.ToSnapshot(i))],
                 Suit = Suit?.ToState(),
                 Turned = TurnedCells(Turned, "turned"),
+                Consoles = SavedConsoles(Consoles, "consoles"),
             };
             return (snapshot, [.. ships.Select((ship, i) => ship!.Cells ?? throw Missing($"ships[{i}].cells"))]);
         }
@@ -733,6 +790,8 @@ public static class WorldSaveFormat
         public ObjectDto?[]? Objects { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int[]?[]? Turned { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ConsoleDto?[]? Consoles { get; set; }
 
         public static ShipDto From(ShipSnapshot ship)
         {
@@ -748,6 +807,7 @@ public static class WorldSaveFormat
                 Cells = Convert.ToBase64String(cells.GetBuffer(), 0, (int)cells.Length),
                 Objects = [.. ship.Objects.Select(ObjectDto.From)],
                 Turned = MetadataDto.TurnedDto(ship.Turned),
+                Consoles = MetadataDto.ConsolesDto(ship.Consoles),
             };
         }
 
@@ -766,8 +826,40 @@ public static class WorldSaveFormat
             {
                 Objects = MetadataDto.PlacedObjects(Objects, $"{field}.objects"),
                 Turned = MetadataDto.TurnedCells(Turned, $"{field}.turned"),
+                Consoles = MetadataDto.SavedConsoles(Consoles, $"{field}.consoles"),
             };
         }
+    }
+
+    sealed class ConsoleDto
+    {
+        public int[]? Cell { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ConsoleGroupDto?[]? Groups { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int[]? Camera { get; set; }
+
+        public static ConsoleDto From(SavedConsole c) => new()
+        {
+            Cell = [c.Cell.X, c.Cell.Y, c.Cell.Z],
+            Groups = c.Groups.Count == 0 ? null : [.. c.Groups.Select(ConsoleGroupDto.From)],
+            Camera = c.Camera is { } cam ? [cam.X, cam.Y, cam.Z] : null,
+        };
+    }
+
+    sealed class ConsoleGroupDto
+    {
+        public int? Index { get; set; }
+        public string? Key { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int[]?[]? Targets { get; set; }
+
+        public static ConsoleGroupDto From(SavedConsoleGroup g) => new()
+        {
+            Index = g.Index,
+            Key = g.Key,
+            Targets = g.Targets.Count == 0 ? null : [.. g.Targets.Select(t => new[] { t.X, t.Y, t.Z })],
+        };
     }
 
     sealed class BindingDto

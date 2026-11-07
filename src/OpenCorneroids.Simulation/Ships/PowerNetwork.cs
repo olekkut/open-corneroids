@@ -22,7 +22,20 @@ public readonly record struct PowerNode(int Id, Int3[] Cells, float Supply, floa
 /// <summary>One connected group of powered blocks.</summary>
 /// <param name="NodeIds">Members, in input order.</param>
 /// <param name="Satisfaction">See <see cref="PowerNetwork.Solve"/>.</param>
-public sealed record PowerNetworkInfo(IReadOnlyList<int> NodeIds, float Supply, float Demand, float Satisfaction);
+public sealed record PowerNetworkInfo(IReadOnlyList<int> NodeIds, float Supply, float Demand, float Satisfaction)
+{
+    /// <summary>Number of powered blocks in the network, shown in the power network window as in the original.</summary>
+    public int BlockCount => NodeIds.Count;
+
+    /// <summary>Signed power sum (<c>Supply - Demand</c>), shown in the power network window as in the original.</summary>
+    public float Balance => Supply - Demand;
+
+    /// <summary>
+    /// As in the original: a network is active when its signed power sum is non-negative (<c>Balance &gt;= 0</c>).
+    /// When negative, every block in the network is inactive.
+    /// </summary>
+    public bool IsActive => Balance >= 0;
+}
 
 /// <summary>The result of <see cref="PowerNetwork.Solve"/>.</summary>
 public sealed class PowerSolution
@@ -41,18 +54,26 @@ public sealed class PowerSolution
     /// <summary>Index into <see cref="Networks"/> of the node's network, or −1 for an unknown id.</summary>
     public int NetworkIndexOf(int id) => _networkOf.TryGetValue(id, out var index) ? index : -1;
 
+    /// <summary>The node's network, or <c>null</c> for an unknown id.</summary>
+    public PowerNetworkInfo? NetworkOf(int id) => _networkOf.TryGetValue(id, out var index) ? Networks[index] : null;
+
     /// <summary>The node's satisfaction (its network's), or 0 for an unknown id.</summary>
     public float SatisfactionOf(int id) => _networkOf.TryGetValue(id, out var index) ? Networks[index].Satisfaction : 0;
 
     /// <summary>
-    /// Whether the block should show its active textures: its network delivers something (satisfaction &gt; 0).
+    /// Whether the node's network is active under the original's all-or-nothing rule (<see cref="PowerNetworkInfo.IsActive"/>).
+    /// </summary>
+    public bool IsActive(int id) => _networkOf.TryGetValue(id, out var index) && Networks[index].IsActive;
+
+    /// <summary>
+    /// Whether the block's network delivers positive satisfaction (<c>Satisfaction &gt; 0</c>).
     /// </summary>
     public bool IsPowered(int id) => SatisfactionOf(id) > 0;
 }
 
 /// <summary>
-/// Groups powered blocks into networks and shares each network's supply among its consumers. Ours; how the original
-/// game routed power is unknown.
+/// Groups face-adjacent powered blocks into networks and computes each network's power balance (as in the original) and
+/// proportional satisfaction.
 /// </summary>
 public static class PowerNetwork
 {

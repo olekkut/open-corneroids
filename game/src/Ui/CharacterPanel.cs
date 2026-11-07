@@ -6,15 +6,13 @@ using OpenCorneroids.Simulation.Items;
 namespace OpenCorneroids.Game.Ui;
 
 /// <summary>
-/// The character window beside the inventory: the seven equipment slots laid out roughly like a body, and the suit's
-/// Health, Armor and Power recharge. Pick up a wearable in the inventory and click its slot to put it on (or press
-/// RMB with it in the hotbar); click a worn piece with nothing picked to take it off. The rules are <see cref="Suit"/>'s.
+/// The character equipment window beside the inventory: the seven equipment slots laid out roughly like a body, and the
+/// suit's Health, Armor and Power recharge.
 /// </summary>
-public partial class CharacterPanel : PanelContainer
+public partial class CharacterPanel : ClassicWindow
 {
     const float SlotSize = 48;
 
-    // Rows of three: null leaves the cell empty.
     static readonly WearableSlot?[] Layout =
     [
         null, WearableSlot.Helmet, null,
@@ -45,12 +43,11 @@ public partial class CharacterPanel : PanelContainer
     public void Setup(Suit suit, Inventory inventory, InventoryPanel inventoryPanel, ItemsetDef itemset, ItemIcons icons)
     {
         (_suit, _inventory, _inventoryPanel, _itemset, _icons) = (suit, inventory, inventoryPanel, itemset, icons);
-        AddThemeStyleboxOverride("panel", GameWindows.PanelStyle());
+        Configure("Character", bevel: 5, padLeft: 18, padTop: 32, padRight: 18, padBottom: 16);
 
         var column = new VBoxContainer();
-        column.AddThemeConstantOverride("separation", 6);
+        column.AddThemeConstantOverride("separation", 8);
         AddChild(column);
-        column.AddChild(Hud.Text("Character", 20));
 
         var grid = new GridContainer { Columns = 3, SizeFlagsHorizontal = SizeFlags.ShrinkCenter };
         grid.AddThemeConstantOverride("h_separation", 6);
@@ -69,10 +66,10 @@ public partial class CharacterPanel : PanelContainer
             _slots[slot] = view;
         }
         column.AddChild(grid);
-        column.AddChild(_stats = Hud.Text("", 14));
-        column.AddChild(_status = Hud.Text("", 13, new Color(1f, 0.75f, 0.7f)));
+        column.AddChild(_stats = ClassicUi.Label("", 14));
+        column.AddChild(_status = ClassicUi.Label("", 13, new Color(1f, 0.85f, 0.8f)));
         _status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        _status.CustomMinimumSize = new Vector2(3 * SlotSize + 12, 0);
+        _status.CustomMinimumSize = new Vector2(3 * SlotSize + 16, 0);
 
         suit.Changed += Refresh;
         Refresh();

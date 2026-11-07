@@ -11,8 +11,8 @@ namespace OpenCorneroids.Game.Player;
 public sealed class CreativeMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space/Ctrl up/down · Z/X roll · Shift boost · N noclip · LMB mine · RMB place · R/middle turn block · " +
-        "E door/console · wheel/1-8 select · T light · L level · Esc mouse, again menu";
+        "WASD move · Space/Ctrl up/down · Z/X roll · Shift boost · LMB mine · RMB place · wheel/1-8 select · R/middle turn block\n" +
+        "E door/console · F edit · T light · L level · K fixed cam · N noclip · Esc mouse, again menu";
 
     readonly ushort[] _blocks;
     int _selected;
@@ -25,7 +25,7 @@ public sealed class CreativeMode : PlayMode
 
     public override bool HasInventory => false;
 
-    public override ushort SelectedBlock => _blocks.Length == 0 ? BlockPalette.Air : _blocks[_selected];
+    public override ushort SelectedBlock => _selected < 0 || _blocks.Length == 0 ? BlockPalette.Air : _blocks[_selected];
 
     public override bool TrySelectBlock(ushort block)
     {
@@ -40,7 +40,8 @@ public sealed class CreativeMode : PlayMode
     public override void Select(int slot)
     {
         if (slot is < 0 or >= Hud.HotbarSlots) return;
-        int page = _selected / Hud.HotbarSlots * Hud.HotbarSlots;
+        int baseIndex = Math.Max(0, _selected);
+        int page = baseIndex / Hud.HotbarSlots * Hud.HotbarSlots;
         if (page + slot < _blocks.Length) _selected = page + slot;
         ShowHotbar();
     }
@@ -49,7 +50,15 @@ public sealed class CreativeMode : PlayMode
     public override void Cycle(int delta)
     {
         if (_blocks.Length == 0) return;
-        _selected = ((_selected + delta) % _blocks.Length + _blocks.Length) % _blocks.Length;
+        if (_selected < 0) _selected = 0;
+        else _selected = ((_selected + delta) % _blocks.Length + _blocks.Length) % _blocks.Length;
+        ShowHotbar();
+    }
+
+    public override void Deselect()
+    {
+        if (_selected < 0) return;
+        _selected = -1;
         ShowHotbar();
     }
 
@@ -68,14 +77,23 @@ public sealed class CreativeMode : PlayMode
         if (TryPlace(eye, aim, block, () => true)) Hud.Flash($"Placed {Palette.Item(block).Name}");
     }
 
+    public override void PlaceInSpace(Vector3 eye)
+    {
+        var block = SelectedBlock;
+        if (block == BlockPalette.Air) return;
+        if (TryPlaceInSpace(eye, View.Forward, block, () => true)) Hud.Flash($"Placed {Palette.Item(block).Name}");
+    }
+
     void ShowHotbar()
     {
-        int page = _selected / Hud.HotbarSlots * Hud.HotbarSlots;
+        int baseIndex = Math.Max(0, _selected);
+        int page = baseIndex / Hud.HotbarSlots * Hud.HotbarSlots;
         var slots = Enumerable.Range(page, Hud.HotbarSlots)
             .Select(i => i < _blocks.Length ? (Palette.Item(_blocks[i]), 1) : (null, 0))
             .ToList();
-        var caption = _blocks.Length == 0 ? "" :
-            $"{Palette.Item(SelectedBlock).Name}   ({_selected + 1}/{_blocks.Length}, page {page / Hud.HotbarSlots + 1})";
-        Hud.ShowHotbar(slots, _selected - page, caption);
+        var caption = _selected < 0 ? ""
+            : _blocks.Length == 0 ? ""
+            : $"{Palette.Item(SelectedBlock).Name}  ({_selected + 1}/{_blocks.Length})";
+        Hud.ShowHotbar(slots, _selected < 0 ? -1 : _selected - page, caption, countText: "");
     }
 }

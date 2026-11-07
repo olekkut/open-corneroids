@@ -28,8 +28,14 @@ public sealed class GameArgs
     /// <summary>Creative rules: instant mining, unlimited placing from the whole block palette, no inventory.</summary>
     public bool Creative { get; private set; }
 
-    /// <summary>A window to open once the world has loaded ("inventory" or "crafting"), so screenshots can show it.</summary>
+    /// <summary>A window to open once the world has loaded ("inventory", "crafting", "console", "power", or "help"), so screenshots can show it.</summary>
     public string? Open { get; private set; }
+
+    /// <summary>Equip the first console's binding tool ("wide" frames the whole ship; "close" stands within 3 m of a thruster).</summary>
+    public string? BindConsole { get; private set; }
+
+    /// <summary>Show the F3 technical/debug readout at the top-left from startup.</summary>
+    public bool DebugHud { get; private set; }
 
     /// <summary>Items added to the survival inventory at start, from <c>--give=itemId:count[,itemId:count...]</c>.</summary>
     public List<(int ItemId, int Count)> Give { get; } = new();
@@ -63,11 +69,15 @@ public sealed class GameArgs
     /// <summary>Select this item and aim at the asteroid so the placement ghost shows, for screenshots.</summary>
     public int? Preview { get; private set; }
 
+    /// <summary>Select this item and aim into empty space near a ship or asteroid (so the empty-space ghost and red
+    /// attachment line show), or with <c>--place</c> place it there.</summary>
+    public int? PreviewSpace { get; private set; }
+
     /// <summary>Select the hotbar slot holding this item (survival), e.g. a weapon for a firing test.</summary>
     public int? Select { get; private set; }
 
-    /// <summary>With <see cref="Preview"/>: place the previewed block there, through the normal placing rules (survival
-    /// spends it), so a placed object can be saved and loaded without a mouse.</summary>
+    /// <summary>With <see cref="Preview"/> or <see cref="PreviewSpace"/>: place the previewed block there, through the
+    /// normal placing rules (survival spends it), so a placed object can be saved and loaded without a mouse.</summary>
     public bool Place { get; private set; }
 
     /// <summary>Move the camera close to the first placed multi-block of this item, for screenshots.</summary>
@@ -79,7 +89,7 @@ public sealed class GameArgs
     /// <summary>Build a small preset ship near the spawn of a new world, from the itemset's own blocks.</summary>
     public bool DemoShip { get; private set; }
 
-    /// <summary>Press F on a console of the static world (the demo ship's, or the nearest), launching its structure.</summary>
+    /// <summary>Press E on a console of the static world (the demo ship's, or the nearest), launching its structure.</summary>
     public bool Launch { get; private set; }
 
     /// <summary>Turn every ship by this many degrees about the world's up axis, to test turned ships.</summary>
@@ -95,7 +105,13 @@ public sealed class GameArgs
     /// stays where it was, for before/after screenshots).</summary>
     public string? Pilot { get; private set; }
 
-    /// <summary>Inertial dampeners on or off for the pilot (default on).</summary>
+    /// <summary>Automatic flight assistant on or off (default off: original console key bindings).</summary>
+    public bool? FlightAssist { get; private set; }
+
+    /// <summary>Fixed camera when aboard a ship on or off (default off).</summary>
+    public bool? FixedCamera { get; private set; }
+
+    /// <summary>Inertial dampeners on or off for the flight assistant (default on).</summary>
     public bool? Dampeners { get; private set; }
 
     /// <summary>Controls held down one after another, each for its seconds, as if the keys were pressed
@@ -124,6 +140,12 @@ public sealed class GameArgs
                 case "--showcase": parsed.Showcase = parsed.Creative = true; break;
                 case "--creative": parsed.Creative = true; break;
                 case "--open": parsed.Open = value.ToLowerInvariant(); break;
+                case "--debug-hud": parsed.DebugHud = true; break;
+                case "--bind-console":
+                    var bindMode = value.Length == 0 ? "wide" : value.ToLowerInvariant();
+                    if (bindMode is "wide" or "close") parsed.BindConsole = bindMode;
+                    else Godot.GD.PushWarning($"--bind-console: '{value}' is not wide or close");
+                    break;
                 case "--give": parsed.Give.AddRange(ParseGive(value)); break;
                 case "--drop": parsed.Drop.AddRange(ParseGive(value)); break;
                 case "--record": parsed.RecordDir = value; break;
@@ -144,6 +166,16 @@ public sealed class GameArgs
                     var view = value.Length == 0 ? "seat" : value.ToLowerInvariant();
                     if (view is "seat" or "chase" or "fixed") parsed.Pilot = view;
                     else Godot.GD.PushWarning($"--pilot: '{value}' is not seat, chase or fixed");
+                    break;
+                case "--flight-assist":
+                    if (value.Length == 0) parsed.FlightAssist = true;
+                    else if (value.ToLowerInvariant() is "on" or "off") parsed.FlightAssist = value.Equals("on", StringComparison.OrdinalIgnoreCase);
+                    else Godot.GD.PushWarning($"--flight-assist: '{value}' is not on or off");
+                    break;
+                case "--fixed-camera":
+                    if (value.Length == 0) parsed.FixedCamera = true;
+                    else if (value.ToLowerInvariant() is "on" or "off") parsed.FixedCamera = value.Equals("on", StringComparison.OrdinalIgnoreCase);
+                    else Godot.GD.PushWarning($"--fixed-camera: '{value}' is not on or off");
                     break;
                 case "--dampeners":
                     if (value.ToLowerInvariant() is "on" or "off") parsed.Dampeners = value.Equals("on", StringComparison.OrdinalIgnoreCase);
@@ -184,6 +216,10 @@ public sealed class GameArgs
                 case "--preview":
                     if (int.TryParse(value, out var preview)) parsed.Preview = preview;
                     else Godot.GD.PushWarning($"--preview: '{value}' is not an item id");
+                    break;
+                case "--preview-space":
+                    if (int.TryParse(value, out var previewSpace)) parsed.PreviewSpace = previewSpace;
+                    else Godot.GD.PushWarning($"--preview-space: '{value}' is not an item id");
                     break;
                 case "--select":
                     if (int.TryParse(value, out var select)) parsed.Select = select;

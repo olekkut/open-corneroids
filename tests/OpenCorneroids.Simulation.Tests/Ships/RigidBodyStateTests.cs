@@ -157,4 +157,37 @@ public class RigidBodyStateTests
         AssertClose(-Vector3.UnitZ, s.DirectionToWorld(Vector3.UnitX));
         AssertClose(Vector3.UnitX, s.DirectionToLocal(-Vector3.UnitZ));
     }
+
+    [Fact]
+    public void Original_step_caps_linear_and_angular_speeds()
+    {
+        var s = new RigidBodyState();
+        s.StepOriginal(new Vector3(100_000, 0, 0), new Vector3(0, 100_000, 0), Cube, Frame, thrustersFiring: true);
+        Assert.Equal(RigidBodyState.MaxLinearSpeed, s.LinearVelocity.Length(), 1e-4f);
+        Assert.Equal(RigidBodyState.MaxAngularSpeed, s.AngularVelocity.Length(), 1e-4f);
+    }
+
+    [Fact]
+    public void Original_step_coasts_down_linearly_and_stops_at_thresholds_when_idle()
+    {
+        var s = new RigidBodyState(Vector3.Zero, Quaternion.Identity, new Vector3(1f, 0, 0), new Vector3(0, 0.1f, 0));
+        // 1 second of coasting without thrusters: linear drops by 0.25 u/s, angular drops by 0.03 rad/s.
+        for (int i = 0; i < 60; i++)
+            s.StepOriginal(Vector3.Zero, Vector3.Zero, Cube, Frame, thrustersFiring: false);
+        AssertClose(new Vector3(0.75f, 0, 0), s.LinearVelocity, 1e-3f);
+        AssertClose(new Vector3(0, 0.07f, 0), s.AngularVelocity, 1e-3f);
+
+        // While thrusters are firing, no coasting slowdown is applied.
+        var firing = s.Clone();
+        for (int i = 0; i < 60; i++)
+            firing.StepOriginal(Vector3.Zero, Vector3.Zero, Cube, Frame, thrustersFiring: true);
+        AssertClose(s.LinearVelocity, firing.LinearVelocity, 1e-4f);
+        AssertClose(s.AngularVelocity, firing.AngularVelocity, 1e-4f);
+
+        // Below the stop thresholds (0.025 linear, 0.003 angular), velocity snaps to zero.
+        var nearStop = new RigidBodyState(Vector3.Zero, Quaternion.Identity, new Vector3(0.025f, 0, 0), new Vector3(0, 0.003f, 0));
+        nearStop.StepOriginal(Vector3.Zero, Vector3.Zero, Cube, Frame, thrustersFiring: false);
+        Assert.Equal(Vector3.Zero, nearStop.LinearVelocity);
+        Assert.Equal(Vector3.Zero, nearStop.AngularVelocity);
+    }
 }

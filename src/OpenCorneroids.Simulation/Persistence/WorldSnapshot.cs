@@ -61,6 +61,12 @@ public sealed record PlacedObject(int BlockId, Int3 Origin, int Orientation, flo
 /// <param name="Orientation">An <see cref="Shapes.Orientation.Index"/>, 1..23 (0, the default, is never stored).</param>
 public sealed record TurnedCell(Int3 Cell, int Orientation);
 
+/// <summary>One colour group's saved key name and bound block origins on a console.</summary>
+public sealed record SavedConsoleGroup(int Index, string Key, IReadOnlyList<Int3> Targets);
+
+/// <summary>Saved colour-group bindings and bound camera for one console block at <see cref="Cell"/>.</summary>
+public sealed record SavedConsole(Int3 Cell, IReadOnlyList<SavedConsoleGroup> Groups, Int3? Camera = null);
+
 /// <summary>
 /// One ship: a cubic block grid of its own with a transform, so it can sit anywhere in the world at any angle. Cells and
 /// objects follow the same rules as the world's (<see cref="WorldSnapshot.Palette"/>, <see cref="WorldSnapshot.Cells"/>,
@@ -82,6 +88,9 @@ public sealed record ShipSnapshot(
 
     /// <summary>The ship's turned grid blocks, in ship-local cells. Optional in the file, like the world's.</summary>
     public IReadOnlyList<TurnedCell> Turned { get; init; } = [];
+
+    /// <summary>Console colour-group and camera bindings on this ship, in ship-local cells. Optional in the file.</summary>
+    public IReadOnlyList<SavedConsole> Consoles { get; init; } = [];
 }
 
 /// <summary>Everything a save file holds, as plain data so the simulation can be rebuilt without Godot.</summary>
@@ -134,6 +143,11 @@ public sealed record WorldSnapshot(
     /// blocks could be turned have none, which is what they held.
     /// </summary>
     public IReadOnlyList<TurnedCell> Turned { get; init; } = [];
+
+    /// <summary>
+    /// Console colour-group and camera bindings in the static world. Optional in the file.
+    /// </summary>
+    public IReadOnlyList<SavedConsole> Consoles { get; init; } = [];
 
     /// <summary>Palette index and cell value of air.</summary>
     public const ushort Air = 0;

@@ -244,6 +244,7 @@ public partial class ShipGrid : BlockGrid
         {
             Objects = ExportObjects(),
             Turned = ExportTurned(),
+            Consoles = ExportConsoles(),
         };
     }
 

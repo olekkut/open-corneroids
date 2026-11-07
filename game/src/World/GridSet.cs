@@ -161,7 +161,7 @@ public sealed class GridSet
     }
 
     /// <summary>
-    /// F on a console of the static world: the structure attached to it (<see cref="Structure.Collect"/>, stopping at
+    /// E on a console of the static world: the structure attached to it (<see cref="Structure.Collect"/>, stopping at
     /// asteroid rock and minerals, multi-blocks included) leaves the world and becomes a new ship at the same world
     /// position, world-aligned. Refused, with the reason as the message, when the structure is too big
     /// (<see cref="ShipLaunch.Problem"/>) or is only the console.
@@ -213,6 +213,10 @@ public sealed class GridSet
         var saved = objects.OrderBy(o => o.Id).Select(o => (o.Block, Origin: o.Origin.ToGodot() + shift, o.Orientation, o.DoorState)).ToList();
         // Turned grid blocks keep their turn on the ship (clearing the world cells forgets it there).
         var turns = cells.Select(c => (Cell: c.Cell + shift, Turn: world.TurnOf(c.Cell))).Where(t => t.Turn != Orientation.Default).ToList();
+        var movingCells = new HashSet<Simulation.Shapes.Int3>();
+        foreach (var (cell, _) in cells) movingCells.Add(cell.ToInt3());
+        foreach (var obj in objects) movingCells.Add(obj.Origin);
+        var consoles = world.Consoles.ExtractAndShift(movingCells, -shift.ToInt3());
         world.ClearCells(cells.Select(c => c.Cell).ToList());
         foreach (var obj in objects) world.RemoveObject(obj);
 
@@ -226,10 +230,67 @@ public sealed class GridSet
             if (added is null) GD.PushWarning($"Launch: {palette.Item(block).Name} did not fit the new ship at {origin}");
             else if (added.Door is not null) added.DoorState = door;
         }
+        ship.ImportConsoles(consoles.ToSnapshot());
 
         int blocks = cells.Count + objects.Count;
         var message = FormattableString.Invariant($"Ship launched: {blocks} blocks, {ship.Mass.Mass:0.#} mass");
         GD.Print($"{message} ({ship.Name} at {ship.Position}, grid {ship.GridSize}³)");
         return (ship, message);
+    }
+
+    /// <summary>
+    /// Finds the grid whose closest solid block is nearest to <paramref name="worldPos"/> within
+    /// <paramref name="maxDistance"/> (16 units in the original). Returns the grid, the local cell of that nearest
+    /// block, and the world-space point the red attachment line connects to (the ship's centre of mass for a ship, or
+    /// the nearest block's centre for the static world).
+    /// </summary>
+    public (BlockGrid Grid, Vector3I NearestCell, Vector3 LineTargetWorld)? NearestAttachment(
+        Vector3 worldPos, float maxDistance = ConsoleBinding.MaxAttachmentDistance)
+    {
+        BlockGrid? bestGrid = null;
+        Vector3I bestCell = default;
+        float bestDistance = maxDistance;
+
+        void Check(BlockGrid grid)
+        {
+            var (center, radius) = grid.Bounds;
+            if (worldPos.DistanceTo(center) > radius + bestDistance) return;
+            var localPos = grid.ToLocal(worldPos);
+            if (grid.NearestSolidBlock(localPos, bestDistance) is not { } hit) return;
+            bestDistance = hit.Distance;
+            bestGrid = grid;
+            bestCell = hit.Cell;
+        }
+
+        Check(World);
+        for (int i = 0; i < _ships.Count; i++) Check(_ships[i]);
+
+        if (bestGrid is null) return null;
+        var targetWorld = bestGrid is ShipGrid ship
+            ? ship.GlobalTransform * ship.Mass.CenterOfMass.ToGodot()
+            : bestGrid.ToGlobal((Vector3)bestCell + new Vector3(0.5f, 0.5f, 0.5f));
+        return (bestGrid, bestCell, targetWorld);
+    }
+
+    /// <summary>
+    /// Places a block in empty space when no existing grid is within <see cref="ConsoleBinding.MaxAttachmentDistance"/>,
+    /// starting a new floating ship whose first block sits centred at <paramref name="worldPos"/>.
+    /// </summary>
+    public (ShipGrid? Ship, string? Problem) CreateFloatingShip(ushort block, Vector3 worldPos, Orientation orientation)
+    {
+        long shipCells = 0;
+        foreach (var existing in _ships) shipCells += (long)existing.GridSize * existing.GridSize * existing.GridSize;
+        if (ShipLaunch.FleetProblem(_ships.Count, shipCells) is { } full) return (null, full);
+
+        var origin = new Vector3I(ShipLaunch.ShipGridSize / 2, ShipLaunch.ShipGridSize / 2, ShipLaunch.ShipGridSize / 2);
+        var shape = Palette.Shape(block);
+        var size = shape is not null ? (Vector3)shape.RotatedSize(orientation).ToGodot() : Vector3.One;
+        var ship = AddShip();
+        ship.Position = worldPos - ((Vector3)origin + size * 0.5f);
+        if (shape is not null)
+            ship.AddObject(block, origin.ToInt3(), orientation);
+        else
+            ship.Set(origin, block, orientation);
+        return (ship, null);
     }
 }

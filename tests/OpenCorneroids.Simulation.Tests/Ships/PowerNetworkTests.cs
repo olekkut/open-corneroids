@@ -116,6 +116,46 @@ public class PowerNetworkTests
     }
 
     [Fact]
+    public void All_or_nothing_balance_tracks_block_count_and_activity()
+    {
+        // Surplus (+10 - 1 - 5 = +4): active.
+        var surplus = PowerNetwork.Solve([
+            PowerNode.FromPower(1, [C(0)], 10),
+            PowerNode.FromPower(2, [C(1)], -1),
+            PowerNode.FromPower(3, [C(2)], -5),
+        ]);
+        var net1 = Assert.Single(surplus.Networks);
+        Assert.Equal(3, net1.BlockCount);
+        Assert.Equal(4, net1.Balance);
+        Assert.True(net1.IsActive);
+        Assert.All([1, 2, 3], id => Assert.True(surplus.IsActive(id)));
+        Assert.Same(net1, surplus.NetworkOf(2));
+
+        // Exact zero balance (+10 - 10 = 0): still active (>= 0).
+        var exact = PowerNetwork.Solve([
+            PowerNode.FromPower(1, [C(0)], 10),
+            PowerNode.FromPower(2, [C(1)], -10),
+        ]);
+        Assert.Equal(0, exact.Networks[0].Balance);
+        Assert.True(exact.Networks[0].IsActive);
+        Assert.True(exact.IsActive(1));
+
+        // Deficit (+10 - 10 - 1 = -1): whole network is inactive (< 0).
+        var deficit = PowerNetwork.Solve([
+            PowerNode.FromPower(1, [C(0)], 10),
+            PowerNode.FromPower(2, [C(1)], -10),
+            PowerNode.FromPower(3, [C(2)], -1),
+        ]);
+        var net3 = Assert.Single(deficit.Networks);
+        Assert.Equal(3, net3.BlockCount);
+        Assert.Equal(-1, net3.Balance);
+        Assert.False(net3.IsActive);
+        Assert.All([1, 2, 3], id => Assert.False(deficit.IsActive(id)));
+        Assert.Null(deficit.NetworkOf(99));
+        Assert.False(deficit.IsActive(99));
+    }
+
+    [Fact]
     public void Bad_input_is_handled()
     {
         Assert.Empty(PowerNetwork.Solve([]).Networks);

@@ -6,9 +6,19 @@ using Num = System.Numerics;
 
 namespace OpenCorneroids.Game.World;
 
-/// <summary>What the pilot asks of the ship, in the ship's local (grid) axes: the velocity and spin to reach, and
-/// whether the flight assistant also cancels drift (<see cref="FlightAssist.Command"/>).</summary>
-public readonly record struct PilotRequest(Num.Vector3 LinearVelocity, Num.Vector3 AngularVelocity, bool Dampeners);
+/// <summary>What the pilot asks of the ship, in the ship's local (grid) axes: either direct console key-group bindings
+/// (as in the original, <see cref="UseFlightAssist"/> = false) or the automatic flight assistant's target velocity and
+/// spin (<see cref="FlightAssist.Command"/>).</summary>
+public readonly record struct PilotRequest(
+    Num.Vector3 LinearVelocity,
+    Num.Vector3 AngularVelocity,
+    bool Dampeners,
+    bool UseFlightAssist = true,
+    IReadOnlySet<Int3>? BoundTargets = null)
+{
+    public static PilotRequest Console(IReadOnlySet<Int3> boundTargets) =>
+        new(Num.Vector3.Zero, Num.Vector3.Zero, Dampeners: false, UseFlightAssist: false, BoundTargets: boundTargets);
+}
 
 /// <summary>One thruster of a ship as flight and display see it.</summary>
 public sealed class ShipThruster
@@ -23,48 +33,35 @@ public sealed class ShipThruster
 
     public WorldObject Object { get; }
     public ThrusterComponent Component { get; }
-    /// <summary>At full power; the force actually available is scaled by its network's satisfaction.</summary>
+    /// <summary>At full power; the force actually available is gated by its network's activity.</summary>
     public ThrusterMount Mount { get; }
     /// <summary>Its power node, or −1 when the block has no power value (then it always has full force).</summary>
     public int Node { get; }
     /// <summary>0..1, from the last physics step.</summary>
     public float Throttle { get; internal set; }
-    /// <summary>Firing: draws power. Every thruster that pushes is lit; one stays lit for
-    /// <see cref="GridSystems.LitHold"/> after its throttle drops to zero, so a throttle hovering near zero does not
-    /// make the network's demand (and every thruster's availability) flicker.</summary>
+    /// <summary>Firing: shows a flame. One stays lit for <see cref="GridSystems.LitHold"/> after its throttle drops to zero.</summary>
     public bool Lit { get; internal set; }
     /// <summary>Seconds a lit thruster at zero throttle has left before it goes dark.</summary>
     internal float DarkIn { get; set; }
-    /// <summary>Fraction of its force that power allows (its network's satisfaction; 1 without a power value).</summary>
+    /// <summary>1 when its power network is active (or it has no power value), 0 when its network is inactive.</summary>
     public float Availability { get; internal set; } = 1;
     internal MeshInstance3D? Flame { get; set; }
 }
 
 /// <summary>
-/// A grid's power and, on a ship, its thrusters: which blocks form networks, how much each thruster may push, the throttles the flight
-/// assistant picks, and what that looks like (active or unpowered textures, thruster flames). All rules are ours
-/// (tunable; original behaviour unknown); see <see cref="PowerNetwork"/>, <see cref="FlightAssist"/> and
-/// <see cref="ThrustAllocator"/> for the parts that live in the simulation library. The static world has one too, for
-/// its power textures only: nobody pilots it, so its thrusters always idle.
+/// A grid's power networks and, on a ship, its thrusters: which blocks form networks, whether each network's power
+/// balance is non-negative (as in the original), direct console thruster firing or flight-assistant allocation, and
+/// active/inactive textures and thruster flames.
 /// </summary>
-/// <remarks>
-/// Power is solved for the thrusters that are lit; lighting changes demand, so after allocating, the networks are solved
-/// again and, if a thruster's availability changed, the throttles are allocated once more against the new
-/// availabilities. Thrusters that light up in that second pass are lit too and the networks solved once more, so the
-/// force applied is what the final throttles give at the availabilities of the final lit set: a thruster never pushes
-/// without being lit (drawing power, a flame), and never pushes with power it does not get. A throttle at or
-/// below <see cref="LightUp"/> counts as zero.
-/// </remarks>
 public sealed class GridSystems
 {
-    /// <summary>Throttles at or below this are not fired at all (no push, no power, no flame): the allocator's tiny
+    /// <summary>Throttles at or below this are not fired at all (no push, no flame): the allocator's tiny
     /// leftovers. Small enough that the dampeners still settle a ship to well under a centimetre per second. Tunable.</summary>
     public const float LightUp = 0.001f;
-    /// <summary>Seconds a thruster stays lit (drawing power) after its throttle drops to zero.
-    /// Tunable; original behaviour unknown.</summary>
+    /// <summary>Seconds a thruster stays lit after its throttle drops to zero. Tunable.</summary>
     public const float LitHold = 0.25f;
     /// <summary>Flame length, in cells at full throttle, for a thruster whose <c>flameLength</c> is 0 (all vanilla
-    /// ones), on top of its nozzle's width. Tunable; original behaviour unknown.</summary>
+    /// ones), on top of its nozzle's width. Tunable.</summary>
     public const float DefaultFlameLength = 1.2f;
 
     // Per ship rather than static: Godot resources held in static fields outlive the engine at shutdown.
@@ -77,8 +74,6 @@ public sealed class GridSystems
     PowerNode[] _nodes = [];
     /// <summary>What each power node is on screen: a grid cell, or an object (then the cell is its origin).</summary>
     (Vector3I Cell, WorldObject? Object)[] _nodeBlocks = [];
-    /// <summary>Index into <see cref="_thrusters"/> per node, −1 for the rest.</summary>
-    int[] _thrusterOfNode = [];
     PowerSolution? _power;
     bool _powerDirty = true;
     bool[] _shown = [];
@@ -104,12 +99,24 @@ public sealed class GridSystems
     /// <summary>Thrusters lit right now.</summary>
     public int Firing => _thrusters.Count(t => t.Lit);
 
+    /// <summary>Whether any thruster is actively pushing right now.</summary>
+    public bool AnyThrusting
+    {
+        get
+        {
+            for (int i = 0; i < _thrusters.Count; i++)
+                if (_thrusters[i].Throttle > 0 && _thrusters[i].Availability > 0) return true;
+            return false;
+        }
+    }
+
     /// <summary>Supply and demand summed over every network of the ship, and the lowest satisfaction of a network that
     /// has demand (1 when nothing demands and something supplies, 0 when nothing supplies).</summary>
     public (float Supply, float Demand, float Satisfaction) PowerSummary
     {
         get
         {
+            Refresh();
             var power = Solve();
             float supply = 0, demand = 0, satisfaction = 1;
             bool anyDemand = false;
@@ -119,12 +126,43 @@ public sealed class GridSystems
                 demand += network.Demand;
                 if (network.Demand <= 0) continue;
                 anyDemand = true;
-                satisfaction = Math.Min(satisfaction, network.Satisfaction);
+                satisfaction = Math.Min(satisfaction, network.IsActive ? 1f : 0f);
             }
             if (!anyDemand) satisfaction = supply > 0 ? 1 : 0;
             return (supply, demand, satisfaction);
         }
     }
+
+    /// <summary>Returns the power network that <paramref name="target"/> belongs to, or <c>null</c> if it is not a powered block.</summary>
+    public PowerNetworkInfo? NetworkOf(BlockTarget target)
+    {
+        Refresh();
+        var power = Solve();
+        for (int i = 0; i < _nodeBlocks.Length; i++)
+        {
+            if (target.Object is not null)
+            {
+                if (_nodeBlocks[i].Object == target.Object)
+                    return power.NetworkOf(i);
+            }
+            else if (_nodeBlocks[i].Object is null && _nodeBlocks[i].Cell == target.Cell)
+            {
+                return power.NetworkOf(i);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Whether <paramref name="target"/> is active: true for unpowered blocks, or when its power network has
+    /// non-negative balance (<see cref="PowerNetworkInfo.IsActive"/>), as in the original.</summary>
+    public bool IsBlockActive(BlockTarget target)
+    {
+        var block = _grid.BlockOf(target);
+        if (block == BlockPalette.Air || !_grid.Palette.IsPowered(block)) return true;
+        return NetworkOf(target)?.IsActive == true;
+    }
+
+    public bool IsCellActive(Vector3I cell) => IsBlockActive(_grid.TargetAt(cell));
 
     /// <summary>
     /// The wrench (ship-local force through the centre of mass and torque about it) the thrusters give this step. With
@@ -147,15 +185,31 @@ public sealed class GridSystems
         }
 
         Scale();
+        if (!r.UseFlightAssist)
+        {
+            for (int i = 0; i < n; i++)
+            {
+                var t = _thrusters[i];
+                _throttles[i] = r.BoundTargets is not null && r.BoundTargets.Contains(t.Object.Origin) && t.Availability > 0 ? 1f : 0f;
+            }
+            SetThrottles(step);
+            var force = Num.Vector3.Zero;
+            var torque = Num.Vector3.Zero;
+            for (int i = 0; i < n; i++)
+            {
+                if (_throttles[i] <= 0) continue;
+                var t = _thrusters[i];
+                // In original console control mode, each bound thruster pushes with its raw itemset force.
+                var f = t.Mount.LocalForceDirection * (t.Component.Force * t.Availability * _throttles[i]);
+                force += f;
+                torque += Num.Vector3.Cross(t.Mount.LocalPosition - mass.CenterOfMass, f);
+            }
+            return (force, torque);
+        }
+
         var command = FlightAssist.Command(state, mass, r.LinearVelocity, r.AngularVelocity, r.Dampeners, Gains);
         ThrustAllocator.Allocate(_scaled, mass.CenterOfMass, command.ForceLocal, command.TorqueLocal, 1, _throttles);
-        if (SetThrottles(step) && Scale())
-        {
-            // Lighting changed the demand and with it what the thrusters can give: allocate once more against that,
-            // light what that needs, and push with what the final lit set really gets.
-            ThrustAllocator.Allocate(_scaled, mass.CenterOfMass, command.ForceLocal, command.TorqueLocal, 1, _throttles);
-            if (SetThrottles(0)) Scale();
-        }
+        SetThrottles(step);
         return ThrustAllocator.Wrench(_scaled, mass.CenterOfMass, _throttles);
     }
 
@@ -166,11 +220,7 @@ public sealed class GridSystems
         foreach (var t in _thrusters)
         {
             t.Throttle = 0;
-            if (t.Lit)
-            {
-                t.Lit = false;
-                _powerDirty = true;
-            }
+            t.Lit = false;
         }
     }
 
@@ -212,12 +262,9 @@ public sealed class GridSystems
     }
 
     /// <summary>
-    /// Drawn active: its network delivers something (<see cref="PowerSolution.IsPowered"/>). An idle thruster on a
-    /// powered network is active too (it is ready to fire; its flame shows when it does), and the rule is the same in
-    /// the static world and on ships, so launching a structure never changes how it looks. Ours (tunable; original
-    /// behaviour unknown).
+    /// Drawn active: its network has non-negative power balance (<see cref="PowerSolution.IsActive"/>), as in the original.
     /// </summary>
-    static bool IsActive(int node, PowerSolution power) => power.IsPowered(node);
+    static bool IsActive(int node, PowerSolution power) => power.IsActive(node);
 
     /// <summary>Rebuilds the thruster and power-node lists after the ship was edited.</summary>
     void Refresh()
@@ -230,13 +277,11 @@ public sealed class GridSystems
         var palette = _grid.Palette;
         var nodes = new List<PowerNode>();
         var blocks = new List<(Vector3I, WorldObject?)>();
-        var thrusterOf = new List<int>();
         foreach (var (cell, block) in _grid.PoweredBlocks())
         {
             if (palette.Item(block).Block!.Power is not { } value) continue;
             nodes.Add(PowerNode.FromPower(nodes.Count, [cell.ToInt3()], value));
             blocks.Add((cell, null));
-            thrusterOf.Add(-1);
         }
         foreach (var obj in _grid.Objects.OrderBy(o => o.Id))
         {
@@ -249,31 +294,26 @@ public sealed class GridSystems
                 // Conducts through its model (closed, for a door), not its exhaust or travel space.
                 nodes.Add(PowerNode.FromPower(node, [.. obj.Shape.ModelCells(obj.Origin, obj.Orientation)], value));
                 blocks.Add((obj.Origin.ToGodot(), obj));
-                thrusterOf.Add(thruster is null ? -1 : _thrusters.Count);
             }
             if (thruster is not null)
                 _thrusters.Add(new ShipThruster(obj, thruster, ThrusterMount.FromShape(obj.Shape, obj.Origin, obj.Orientation, thruster), node));
         }
         _nodes = [.. nodes];
         _nodeBlocks = [.. blocks];
-        _thrusterOfNode = [.. thrusterOf];
         _powerDirty = true;
         _shownValid = false;
     }
 
-    /// <summary>The power solution for the lit thrusters, solved again only when something changed.</summary>
+    /// <summary>The power solution for the grid, solved again only when blocks change.</summary>
     PowerSolution Solve()
     {
         if (!_powerDirty && _power is not null) return _power;
-        var nodes = new PowerNode[_nodes.Length];
-        for (int i = 0; i < nodes.Length; i++)
-            nodes[i] = _thrusterOfNode[i] is var t && t >= 0 && !_thrusters[t].Lit ? _nodes[i] with { Demand = 0 } : _nodes[i];
-        _power = PowerNetwork.Solve(nodes);
+        _power = PowerNetwork.Solve(_nodes);
         _powerDirty = false;
         return _power;
     }
 
-    /// <summary>Each thruster's mount with its force scaled by its availability. Returns whether any availability changed.</summary>
+    /// <summary>Each thruster's mount with its force gated by its power network's activity, as in the original.</summary>
     bool Scale()
     {
         var power = Solve();
@@ -281,7 +321,7 @@ public sealed class GridSystems
         for (int i = 0; i < _thrusters.Count; i++)
         {
             var t = _thrusters[i];
-            float availability = t.Node < 0 ? 1 : power.SatisfactionOf(t.Node);
+            float availability = t.Node < 0 ? 1 : (power.IsActive(t.Node) ? 1 : 0);
             if (availability != t.Availability) changed = true;
             t.Availability = availability;
             _scaled[i] = t.Mount with { MaxForce = t.Mount.MaxForce * availability };
@@ -290,8 +330,7 @@ public sealed class GridSystems
     }
 
     /// <summary>Stores the allocated throttles (zeroing those at or below <see cref="LightUp"/>), lights every thruster that
-    /// pushes and darkens those idle for <see cref="LitHold"/> (counted down by <paramref name="elapsed"/>). Returns
-    /// whether any thruster's lit state changed (and with it the power demand).</summary>
+    /// pushes and darkens those idle for <see cref="LitHold"/> (counted down by <paramref name="elapsed"/>).</summary>
     bool SetThrottles(float elapsed)
     {
         bool changed = false;
@@ -315,7 +354,6 @@ public sealed class GridSystems
             t.Lit = lit;
             changed = true;
         }
-        if (changed) _powerDirty = true;
         return changed;
     }
 

@@ -6,13 +6,11 @@ using OpenCorneroids.Simulation.Items;
 namespace OpenCorneroids.Game.Ui;
 
 /// <summary>
-/// The inventory grid: the backpack rows on top and the hotbar row (slots 0..8) below them, set apart and tinted
-/// so it is clear which items are in hand. Click a stack to pick it up, click another slot to put it there; the
-/// move itself is <see cref="Inventory.MoveOrMerge"/>, so the same item merges and anything else swaps. Putting a
-/// stack on the trash slot throws it away (<see cref="Inventory.Discard"/>); clicking the trash with nothing picked
-/// takes the last thrown stack back.
+/// The inventory grid inside a classic bevelled window: the backpack rows on top and the hotbar row (slots 0..7) below
+/// them. Click a stack to pick it up, click another slot to put it there; putting a stack on the trash slot throws it
+/// away (<see cref="Inventory.Discard"/>), and clicking the trash with nothing picked takes the last thrown stack back.
 /// </summary>
-public partial class InventoryPanel : PanelContainer
+public partial class InventoryPanel : ClassicWindow
 {
     const float SlotSize = 48;
 
@@ -30,20 +28,18 @@ public partial class InventoryPanel : PanelContainer
         _inventory = inventory;
         _itemset = itemset;
         _icons = icons;
-        AddThemeStyleboxOverride("panel", GameWindows.PanelStyle());
+        Configure("Inventory", bevel: 5, padLeft: 18, padTop: 32, padRight: 18, padBottom: 16);
 
         var column = new VBoxContainer();
         column.AddThemeConstantOverride("separation", 6);
         AddChild(column);
-        column.AddChild(Hud.Text("Inventory", 20));
 
         _all = new ItemSlot[inventory.Slots.Count];
         var backpack = Grid();
         for (int i = Inventory.HotbarSize; i < _all.Length; i++) backpack.AddChild(_all[i] = NewSlot(i));
         column.AddChild(backpack);
 
-        column.AddChild(new HSeparator());
-        column.AddChild(Hud.Text($"Hotbar (1-{Inventory.HotbarSize})", 14, new Color(0.6f, 0.75f, 1f)));
+        column.AddChild(ClassicUi.Label($"Hotbar (1-{Inventory.HotbarSize})", 14, new Color(1f, 0.96f, 0.72f)));
         var hotbar = Grid();
         for (int i = 0; i < Math.Min(Inventory.HotbarSize, _all.Length); i++) hotbar.AddChild(_all[i] = NewSlot(i));
         column.AddChild(hotbar);
@@ -53,7 +49,7 @@ public partial class InventoryPanel : PanelContainer
         _trash = ItemSlot.Create(SlotSize, MouseFilterEnum.Stop);
         _trash.Clicked += OnTrashClicked;
         trashRow.AddChild(_trash);
-        _trashHint = Hud.Text("", 13, new Color(1f, 0.75f, 0.7f, 0.8f));
+        _trashHint = ClassicUi.Label("", 13, new Color(1f, 0.9f, 0.88f));
         _trashHint.VerticalAlignment = VerticalAlignment.Center;
         _trashHint.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         trashRow.AddChild(_trashHint);
@@ -63,7 +59,7 @@ public partial class InventoryPanel : PanelContainer
         if (endless.Count > 0)
         {
             var endlessRow = new HBoxContainer();
-            endlessRow.AddThemeConstantOverride("separation", 8);
+            endlessRow.AddThemeConstantOverride("separation", 6);
             foreach (var itemId in endless)
             {
                 if (!itemset.ItemsById.TryGetValue(itemId, out var item)) continue;
@@ -73,15 +69,12 @@ public partial class InventoryPanel : PanelContainer
                 slot.Clicked += _ => TakeEndless(item);
                 endlessRow.AddChild(slot);
             }
-            var hint = Hud.Text("Always yours: click to take one.", 13, new Color(0.8f, 0.9f, 1f, 0.8f));
+            var hint = ClassicUi.Label("Starter kit (click to take)", 13);
             hint.VerticalAlignment = VerticalAlignment.Center;
             hint.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             endlessRow.AddChild(hint);
             column.AddChild(endlessRow);
         }
-
-        column.AddChild(Hud.Text("Click an item, then click where it goes. Right click cancels.", 13, new Color(1, 1, 1, 0.55f)));
-        column.AddChild(Hud.Text("Esc or C/I closes.", 13, new Color(1, 1, 1, 0.55f)));
 
         inventory.Changed += Refresh;
         Refresh();
@@ -123,7 +116,7 @@ public partial class InventoryPanel : PanelContainer
         {
             _picked = null;
             _inventory.MoveOrMerge(from, index);
-            Refresh();   // MoveOrMerge raises no event when nothing changed, but the pick highlight must still go
+            Refresh();
         }
         else if (_inventory.Slots[index] is { } stack)
         {
@@ -156,8 +149,6 @@ public partial class InventoryPanel : PanelContainer
 
     void Refresh()
     {
-        // A craft can empty the picked slot or refill it with something else. Keeping the pick then would make the
-        // next click move a stack the player never picked (MoveOrMerge swaps from an empty source), so drop it.
         if (_picked is { } picked && _inventory.Slots[picked]?.ItemId != _pickedItemId) _picked = null;
         for (int i = 0; i < _all.Length; i++)
         {
@@ -174,15 +165,15 @@ public partial class InventoryPanel : PanelContainer
         _trash.SetLook(ItemSlot.Look.Trash);
         _trash.TooltipText = trash is null ? "Trash" : $"Trash: {trashed?.Name ?? $"item {trash.ItemId}"} (click to take back)";
         _trashHint.Text = trash is null
-            ? "Trash: put an item here to throw it away."
-            : "Trash: click to take it back. The next item thrown away destroys it.";
+            ? "Trash (drop item to discard)"
+            : "Trash (click to restore)";
     }
 
     static GridContainer Grid()
     {
         var grid = new GridContainer { Columns = Inventory.HotbarSize };
-        grid.AddThemeConstantOverride("h_separation", 4);
-        grid.AddThemeConstantOverride("v_separation", 4);
+        grid.AddThemeConstantOverride("h_separation", 2);
+        grid.AddThemeConstantOverride("v_separation", 2);
         return grid;
     }
 }

@@ -44,15 +44,15 @@ public sealed class BlockPalette
 
     /// <summary>
     /// A grid block whose facing matters, so it can be turned when placed: its top or bottom texture differs from its
-    /// walls (a console, a crafting station, a torch), or it is a gun, which fires along its up axis. Plain cubes (rock,
-    /// armor, windows) look the same any way round and are never turned.
+    /// walls (a console, a crafting station, a torch), or it is a gun or camera, which aims/looks along its axis. Plain
+    /// cubes (rock, armor, windows) look the same any way round and are never turned.
     /// </summary>
     public bool IsTurnable(ushort index)
     {
         if (index == Air || IsObject(index)) return false;
         var e = _entries[index];
         return e.Top != e.Walls || e.Bottom != e.Walls || e.InactiveTop != e.InactiveWalls || e.InactiveBottom != e.InactiveWalls
-               || e.Item.Get<GunComponent>() is not null;
+               || e.Item.Get<GunComponent>() is not null || e.Item.Kind == "camera";
     }
 
     /// <summary>True for blocks placed as world objects rather than into the chunk grid.</summary>

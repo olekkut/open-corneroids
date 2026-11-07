@@ -5,8 +5,8 @@ using OpenCorneroids.Game.Content;
 namespace OpenCorneroids.Game.Ui;
 
 /// <summary>
-/// One square showing an item: its icon (or a text badge when it has none), a count in the corner and the name as a
-/// tooltip. Used by the hotbar, the inventory grid and the crafting window, so an item looks the same everywhere.
+/// One square showing an item: its icon (or a text badge when it has none), a count in the top-left corner as in the
+/// original, and the name as a tooltip. Used by the hotbar, the inventory grid and the crafting window.
 /// </summary>
 public partial class ItemSlot : PanelContainer
 {
@@ -14,11 +14,11 @@ public partial class ItemSlot : PanelContainer
 
     // Per instance rather than static: Godot resources held in static fields outlive the engine and are reported
     // as leaks at exit.
-    readonly StyleBoxFlat _normalStyle = Style(new Color(0, 0, 0, 0.55f), new Color(1, 1, 1, 0.25f), 1);
-    readonly StyleBoxFlat _hotbarStyle = Style(new Color(0.05f, 0.08f, 0.14f, 0.7f), new Color(0.45f, 0.65f, 1f, 0.6f), 1);
-    readonly StyleBoxFlat _selectedStyle = Style(new Color(0.1f, 0.1f, 0.1f, 0.75f), new Color(1f, 0.85f, 0.3f), 3);
-    readonly StyleBoxFlat _pickedStyle = Style(new Color(0.1f, 0.25f, 0.3f, 0.85f), new Color(0.4f, 1f, 1f), 3);
-    readonly StyleBoxFlat _trashStyle = Style(new Color(0.25f, 0.05f, 0.05f, 0.7f), new Color(1f, 0.4f, 0.35f, 0.7f), 1);
+    readonly StyleBox _normalStyle = ClassicUi.BevelStyle(ClassicUi.SlotFace, ClassicUi.BevelDark, ClassicUi.BevelLight, bevel: 2, marginH: 4, marginV: 4);
+    readonly StyleBox _hotbarStyle = ClassicUi.BevelStyle(Color.Color8(186, 186, 186), ClassicUi.BevelDark, ClassicUi.BevelLight, bevel: 2, marginH: 4, marginV: 4);
+    readonly StyleBox _selectedStyle = FrameStyle(Color.Color8(196, 196, 196), Colors.White, 3);
+    readonly StyleBox _pickedStyle = FrameStyle(Color.Color8(170, 198, 204), new Color(0.25f, 0.95f, 1f), 3);
+    readonly StyleBox _trashStyle = ClassicUi.BevelStyle(Color.Color8(168, 136, 136), ClassicUi.BevelDark, ClassicUi.BevelLight, bevel: 2, marginH: 4, marginV: 4);
 
     TextureRect _icon = null!;
     Label _badge = null!, _count = null!;
@@ -46,12 +46,14 @@ public partial class ItemSlot : PanelContainer
             TextureFilter = TextureFilterEnum.Nearest,
             MouseFilter = MouseFilterEnum.Ignore,
         };
-        slot._badge = Hud.Text("", (int)(size * 0.32f), new Color(1, 1, 1, 0.85f));
+        slot._badge = ClassicUi.Label("", (int)(size * 0.28f), new Color(1, 1, 1, 0.9f));
         slot._badge.HorizontalAlignment = HorizontalAlignment.Center;
         slot._badge.VerticalAlignment = VerticalAlignment.Center;
-        slot._count = Hud.Text("", Math.Max(11, (int)(size * 0.26f)));
-        slot._count.HorizontalAlignment = HorizontalAlignment.Right;
-        slot._count.VerticalAlignment = VerticalAlignment.Bottom;
+        slot._count = ClassicUi.Label("", Math.Max(12, (int)(size * 0.25f)));
+        slot._count.HorizontalAlignment = HorizontalAlignment.Left;
+        slot._count.VerticalAlignment = VerticalAlignment.Top;
+        slot._count.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
+        slot._count.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         slot.AddChild(slot._icon);
         slot.AddChild(slot._badge);
         slot.AddChild(slot._count);
@@ -59,15 +61,15 @@ public partial class ItemSlot : PanelContainer
         return slot;
     }
 
-    /// <summary>Shows an item, or clears the slot when <paramref name="item"/> is null. A count of 1 or less is not
-    /// drawn, the way a single tool needs no number.</summary>
+    /// <summary>Shows an item, or clears the slot when <paramref name="item"/> is null. Stack count sits in the
+    /// top-left corner, as in the original.</summary>
     public void Show(ItemDef? item, int count, ItemIcons icons, string? countText = null)
     {
         var icon = item is null ? null : icons.Of(item);
         _icon.Texture = icon;
         _badge.Text = item is null ? Placeholder : icon is null ? ItemIcons.Badge(item) : "";
-        _badge.Modulate = new Color(1, 1, 1, item is null ? 0.35f : 1f);
-        _count.Text = countText ?? (item is not null && count > 1 ? count.ToString() : "");
+        _badge.Modulate = new Color(1, 1, 1, item is null ? 0.55f : 1f);
+        _count.Text = countText ?? (item is not null && count >= 1 ? count.ToString() : "");
         TooltipText = item?.Name ?? "";
     }
 
@@ -89,11 +91,11 @@ public partial class ItemSlot : PanelContainer
         }
     }
 
-    static StyleBoxFlat Style(Color background, Color border, int borderWidth)
+    static StyleBoxFlat FrameStyle(Color background, Color border, int borderWidth)
     {
         var style = new StyleBoxFlat { BgColor = background, BorderColor = border };
         style.SetBorderWidthAll(borderWidth);
-        style.SetContentMarginAll(5);
+        style.SetContentMarginAll(4);
         return style;
     }
 }

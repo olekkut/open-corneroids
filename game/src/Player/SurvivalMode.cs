@@ -16,8 +16,8 @@ namespace OpenCorneroids.Game.Player;
 public sealed class SurvivalMode : PlayMode
 {
     public override string Controls =>
-        "WASD move · Space/Ctrl up/down · Z/X roll · Shift boost · LMB use what you hold · RMB empty hand · 1-8/wheel select · " +
-        "R/middle turn block · E use · F edit · C inventory · T light · L level · N noclip · Esc mouse, again menu";
+        "WASD move · Space/Ctrl up/down · Z/X roll · Shift boost · LMB use what you hold · RMB empty hand · 1-8/wheel select\n" +
+        "R/middle turn block · E use · F edit · C inventory · T light · L level · K fixed cam · N noclip · Esc mouse, again menu";
 
     readonly Inventory _inventory;
     readonly ItemsetDef _itemset;
@@ -78,13 +78,15 @@ public sealed class SurvivalMode : PlayMode
 
     double _boostWarned = double.NegativeInfinity;
 
-    /// <summary>Releasing the left button: a block in hand is placed, a consumable used, as in the original.</summary>
+    /// <summary>Releasing the left button: a block in hand is placed (against an aimed face, or in empty space to attach
+    /// within 16 units / start a new ship), or a consumable is used, as in the original.</summary>
     public override void PrimaryReleased(Vector3 eye, Aim? aim)
     {
         if (InHand is not { } stack || !_itemset.ItemsById.TryGetValue(stack.ItemId, out var item)) return;
         if (item.Block is not null)
         {
             if (aim is { } a) Place(eye, a);
+            else PlaceInSpace(eye);
         }
         else UseSelected();
     }
@@ -100,6 +102,8 @@ public sealed class SurvivalMode : PlayMode
         StopDrilling();
         ShowHotbar();
     }
+
+    public override void Deselect() => SecondaryReleased();
 
     /// <summary>The drill in hand, if any: mining needs one held, as in the original.</summary>
     int HeldDrillPower => HeldItem?.Get<DrillComponent>()?.Power ?? 0;
@@ -248,23 +252,37 @@ public sealed class SurvivalMode : PlayMode
 
     public override void Place(Vector3 eye, Aim aim)
     {
+        if (!TryGetHeldPlaceable(out var block)) return;
+        TryPlace(eye, aim, block, () => _inventory.TryTakeFromSlot(_selected, 1));
+    }
+
+    public override void PlaceInSpace(Vector3 eye)
+    {
+        if (!TryGetHeldPlaceable(out var block)) return;
+        TryPlaceInSpace(eye, View.Forward, block, () => _inventory.TryTakeFromSlot(_selected, 1));
+    }
+
+    bool TryGetHeldPlaceable(out ushort block)
+    {
+        block = BlockPalette.Air;
         if (InHand is not { } stack)
         {
             Hud.Flash("Nothing in hand to place", warning: true);
-            return;
+            return false;
         }
         if (!_itemset.ItemsById.TryGetValue(stack.ItemId, out var item) || item.Block is null)
         {
             Hud.Flash($"{NameOf(stack.ItemId)} can't be placed", warning: true);
-            return;
+            return false;
         }
-        if (Palette.IndexOf(item.ItemId) is not { } block)
+        if (Palette.IndexOf(item.ItemId) is not { } idx)
         {
             // The palette leaves out only blocks whose face textures are missing.
             Hud.Flash($"{item.Name} has no usable textures in this pack, so it can't be placed", warning: true);
-            return;
+            return false;
         }
-        TryPlace(eye, aim, block, () => _inventory.TryTakeFromSlot(_selected, 1));
+        block = idx;
+        return true;
     }
 
     /// <summary>The button is up or the aim is off every block: the drilling starts over.</summary>
@@ -288,7 +306,7 @@ public sealed class SurvivalMode : PlayMode
             slots.Add(stack is not null && _itemset.ItemsById.TryGetValue(stack.ItemId, out var item) ? (item, stack.Quantity) : (null, 0));
         }
         var selected = InHand;
-        var caption = _selected < 0 ? "Empty hand" : selected is null ? "Empty slot" : NameOf(selected.ItemId);
+        var caption = _selected < 0 || selected is null ? "" : NameOf(selected.ItemId);
         Hud.ShowHotbar(slots, _selected, caption);
     }
 }

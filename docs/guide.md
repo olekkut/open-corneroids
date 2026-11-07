@@ -47,29 +47,34 @@ Arguments after `--`:
 | `--texture-mapping=stretch` / `=tile` | How multi-block faces use their texture region: once over the whole face (default), or repeated every region-size cells. Display only, not saved |
 | `--orientation=<0..23>` | Initial orientation for placing multi-blocks (up axis × 4 + spin; 0 is upright) |
 | `--preview=<itemId>` | Select that block (survival: given one if the hotbar has none) and aim at the asteroid so the placement ghost shows, preferring a spot where it fits. The camera stands back at an angle so the whole footprint is in view, and the aim stays on that spot until the mouse moves or a key is pressed; for screenshots |
-| `--place` | With `--preview`: place the previewed block there by the normal rules (survival spends the item), e.g. with `--quit-after-save` to save a placed object without a mouse |
+| `--preview-space=<itemId>` | Select that block (survival: given one) and aim into empty space near a ship (so the ghost and the red attachment beam to its centre of mass show) or into open space beyond 16 m |
+| `--place` | With `--preview` or `--preview-space`: place the previewed block there by the normal rules (survival spends the item), attaching within 16 m or starting a new floating ship beyond it |
 | `--focus=<itemId>` | Move the camera close to the first placed multi-block of that item (from the side it already looks at), framing its footprint; for checking a showcase or loaded object by eye |
 | `--select=<itemId>` | Select the hotbar slot holding that item (survival), e.g. a weapon for a firing test |
 | `--drop=<itemId>:<count>[,...]` | Leave those items floating a metre in front of the player at the start (survival), to check picking up |
 | `--record=<folder>` | Save a numbered PNG 15 times a second of game time until the `--screenshot`, to make short clips (the README's flight clip was made this way) |
 | `--open-doors` | Open every door once the world is up, and keep doors from closing by themselves; a door that would open into the player stays shut (warning in the console); for screenshots |
-| `--demo-ship` | In a new world, build a small ship near the spawn, at the nearest spot with 40 cells of open space in front of it (−Z, where it faces), from the itemset's own blocks, attached to nothing: a hull of the first plain opaque block, the first console in its top front, the strongest power supply on top and two thrusters on each face (exhaust outwards; on the top and bottom on opposite diagonals, so it can pitch and roll both ways), skipping what the itemset lacks. Hull blocks don't conduct power, so the weakest non-supplying single-cell power block (a cable) replaces the hull on the shortest paths from the power block to the console and every thruster. The camera moves to look at it |
+| `--demo-ship` | In a new world, build a small ship near the spawn, at the nearest spot with 40 cells of open space in front of it (−Z, where it faces), from the itemset's own blocks, attached to nothing: a hull of the first plain opaque block, the first flight console in its top front, the strongest power supply on top and two thrusters on each face (exhaust outwards; on the top and bottom on opposite diagonals, so it can pitch and roll both ways), wired with cables and pre-bound to `W` `S` `A` `D` `Space` on its console so it flies in both console-binding and flight-assistant modes. The camera moves to look at it |
 | `--launch` | Press E on a console of the static world: the `--demo-ship` console, or else the one nearest the camera, launching its structure as a ship |
 | `--turn-ship=<degrees>` | Turn every ship about the world's up axis through its centre of mass (after `--launch`), to check that aiming, the ghost and building follow a ship's own axes |
 | `--place-on-ship=<itemId>` | Select that block (survival: given one) and place it on the first face of a ship, seen from the camera, where it fits, by the normal rules |
 | `--preview-ship=<itemId>` | As `--place-on-ship`, but only aim there, so the highlight and the ghost show on the ship; for screenshots |
-| `--pilot` / `=seat` / `=chase` / `=fixed` | Sit at the first ship's console (after `--demo-ship --launch`, or in a loaded world) and pilot it, with the camera on the seat, chasing the ship from behind, or (`fixed`, for before/after screenshots) left where it was. Applied after the hooks above |
-| `--dampeners=on` / `=off` | Inertial dampeners for the pilot (default on) |
-| `--hold=<action>[+<action>...]:<seconds>` | Hold these input actions down for that many seconds of game time, as if the keys were pressed (the screenshot lock ignores only the real keyboard). Repeat the argument for a sequence. Actions: `move_forward`, `move_back`, `move_left`, `move_right`, `move_boost` (walking and piloting), `move_up`, `move_down` (walking only), `ship_up`, `ship_down`, `ship_pitch_up`, `ship_pitch_down`, `ship_yaw_left`, `ship_yaw_right` (piloting only), `ship_roll_left`, `ship_roll_right` (rolling the ship or the astronaut), and `primary` (the left mouse button: drill, shoot, or fire the ship's guns). Toggles (dampeners, view) are not held: use `--dampeners`, `--pilot=`. `move_up`/`move_down` held while piloting log a warning (they do nothing there). Game time counts each frame up to 0.25 s, as the ship physics does, so a loading hitch does not use up a hold |
+| `--pilot` / `=seat` / `=chase` / `=fixed` | Sit at the first ship's console (after `--demo-ship --launch`, or in a loaded world) and pilot it, with the camera on the seat (or bound camera block), chasing the ship from behind, or (`fixed`, for before/after screenshots) left where it was. Applied after the hooks above |
+| `--flight-assist` / `=on` / `=off` | Toggle the optional automatic flight assistant (default `off`: original console group bindings) |
+| `--fixed-camera` / `=on` / `=off` | Toggle locking camera rotation to a boarded ship's rotation (default `off`) |
+| `--dampeners=on` / `=off` | Inertial dampeners for the flight assistant (default `on`) |
+| `--hold=<action>[+<action>...]:<seconds>` | Hold these input actions down for that many seconds of game time, as if the keys were pressed (the screenshot lock ignores only the real keyboard). Repeat the argument for a sequence. Actions: `move_forward`, `move_back`, `move_left`, `move_right`, `move_boost` (walking and piloting), `move_up`, `move_down` (walking only), `ship_up`, `ship_down`, `ship_pitch_up`, `ship_pitch_down`, `ship_yaw_left`, `ship_yaw_right` (piloting only), `ship_roll_left`, `ship_roll_right` (rolling the ship or the astronaut), and `primary` (the left mouse button: drill, shoot, or fire the ship's guns). Toggles (dampeners, flight assist, view) are not held: use `--flight-assist`, `--dampeners`, `--pilot=`. Game time counts each frame up to 0.25 s, as the ship physics does, so a loading hitch does not use up a hold |
 | `--frames=<n>` | Take the `--screenshot` at frame n (default 240), or with `--quit-after-save` run that many frames before saving and quitting (so held controls and flying ships are in the save). The screenshot run's frame rate is uncapped, so the moment n frames is depends on the machine: prefer `--seconds` |
 | `--seconds=<s>` | As `--frames`, but after s seconds of game time (the clock `--hold` counts in), the same moment on any machine. Wins over `--frames`. The log says the frame and time it fired at |
-| `--open=inventory` / `=crafting` | Open that window once the first world (new or loaded) is up (survival). `crafting` shows the first crafting-table station without aiming at one |
+| `--open=inventory` / `=crafting` / `=console` / `=power` / `=help` | Open that window once the first world (new or loaded) is up. `crafting` shows the first crafting-table station; `console` opens the "Control block" window of the first console; `power` opens the "Power network" popup of the first powered block; `help` opens the `F1` controls & mechanics window |
+| `--bind-console` / `=wide` / `=close` | Equip the first console's binding tool and frame either the whole ship (`wide`, default) or a close deck view within 3 m of a thruster (`close`); for screenshots |
+| `--debug-hud` | Show the `F3` top-left technical readout (FPS, coordinates, ship telemetry) from startup |
 | `--give=<itemId>:<count>[,<itemId>:<count>...]` | Add items to the survival inventory of the first *new* world, after the starting kit. Not applied to loaded worlds or to worlds picked later from the menu |
 | `--seed=<n>` | Generator seed for a world started from the command line (default 2012) |
 | `--new-world=<name>` | Create a world with this name (from `--itemset`, default `auto`, with `--textures`, `--creative`, `--seed`) and save it at once, replacing a save of the same name |
 | `--load=<world name>` | Load a saved world instead of showing the menu. `--itemset`, `--textures`, `--creative`, `--showcase` and `--seed` are ignored: the save decides |
-| `--quit-after-save` | Save the world started from the command line, then quit (no screenshot). Exit code 1 if nothing was saved. With `--frames`, the world runs that long first |
-| `--screenshot=<file.png>` | Save a screenshot after 240 frames (or `--frames`), then quit (without saving the world). Mouse and keyboard are ignored meanwhile, so stray input can't change the picture. The log has the frame rate measured over the run |
+| `--quit-after-save` | Save the world started from the command line, then quit (no screenshot). Exit code 1 if nothing was saved. With `--frames` or `--seconds`, the world runs that long first |
+| `--screenshot=<file.png>` | Save a screenshot after 240 frames (or `--frames` / `--seconds`), then quit (without saving the world). Mouse and keyboard are ignored meanwhile, so stray input can't change the picture. The log has the frame rate measured over the run |
 
 The game starts in survival with the itemset's starting kit (`defaultItems`), as the original gives it: the first drill,
 the crafting table and the ore furnace are endless (beside the inventory: click one to take another), and the rest
@@ -78,12 +83,11 @@ in the main inventory, not the hotbar: craft one at a time, or half of what you 
 
 Your suit has **Health** and **Power** (the bars above the hotbar). Power recharges by itself (5 per second, more
 with a power source worn); boosting with Shift uses it. Armor and helmets, power sources and the like are worn in the
-**character** window beside the inventory, or put on with right click from the hotbar. Right click with a consumable
-(health potion, power overcharge, armor boost) uses it. Nothing hurts you yet; that comes with combat.
+**character** window beside the inventory, or put on from the hotbar. Nothing hurts you yet; that comes with combat.
 
 With a weapon selected (the starting kit has a pistol), the left button fires instead of drilling. Each shot costs
 suit power and pushes you back a little; shots break blocks once they've done enough damage (shot-apart blocks drop
-nothing). While piloting, the left button fires every gun on the ship.
+nothing).
 
 Green markers show each asteroid's distance and mass, white ones each ship's. The log at the left keeps the last
 messages for a few seconds.
@@ -97,27 +101,37 @@ Controls (survival) follow the original's defaults:
   (ours).
 - **Hands:** the left button acts with what you hold. A drill drills (within 3 m: grey sparks when it bites, yellow when
   it is too weak) and a weapon fires while it is held down; a block is placed and a consumable used (or a wearable put
-  on) when you let go. A mined block floats where it was for 30 seconds; come within 1.5 m and it flies to you. Letting go of the right button empties your
-  hand. 1–8 or the wheel pick a hotbar slot; R or the middle button turns the block you are about to place.
-- **Blocks:** E uses the block you look at (a console's seat, a crafting station, a door); F edits it (console
-  binding, still to come). T switches the flashlight.
-- **Windows:** C (or I) opens the inventory and character window (click a stack, then click where it goes, or onto
+  on) when you let go. With a block in hand and no block face aimed at, the preview floats ahead of you in empty space:
+  within 16 m of an existing ship or asteroid a red beam shows what it will attach to, and beyond 16 m releasing the
+  left button starts a new floating ship, as in the original. A mined block floats where it was for 30 seconds; come
+  within 1.5 m and it flies to you. Letting go of the right button empties your hand. 1–8 or the wheel pick a hotbar
+  slot; R or the middle button turns the block you are about to place.
+- **Blocks:** E uses the block you look at (a console's seat, a crafting station, a door); F edits it: on a console it
+  equips that console's binding tool (left-click thrusters or cannons within 3 m to cycle their colour group, right-click
+  to put the tool away, or press F again to open the "Control block" window for key assignment and "Set camera"); on any
+  other powered block F opens the "Power network" popup showing block count and power balance. Contextual `"F to edit"` /
+  `"E to use"` prompts appear beneath the crosshair when aiming at an interactive block within reach. T switches the
+  flashlight.
+- **Windows & HUD:** C (or I) opens the inventory and character window (click a stack, then click where it goes, or onto
   its equipment slot to wear it; put it on the red trash slot to throw it away, click the trash to take the last
-  thrown stack back; the next throw destroys it and saves don't keep it). Esc closes a window, frees the mouse, and
-  again returns to the menu. Movement stops while a window is open. F5 saves the world.
-- **Ships:** come within about a metre of a ship's blocks and you are aboard: you move along with it, turning with it,
-  until you are about 2.5 m clear of it again.
+  thrown stack back; the next throw destroys it and saves don't keep it). F1 opens the Help & Controls window, F3 toggles
+  the top-left technical readout (FPS, coordinates, flight telemetry), F6 hides or shows the HUD, and F5 saves the world.
+  Esc closes a window, frees the mouse, and again returns to the menu. Movement stops while a window is open.
+- **Ships:** come within about a metre of a ship's blocks and you are aboard (indicated by the magnetic-boot icon to the
+  right of the hotbar): you move along with it, and when K ("Fixed camera when aboard") is on your view turns with the
+  ship too, until you are about 2.5 m clear of it again.
 
-Multi-block blocks (doors, thrusters, guns, power blocks, big windows) are placed whole. While one is selected, the
-aimed face shows a ghost of it: a wire box for its footprint and its textured model, see-through and tinted green when it
-fits and red when it is blocked (outside the world, overlapping blocks or another multi-block's footprint, or in your body).
-Rock in front of the ghost hides it, as it would the placed block.
-R or the middle mouse button turns it: its top points to the next of the six directions, and after all six the spin
-moves on, so all 24 orientations come round; the HUD shows the orientation.
+Multi-block blocks (doors, thrusters, guns, power blocks, big windows) are placed whole. While any block is selected,
+the preview shows its natural block faces wrapped in white 8-corner selector brackets covering its full footprint
+(including thruster exhaust space), or tinted red with red brackets when blocked (outside the world, overlapping blocks
+or another multi-block's footprint, or in your body). Rock or hull in front of the preview hides it, as it would the
+placed block.
+R or the middle mouse button turns multi-blocks and turnable single blocks: the block's top points to the next of the
+six directions, and after all six the spin moves on, so all 24 orientations come round.
 Single-cell blocks whose facing matters turn the same way: consoles, crafting stations, torches, cables, containers,
 cameras and the single-cell Anti-Personnel Cannon (anything whose top or bottom differs from its sides, and every gun).
-A red and white arrow in the preview shows the way the block's top faces, which is where a gun fires. Plain cubes
-(rock, armor, windows) look the same any way round, so R and T say so instead.
+A depth-tested red and white arrow in the preview points along the block's top (and straight out of a thruster's nozzle
+through its exhaust box). Plain cubes (rock, armor, windows) look the same any way round, so R says so instead.
 Only the model is solid: thruster exhaust and door travel space can be flown through but not built in. Aiming at any part
 of a multi-block's model targets all of it, and breaking it drops the item. Doors slide along their own up axis and close
 again after their time; a door never closes on the player (it stays open and says so). Door speed is read as cells per
@@ -125,96 +139,50 @@ second and time as milliseconds open (ours; original behaviour unknown).
 
 ## Ships
 
-A ship (our rules; original behaviour unknown) is the structure attached to a ship console (any block with a console component, the Standard console block in
-vanilla): every block face-connected to it, multi-blocks included, except asteroid rock and minerals, where it stops.
-E on a console that is part of the static world **launches** it: the structure leaves the world and becomes a ship with
-its own block grid, at the same world position and world-aligned at first, and the HUD says how many blocks it has and
-its mass (the sum of the blocks' `mass`; a multi-block counts its item's mass once). A console with nothing attached, or
-a structure over 48 cells along any axis (or over 20 000 cells), is refused with a message, and so is a
-65th ship, since a save holds at most 64. A ship's grid has 64 cells a
-side with the structure in the middle, so there is room to build on every side.
+Ships can be started straight in empty space (place a block more than 16 m from any rock or ship) or launched from a
+structure built on an asteroid: E on a console that is part of the static world **launches** its face-connected
+structure (stopping at asteroid rock and minerals) as a ship with its own 64³ block grid. Console bindings made before
+launching carry over onto the ship.
 
-Ships are built on like the world: aiming, mining, placing, the ghost, doors and stations all work on them, and a block
-placed against a ship's face joins that ship, turned in the ship's own axes. Nothing can be placed where another grid already
-has a block or a multi-block's reserved space (a ship's thruster can't be built into the rock beside it). Mining a ship down to nothing removes it.
-The player collides with ships too (in a turned ship's frame the body is approximated by the axis-aligned box around
-it).
+Ships are built on like the world: aiming, mining, placing (against a face or within 16 m in space, with the red
+attachment beam pointing to the ship's centre of mass), the ghost, doors, consoles and stations all work on them. Mining
+a ship down to nothing removes it.
+
+### Console binding and power networks
+
+- **Power networks (as in the original).** Face-touching blocks that have a `power` value form a network. Its balance is
+  the signed sum of every member block's `power` (supply positive, consumers and cables negative or zero, counted
+  continuously). When `balance >= 0` every block on the network is active and shows its `activeTextures`; when
+  `balance < 0` the whole network goes inactive (`deactiveTextures`), thrusters and cannons on it cannot fire, and a
+  console on it refuses seating (or immediately unmounts a seated pilot if power is lost). Pressing `F` on a non-console
+  powered block opens the **Power network** popup with its block count and power balance.
+- **Console binding (as in the original).** Pressing `F` on a console equips its binding tool (deselecting the hotbar)
+  and highlights the console in blue, bound blocks in their colour group, any bound camera in magenta, and a valid aimed
+  block within 3 m in white. Releasing the left mouse button on a thruster or cannon on the same grid cycles it through
+  the console's colour groups (up to `min(buttons, 10)`: Red, Green, LightBlue, Yellow, Violet, Orange, Brown,
+  Turquoise, Pink, DarkBlue) and unbinds after the last group; gun consoles bind cannons only. Pressing `F` a second
+  time on the same console opens the **Control block** window to bind a key to each colour group (Esc cancels) or click
+  **Set camera** to bind a camera block on the same grid.
 
 ### Flying
 
-E on a ship's console sits the player down at it (Esc or E again stands up, aboard the ship). The camera sits just above the console
-(or, when the ship has a block right there, behind it, so an enclosed cockpit does not look out through its own roof),
-looking along its forward: a console block has no orientation, so its forward is the ship's −Z (the front of the demo
-ship); a console that is a multi-block faces its own turned −Z. Controls while seated:
+E on a powered ship console sits the player down at it (Esc or E again stands up, aboard the ship). In `seat` view, if a
+powered camera block is bound to that console the view comes from that camera block; otherwise it sits at the console. V
+switches between seat/camera view and a chase camera behind the ship.
 
-- W/S forward/back, A/D strafe, Space/Ctrl up/down, along the console's axes; Shift asks for twice the speed
-- mouse (or the arrow keys) pitches and yaws, Z/X roll
-- G toggles the inertial dampeners, V switches between the seat and a chase camera behind the ship
-- the HUD shows the position of the centre of mass, speed, heading (compass degrees, 0 along the world's −Z, counting up
-  to the right), pitch and roll, the turn rates about the console's axes (°/s; pitch up, yaw right and roll right are
-  positive), mass, power supply/demand and the worst network's satisfaction, how many thrusters fire, the dampeners and
-  the view. Building and mining are off while seated, and the hotbar's selection name is hidden
+Two control schemes are available while seated (`H` toggles between them on flight consoles):
 
-Standing up puts the player at the nearest free spot beside the console (above, behind, to the sides...) moving with the
-ship's velocity there. That velocity is drift, which the astronaut's damping leaves alone, so the player keeps moving
-with a coasting ship; thrusting against it spends the thrust on it first, and hitting something takes away the part
-into it. The seat is not saved: a world saved while flying loads with the player standing there, drifting with the ship
-(the drift is saved) and looking at the ship's centre of mass.
+- **Original console bindings (default).** Holding a colour group's bound key fires its powered thrusters continuously
+  (each pushing with its itemset `force`, turning the ship when mounted off the centre of mass; speed capped at 20 m/s,
+  spin at 1.5 rad/s, and coasting slows by 0.25 m/s² and 0.03 rad/s² when no thruster pushes) and fires its bound
+  cannons whenever reloaded. On a gun console, bound cannons aim where the seated player looks.
+- **Flight assistant (optional, `H` or `--flight-assist=on`).** W/S forward/back, A/D strafe, Space/Ctrl up/down, Shift
+  boost, mouse/arrows pitch and yaw, Z/X roll, G inertial dampeners, and left mouse button to fire all guns. The
+  allocator picks throttles 0..1 across powered thrusters (scaled by 30× itemset `force`) to match the requested
+  velocity and turn rate without spinning lopsided hulls.
 
-All flight rules are ours (tunable; original behaviour unknown):
-
-- **Thrust.** A thruster's placement bounds leave room for its exhaust beside the model ("thruster wash" in the DarthNox
-  v21 readme); the flame points from the model's centre towards the bounds' centre (snapped to an axis) and the ship is
-  pushed the other way, at the model's centre. Force is the itemset's `force` × 30, so the demo ship (mass about 265)
-  gets about 4.5 m/s² per axis.
-- **Flight assistant.** The controls ask for a velocity (up to 30 m/s) and a turn rate (0.9 rad/s per key, the mouse up
-  to 1.8). The assistant turns the difference into a force and torque, and an allocator picks a throttle 0..1 for every
-  real thruster to come as close as it can, turning first: a ship moves and turns only where it has thrusters, and
-  pushing forward on a lopsided ship flies straight at reduced thrust rather than spinning. Only when that would leave
-  less than half the push the ship could give (all its rear thrust off the centre of mass, with nothing to trim the
-  turn it makes) does the allocator lean towards pushing anyway: such a ship accelerates and pitches. There are no
-  gyroscopes. With dampeners on, letting go brings the ship to a stop and sideways drift is cancelled; with them off
-  the assistant only speeds up towards what is asked and the ship keeps its momentum. Either way it never pushes a ship
-  past 60 m/s (the boosted request) and brakes back to that, so legs flown in different directions without dampeners
-  do not add up. Rotation always stops when the stick is let go.
-  An unpiloted ship drifts (with a very small damping, so it eventually stops).
-- **Power.** Blocks with a `power` value form networks through touching faces; other blocks don't conduct. Supply is the
-  sum of positive values, demand the sum of the consumers' (thrusters only while firing), and a network's satisfaction
-  is supply / demand, at most 1. Thrusters give that fraction of their force. Every thruster that pushes is firing
-  (draws power, shows a flame scaled by throttle and the thruster's `flameLength`, or a short default when it is 0);
-  one stays lit for 0.25 s after its throttle drops to zero, so the demand does not flicker. Blocks on a network that
-  delivers something (satisfaction above 0) show their active textures, idle thrusters included: they are ready to
-  fire. The others (a lone cable, a thruster with no supply on its network) show their `deactiveTextures`. The static
-  world follows the same rule, so launching a structure does not change how it looks. Only the changed chunks and
-  objects are remeshed.
-- **Physics.** Ships are integrated in fixed steps of 1/120 s and drawn (and followed by the camera) at the blend of
-  their last two steps that the frame's leftover time gives, so they move smoothly at any refresh rate, at most a step
-  behind. Mass, centre of mass and inertia are recomputed whenever blocks are added or removed, also while flying;
-  building on a ship never moves it, and on a turning ship the hull keeps its motion (the centre of mass velocity is
-  corrected for the shift).
-- **Collisions.** After each step the ship's surface (each exposed cell's centre and a point just inside each open face)
-  is tested against the static world's solid cells, and against nearby ships' (bounding spheres first). On contact the
-  step is undone back to the last free moment, the velocity into the contact is reversed at 20% (sliding along it is
-  kept) and the spin is halved; the contact normal is read from which faces of the hit cells are open. Limits: no
-  swept test (a ship faster than a cell per step, 120 m/s, could skip a one-cell wall; the assistant's 60 m/s limit
-  keeps piloted ships well below that), sample points a cell apart (a sharp rock corner can poke half a cell in
-  between them), no torque or friction from contacts, and a ship that starts a step already overlapping (built into
-  rock, or loaded so) is pushed out a little each step; a resting ship is checked again after any edit, door move or
-  pose change. Ship against ship shares the impulse by mass. A standing player is pushed out of a moving ship's cells,
-  along the ship's motion if there is room (else to another side), never into rock or another ship, and drifts at
-  least as fast as the ship that way; with no free spot at all the player stays in the ship's cells and can walk out
-  (the ship is not stopped by the player). A player standing inside a moving ship is not carried with it, only pushed
-  by its walls.
-- **Saves.** Position, rotation and both velocities of every ship are saved, so a ship saved while moving keeps moving
-  after loading. Doors on ships keep working and move with the ship.
-
-On this machine the demo ship flying in a new vanilla world runs at about 1 000 FPS (Godot's screenshot runs are
-uncapped), and the DarthNox showcase (every block placed, in view behind the ship) plus the demo ship flying up and
-backwards at 16 m/s in front of it (`--itemset=DarthNoxItemset --showcase --demo-ship --launch --pilot=chase
---hold=ship_up+move_back:4 --seconds=3.5`) at about 955 FPS.
-
-Controls (creative): as above, but a click mines at once, right click places from the whole block palette
-(the wheel pages through it), and there is no inventory or crafting (doors still work).
+Standing up puts the player at the nearest free spot beside the console moving with the ship's velocity as drift.
+Console colour-group keys, bound targets and bound cameras are saved with both the static world and every ship.
 
 ## Worlds
 
@@ -225,8 +193,8 @@ from, so a copied or renamed `.ocworld` file is a separate world and never overw
 **Continue** list loads or deletes them (saves whose header can't be read are listed too, so they can be deleted);
 **New world** picks an itemset, texture packs, a name, a seed and creative or survival rules, all of which the save
 remembers. Multi-blocks are saved whole (block, footprint origin, orientation and how far a door is open); a door saved
-part-open finishes closing on load. Ships are saved with their position, rotation, velocities, cells and multi-blocks;
-saves without ships keep the older format version, so older builds still read them.
+part-open finishes closing on load. Ships are saved with their position, rotation, velocities, cells, multi-blocks and
+console bindings; older saves without console bindings keep loading unchanged.
 
 A world is bound to the exact itemset it was made with (key, pack and content fingerprint). On load:
 
@@ -239,7 +207,7 @@ A world is bound to the exact itemset it was made with (key, pack and content fi
 - a world whose itemset is not installed (or no longer parses) is refused, naming the itemset it needs. Damaged files
   show an error.
 
-Round-trip check (creative showcase, then survival inventory):
+Round-trip checks:
 
 ```
 <godot> --path game -- --itemset=auto --showcase --new-world=RoundTrip --quit-after-save
@@ -250,18 +218,17 @@ Round-trip check (creative showcase, then survival inventory):
 <godot> --path game -- --load=ObjectTrip --focus=56 --screenshot=object.png
 <godot> --path game -- --new-world=ShipTrip --demo-ship --launch --turn-ship=30 --place-on-ship=29 --quit-after-save
 <godot> --path game -- --load=ShipTrip --screenshot=ship.png
-<godot> --path game -- --new-world=FlightTrip --demo-ship --launch --pilot=fixed --dampeners=off --hold=move_forward+ship_yaw_left:0.8 --seconds=1.2 --quit-after-save
-<godot> --path game -- --load=FlightTrip --dampeners=off --pilot=chase --seconds=0.5 --screenshot=flight.png
+<godot> --path game -- --new-world=ConsoleTrip --demo-ship --launch --quit-after-save
+<godot> --path game -- --load=ConsoleTrip --open=console --seconds=0.5 --screenshot=console.png
 ```
 
-Flight checks:
+Flight and space-placement checks:
 
 ```
-<godot> --path game -- --itemset=auto --demo-ship --launch --pilot=fixed --screenshot=rest.png
-<godot> --path game -- --itemset=auto --demo-ship --launch --pilot=fixed --hold=move_forward:2 --seconds=2.5 --screenshot=forward.png
-<godot> --path game -- --itemset=auto --demo-ship --launch --pilot=fixed --hold=ship_yaw_left:1.5 --seconds=2.5 --screenshot=yaw.png
-<godot> --path game -- --itemset=auto --demo-ship --launch --pilot=chase --hold=move_forward+move_boost:12 --seconds=11.5 --screenshot=boost.png
-<godot> --path game -- --itemset=auto --demo-ship --launch --pilot=chase --hold=ship_yaw_right+ship_pitch_up:0.7 --hold=move_forward:20 --seconds=12 --screenshot=bump.png
+<godot> --path game -- --itemset=auto --demo-ship --launch --pilot=chase --hold=move_forward+move_left:2.5 --seconds=2.0 --screenshot=console_flight.png
+<godot> --path game -- --itemset=auto --demo-ship --launch --flight-assist=on --pilot=chase --hold=move_forward+ship_yaw_left:2 --seconds=1.8 --screenshot=assist_flight.png
+<godot> --path game -- --itemset=auto --demo-ship --launch --preview-space=28 --seconds=0.5 --screenshot=space_attach.png
+<godot> --path game -- --itemset=auto --preview-space=28 --place --seconds=0.5 --screenshot=space_new_ship.png
 ```
 
 ## Tests and tools

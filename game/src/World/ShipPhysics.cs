@@ -6,34 +6,10 @@ namespace OpenCorneroids.Game.World;
 
 /// <summary>
 /// Moves the ships: a fixed-step loop (<see cref="FixedStep"/>) driven from the frame, so flight does not depend on the
-/// frame rate. Each step the piloted ship's request goes through power, the flight assistant and the thrust allocator
-/// (<see cref="GridSystems.Thrust"/>), every awake ship is integrated (<see cref="RigidBodyState.Step"/>), and then
-/// collisions are resolved: each ship against the static world, then ship against ship. Ours; original behaviour
-/// unknown.
+/// frame rate. Each step the piloted ship's request goes through power, console bindings or the flight assistant
+/// (<see cref="GridSystems.Thrust"/>), every awake ship is integrated, and then collisions are resolved: each ship
+/// against the static world, then ship against ship.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Collision is approximate (all tunable): a ship is represented by <see cref="ShipGrid.SurfacePoints"/>, and a step
-/// that leaves any of them inside a solid cell of the other grid is undone back to the last free fraction of the step
-/// (<see cref="ShipContact.LastFree"/>); the velocity into the contact is reversed and scaled by
-/// <see cref="ShipContact.Restitution"/>, and the spin is damped (<see cref="ShipContact.ContactSpinDamping"/>).
-/// The normal comes from which faces of the penetrated cells are open (<see cref="ShipContact.Normal"/>).
-/// </para>
-/// <para>
-/// Limits: steps are not swept, so a thin wall can be skipped by a ship faster than a cell per step (120 m/s); the
-/// sample points are a cell apart, so a sharp rock corner can poke up to half a cell between them; contacts give no
-/// torque (a ship hitting with a wingtip does not spin about it) and no friction; a ship pressed into rock by its
-/// thrusters simply stops there. A ship that starts a step already overlapping (built into rock, loaded so) is pushed
-/// out along the normal a little each step (<see cref="ShipContact.PushOutPerStep"/>) instead. A resting (asleep) ship
-/// is checked once whenever its blocks, its doors or its pose changed since it was last found free, and pushed out the
-/// same way until it is.
-/// </para>
-/// <para>
-/// Drawing: the steps do not line up with frames, so each frame the ships are shown at the blend between their last two
-/// step poses that the leftover time gives (<see cref="ShipGrid.ShowBetweenSteps"/>), up to a step behind the
-/// simulation, and the camera follows that. Without it a ship would move 0, 1 or 2 steps per frame and judder.
-/// </para>
-/// </remarks>
 public sealed class ShipPhysics
 {
     /// <summary>Length of one physics step, seconds. Tunable.</summary>
@@ -92,8 +68,16 @@ public sealed class ShipPhysics
             }
             var state = ship.BodyState();
             var (force, torque) = ship.Systems.Thrust(state, mass, controlled ? request : null, FixedStep);
-            state.Step(state.DirectionToWorld(force), state.DirectionToWorld(torque), mass, FixedStep,
-                RigidBodyState.DefaultLinearDamping, RigidBodyState.DefaultAngularDamping);
+            if (controlled && request.UseFlightAssist)
+            {
+                state.Step(state.DirectionToWorld(force), state.DirectionToWorld(torque), mass, FixedStep,
+                    RigidBodyState.DefaultLinearDamping, RigidBodyState.DefaultAngularDamping);
+            }
+            else
+            {
+                state.StepOriginal(state.DirectionToWorld(force), state.DirectionToWorld(torque), mass, FixedStep,
+                    thrustersFiring: ship.Systems.AnyThrusting);
+            }
             ship.SetBodyState(state);
             _moved[i] = true;
         }
