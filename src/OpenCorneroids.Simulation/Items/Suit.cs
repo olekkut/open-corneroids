@@ -40,6 +40,8 @@ public sealed class Suit
 
     public double Health { get; private set; }
     public double Power { get; private set; }
+    /// <summary>When enabled via the debug console, suit power is never spent and health/power stay full.</summary>
+    public bool GodMode { get; set; }
     public IReadOnlyList<ItemStack?> Equipment => equipment;
     public IReadOnlyList<SuitBuff> Buffs => buffs;
 
@@ -124,10 +126,34 @@ public sealed class Suit
     /// <summary>Spends <paramref name="amount"/> power if it is all there; otherwise spends nothing.</summary>
     public bool TrySpend(double amount)
     {
-        if (amount <= 0) return true;
+        if (GodMode || amount <= 0) return true;
         if (Power < amount) return false;
         SetPower(Power - amount);
         return true;
+    }
+
+    /// <summary>Sets suit health (clamped to <c>0..MaxHealth</c>) and notifies listeners.</summary>
+    public void SetHealth(double value)
+    {
+        if (!double.IsFinite(value)) return;
+        Health = Math.Clamp(value, 0, MaxHealth);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Sets suit power (clamped to <c>0..MaxPower</c>) and notifies listeners.</summary>
+    public void SetPowerLevel(double value)
+    {
+        if (!double.IsFinite(value)) return;
+        Power = Math.Clamp(value, 0, MaxPower);
+        Changed?.Invoke();
+    }
+
+    /// <summary>Restores both health and power to their maxima.</summary>
+    public void RestoreFull()
+    {
+        Health = MaxHealth;
+        Power = MaxPower;
+        Changed?.Invoke();
     }
 
     /// <summary>Recharges power and runs buffs down by <paramref name="seconds"/> of game time.</summary>

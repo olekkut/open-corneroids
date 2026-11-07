@@ -5,6 +5,7 @@ using OpenCorneroids.Game.Content;
 using OpenCorneroids.Game.Persistence;
 using OpenCorneroids.Game.Player;
 using OpenCorneroids.Game.Ui;
+using OpenCorneroids.Simulation.Debugging;
 using OpenCorneroids.Simulation.Items;
 using OpenCorneroids.Simulation.Persistence;
 using OpenCorneroids.Simulation.Shapes;
@@ -18,7 +19,7 @@ namespace OpenCorneroids.Game.World;
 /// One play session: space environment, asteroids (generated, or restored from a save), ships, the player camera, the
 /// HUD and the in-world windows. It can turn itself back into a <see cref="WorldSnapshot"/>.
 /// </summary>
-public partial class WorldView : Node3D
+public partial class WorldView : Node3D, IDebugConsoleHost
 {
     public event Action? ExitRequested;
 
@@ -57,10 +58,17 @@ public partial class WorldView : Node3D
     public TextureMapping Mapping { get; init; } = TextureMapping.Stretch;
 
     Hud _hud = null!;
+    GameWindows _windows = null!;
+    Projectiles _shots = null!;
+    HeldItem _held = null!;
+    string _packId = "";
     Vector3 _eye;
     readonly ShipPhysics _shipPhysics = new();
     /// <summary>Where <see cref="DemoShip"/> put its console, for <c>--launch</c>.</summary>
     Vector3I? _demoConsole;
+
+    /// <summary>In-game drop-down developer/debug console (<c>`</c>).</summary>
+    public DebugConsoleOverlay DebugConsole { get; private set; } = null!;
 
     /// <summary>Builds the world from a loaded itemset. Must be called once the view is in the scene tree.</summary>
     /// <param name="saved">The save to restore, or null to generate asteroids from <see cref="WorldInfo.Seed"/>.</param>
@@ -118,7 +126,8 @@ public partial class WorldView : Node3D
 
         var hud = new Hud { Name = "Hud" };
         AddChild(hud);
-        hud.Setup($"{info.Name}  -  {header.Name} by {header.Author}  [{loaded.View.PackId}]{(creative ? "  (creative)" : "")}", Icons);
+        _packId = loaded.View.PackId;
+        hud.Setup($"{info.Name}  -  {header.Name} by {header.Author}  [{_packId}]{(creative ? "  (creative)" : "")}", Icons);
         _hud = hud;
         var markers = new SpaceMarkers { Name = "Markers" };
         hud.AddChild(markers);
@@ -129,6 +138,7 @@ public partial class WorldView : Node3D
         PlayMode mode;
         var windows = new GameWindows { Name = "Windows" };
         AddChild(windows);
+        _windows = windows;
         if (creative)
         {
             mode = new CreativeMode(Grids, hud);
@@ -160,6 +170,11 @@ public partial class WorldView : Node3D
         }
         hud.SetControls(mode.Controls + "   F5 save");
 
+        var consoleOverlay = new DebugConsoleOverlay { Name = "DebugConsole" };
+        AddChild(consoleOverlay);
+        consoleOverlay.Setup(this, () => windows.IsOpen);
+        DebugConsole = consoleOverlay;
+
         var camera = new FlyCamera { Name = "Player", Position = eye };
         AddChild(camera);
         if (saved is null)
@@ -177,6 +192,7 @@ public partial class WorldView : Node3D
         shots.Setup(Grids, itemset);
         shots.BlockDestroyed += name => hud.Log($"Shot apart: {name}");
         mode.Shots = shots;
+        _shots = shots;
         if (mode is SurvivalMode survival)
         {
             var drops = new FloatingItems { Name = "Drops" };
@@ -186,7 +202,7 @@ public partial class WorldView : Node3D
             survival.Drops = drops;
             _drops = drops;
         }
-        camera.Setup(Grids, hud, mode, windows);
+        camera.Setup(Grids, hud, mode, windows, consoleOverlay);
         camera.ExitRequested += () => ExitRequested?.Invoke();
         camera.SaveRequested += () => Save();
         camera.MakeCurrent();
@@ -194,6 +210,7 @@ public partial class WorldView : Node3D
         var held = new HeldItem { Name = "HeldItem" };
         camera.AddChild(held);
         held.Setup(mode, Icons);
+        _held = held;
         Player = camera;
         _eye = eye;
         return true;
@@ -356,11 +373,170 @@ public partial class WorldView : Node3D
             case "help":
                 Player.OpenHelp();
                 break;
+            case "debug" or "debug-console":
+                DebugConsole.Open();
+                break;
             default:
-                GD.PushWarning($"--open: unknown window '{which}', expected inventory, crafting, console, power or help");
+                GD.PushWarning($"--open: unknown window '{which}', expected inventory, crafting, console, power, help or debug");
                 break;
         }
     }
+
+    // ---- IDebugConsoleHost ----
+
+    Num.Vector3 IDebugConsoleHost.Position => ToNumerics(Player.GlobalPosition);
+    Num.Vector3 IDebugConsoleHost.Velocity => ToNumerics(Player.WorldVelocity);
+    Num.Vector3 IDebugConsoleHost.SpawnPosition => ToNumerics(_eye);
+
+    void IDebugConsoleHost.Teleport(Num.Vector3 position) => Player.TeleportTo(ToGodot(position));
+
+    float IDebugConsoleHost.SpeedMultiplier
+    {
+        get => Player.Motor.SpeedMultiplier;
+        set => Player.Motor.SpeedMultiplier = value;
+    }
+
+    bool IDebugConsoleHost.Noclip
+    {
+        get => Player.Motor.Noclip;
+        set => Player.Motor.Noclip = value;
+    }
+
+    bool IDebugConsoleHost.FlightAssist
+    {
+        get => Player.FlightAssist;
+        set => Player.FlightAssist = value;
+    }
+
+    bool IDebugConsoleHost.FixedCamera
+    {
+        get => Player.FixedCamera;
+        set => Player.FixedCamera = value;
+    }
+
+    float IDebugConsoleHost.Fov
+    {
+        get => Player.Fov;
+        set => Player.Fov = value;
+    }
+
+    public void SetCreative(bool creative)
+    {
+        Info = Info with { Creative = creative };
+        var header = Itemset.Header;
+        _hud.SetTitle($"{Info.Name}  -  {header.Name} by {header.Author}  [{_packId}]{(creative ? "  (creative)" : "")}");
+
+        PlayMode mode;
+        if (creative)
+        {
+            if (_windows.IsOpen) _windows.Close();
+            mode = new CreativeMode(Grids, _hud) { Shots = _shots };
+            _hud.HideSuit();
+        }
+        else
+        {
+            if (Suit is null)
+            {
+                if (Inventory.Slots.All(s => s is null))
+                    StartingKit.Give(Inventory, Itemset, Crafting.MainInventory);
+                Suit = new Suit(Itemset);
+            }
+            _windows.EnsureSurvival(Inventory, Suit, Itemset, Icons, StartingKit.Endless(Itemset));
+            if (_drops is null)
+            {
+                var drops = new FloatingItems { Name = "Drops" };
+                AddChild(drops);
+                drops.Setup(Inventory, Itemset, Icons, () => Player.GlobalPosition);
+                drops.PickedUp += (name, count) => _hud.Flash($"+{count} {name}");
+                _drops = drops;
+            }
+            mode = new SurvivalMode(Grids, _hud, Inventory, Itemset, Suit) { Shots = _shots, Drops = _drops };
+        }
+        _hud.SetControls(mode.Controls + "   F5 save");
+        Player.SetMode(mode);
+        _held.SetMode(mode);
+    }
+
+    IReadOnlyList<DebugShipSummary> IDebugConsoleHost.Ships =>
+        Grids.Ships
+            .Select(s =>
+            {
+                var com = s.ToGlobal(s.Mass.CenterOfMass.ToGodot());
+                return new DebugShipSummary(s.Name.ToString(), s.BlockCount, s.Mass.Mass, ToNumerics(com), s.LinearVelocity.Length());
+            })
+            .ToList();
+
+    bool IDebugConsoleHost.TryTeleportToShip(string? selector, out string message)
+    {
+        if (Grids.Ships.Count == 0)
+        {
+            message = "No ships in the world. Use 'spawnship' to build and launch one.";
+            return false;
+        }
+
+        ShipGrid? chosen = null;
+        if (string.IsNullOrWhiteSpace(selector))
+        {
+            chosen = Grids.Ships
+                .OrderBy(s => s.ToGlobal(s.Mass.CenterOfMass.ToGodot()).DistanceSquaredTo(Player.GlobalPosition))
+                .First();
+        }
+        else if (int.TryParse(selector, out int idx) && idx >= 1 && idx <= Grids.Ships.Count)
+        {
+            chosen = Grids.Ships[idx - 1];
+        }
+        else
+        {
+            chosen = Grids.Ships.FirstOrDefault(s => s.Name.ToString().Equals(selector, StringComparison.OrdinalIgnoreCase))
+                  ?? Grids.Ships.FirstOrDefault(s => s.Name.ToString().Contains(selector, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (chosen is null)
+        {
+            message = $"Ship '{selector}' not found (use 'ships' to list active ships).";
+            return false;
+        }
+
+        var com = chosen.ToGlobal(chosen.Mass.CenterOfMass.ToGodot());
+        float offset = Math.Max(4f, chosen.LocalExtent.Radius + 3f);
+        var spot = com + new Vector3(0f, 2f, offset);
+        Player.TeleportTo(spot);
+        Player.LookAt(com, Vector3.Up);
+        message = FormattableString.Invariant($"Teleported beside {chosen.Name} ({spot.X:0.#}, {spot.Y:0.#}, {spot.Z:0.#}).");
+        return true;
+    }
+
+    string IDebugConsoleHost.SpawnDemoShip()
+    {
+        int before = Grids.Ships.Count;
+        if (!DemoShip())
+            return "Could not build demo ship (no free space or missing hull/thruster blocks in itemset).";
+        LaunchConsole();
+        return Grids.Ships.Count > before
+            ? $"Built and launched {Grids.Ships[^1].Name} ({Grids.Ships[^1].BlockCount} blocks, mass {Grids.Ships[^1].Mass.Mass:0.#})."
+            : "Built demo ship structure on the static grid.";
+    }
+
+    string IDebugConsoleHost.LaunchTargetedOrNearestShip()
+    {
+        int before = Grids.Ships.Count;
+        LaunchConsole();
+        return Grids.Ships.Count > before
+            ? $"Launched {Grids.Ships[^1].Name} ({Grids.Ships[^1].BlockCount} blocks)."
+            : "No unlaunched console found in the static world.";
+    }
+
+    int IDebugConsoleHost.ClearShips()
+    {
+        if (Player.PilotShip is not null)
+            Player.TeleportTo(Player.GlobalPosition);
+        var all = Grids.Ships.ToList();
+        foreach (var ship in all)
+            Grids.RemoveShip(ship);
+        return all.Count;
+    }
+
+    string? IDebugConsoleHost.SaveWorld() => Save();
 
     public void Showcase()
     {

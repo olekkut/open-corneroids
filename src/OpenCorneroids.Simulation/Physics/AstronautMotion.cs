@@ -29,36 +29,41 @@ public static class AstronautMotion
     public readonly record struct Input(Vector3 Keys, Vector3 Forward, bool ForwardHeld, bool Boost);
 
     /// <summary>The velocity after <paramref name="dt"/> seconds.</summary>
-    public static Vector3 Step(Vector3 velocity, Input input, float dt)
+    /// <param name="speedMultiplier">Optional debug speed multiplier (1 = original speed).</param>
+    public static Vector3 Step(Vector3 velocity, Input input, float dt, float speedMultiplier = 1f)
     {
         if (dt <= 0) return velocity;
-        var push = input.Keys * KeyAcceleration;
+        float scale = float.IsFinite(speedMultiplier) ? Math.Clamp(speedMultiplier, 0.05f, 100f) : 1f;
+        float keyAccel = KeyAcceleration * scale;
+        float boostAccel = BoostAcceleration * scale;
+        var push = input.Keys * keyAccel;
         if (input.Boost)
         {
             // The boost takes the forward key's place (and works without it).
-            if (input.ForwardHeld) push -= input.Forward * KeyAcceleration;
-            push += input.Forward * BoostAcceleration;
+            if (input.ForwardHeld) push -= input.Forward * keyAccel;
+            push += input.Forward * boostAccel;
         }
         velocity += push * dt;
 
         float speed = velocity.Length();
-        float limit = input.Boost ? BoostSpeedLimit : SpeedLimit;
+        float limit = (input.Boost ? BoostSpeedLimit : SpeedLimit) * scale;
         // Over the soft limit the speed bleeds off (never below the limit itself; the original lets plain thrust hover
         // just over it, the same thing to the eye).
         if (speed > limit)
         {
-            float slowed = MathF.Max(limit, speed - OverLimitDeceleration * dt);
+            float slowed = MathF.Max(limit, speed - OverLimitDeceleration * scale * dt);
             velocity *= slowed / speed;
             speed = slowed;
         }
         // No push at all: coast to a stop.
         if (push == Vector3.Zero && speed > 0)
         {
-            float slowed = speed - IdleDeceleration * dt;
+            float slowed = speed - IdleDeceleration * scale * dt;
             velocity = slowed <= 0 ? Vector3.Zero : velocity * (slowed / speed);
             speed = MathF.Max(0, slowed);
         }
-        if (speed > HardSpeedLimit) velocity *= HardSpeedLimit / speed;
+        float hardLimit = HardSpeedLimit * scale;
+        if (speed > hardLimit) velocity *= hardLimit / speed;
         return velocity;
     }
 }

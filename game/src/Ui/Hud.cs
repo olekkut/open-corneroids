@@ -29,7 +29,7 @@ public partial class Hud : CanvasLayer
     ItemIcons _icons = null!;
     readonly List<ItemSlot> _slots = new();
     PanelContainer _debugPlate = null!;
-    Label _status = null!, _controls = null!, _selectedName = null!, _message = null!, _centerPrompt = null!;
+    Label _title = null!, _status = null!, _controls = null!, _selectedName = null!, _message = null!, _centerPrompt = null!;
     Label _speedLabel = null!, _flightModeLabel = null!;
     ProgressBar _progress = null!;
     CrosshairView _crosshair = null!;
@@ -85,7 +85,7 @@ public partial class Hud : CanvasLayer
         _debugPlate.AddThemeStyleboxOverride("panel", plateStyle);
         var top = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         top.AddThemeConstantOverride("separation", 1);
-        top.AddChild(Text(title, 15, new Color(0.85f, 0.92f, 1f)));
+        top.AddChild(_title = Text(title, 15, new Color(0.85f, 0.92f, 1f)));
         top.AddChild(_status = Text("", 13));
         top.AddChild(_controls = Text("", 12, new Color(1, 1, 1, 0.75f)));
         _debugPlate.AddChild(top);
@@ -232,6 +232,12 @@ public partial class Hud : CanvasLayer
             bar.Value.Text = $"{(int)value} / {max}";
         }
     }
+
+    /// <summary>Hides the suit bars when switching to creative mode on foot.</summary>
+    public void HideSuit() => _suitBars.Visible = false;
+
+    /// <summary>Updates the F3 debug title banner when switching between creative and survival.</summary>
+    public void SetTitle(string title) => _title.Text = title;
 
     /// <summary>Switches the centre crosshair sprite.</summary>
     public void SetCrosshair(CrosshairKind kind) => _crosshair.Kind = kind;

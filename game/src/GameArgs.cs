@@ -28,8 +28,11 @@ public sealed class GameArgs
     /// <summary>Creative rules: instant mining, unlimited placing from the whole block palette, no inventory.</summary>
     public bool Creative { get; private set; }
 
-    /// <summary>A window to open once the world has loaded ("inventory", "crafting", "console", "power", or "help"), so screenshots can show it.</summary>
+    /// <summary>A window to open once the world has loaded ("inventory", "crafting", "console", "power", "help", or "debug"), so screenshots can show it.</summary>
     public string? Open { get; private set; }
+
+    /// <summary>Debug console commands executed once the world has loaded (<c>--console="mode creative;speed 3;tp 64 80 100"</c>).</summary>
+    public List<string> ConsoleCommands { get; } = new();
 
     /// <summary>Equip the first console's binding tool ("wide" frames the whole ship; "close" stands within 3 m of a thruster).</summary>
     public string? BindConsole { get; private set; }
@@ -140,6 +143,9 @@ public sealed class GameArgs
                 case "--showcase": parsed.Showcase = parsed.Creative = true; break;
                 case "--creative": parsed.Creative = true; break;
                 case "--open": parsed.Open = value.ToLowerInvariant(); break;
+                case "--console":
+                    if (!string.IsNullOrWhiteSpace(value)) parsed.ConsoleCommands.Add(value);
+                    break;
                 case "--debug-hud": parsed.DebugHud = true; break;
                 case "--bind-console":
                     var bindMode = value.Length == 0 ? "wide" : value.ToLowerInvariant();

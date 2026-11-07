@@ -214,6 +214,8 @@ public partial class Main : Node
         if (_args.Pilot is { } view)
             world.PilotFirstShip(view switch { "chase" => FlyCamera.PilotView.Chase, "fixed" => FlyCamera.PilotView.Fixed, _ => FlyCamera.PilotView.Seat });
         if (_args.Holds.Count > 0) world.Player.Hold(_args.Holds);
+        foreach (var cmd in _args.ConsoleCommands)
+            world.DebugConsole.RunCommand(cmd);
         if (_args.Open is { } window) world.OpenWindow(window);
     }
 

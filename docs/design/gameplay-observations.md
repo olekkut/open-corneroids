@@ -114,7 +114,9 @@ Watched through its narration and stills taken from it (stored outside the repos
   replacing the hotbar with the 3D green velocity cone and `Speed: X Units/s` readout.
 - **HUD and in-world windows:** classic raised light-grey bevelled panels (`#BEBEBE` face, 3D bevels, broken caption
   groove), 8-slot hotbar with top-left stack counts and magnetic-boot aboard indicator, contextual crosshair reticles and
-  prompts (`"F to edit"`, `"E to use"`), `F1` Help & Controls window, and `F3` toggleable debug telemetry.
+  prompts (`"F to edit"`, `"E to use"`), `F1` Help & Controls window, `F3` toggleable debug telemetry, and `` ` ``
+  developer/debug console (ours: live `mode creative|survival`, `speed`, `tp`, `give`, `noclip`, `god`, `heal`, `ships`,
+  `spawnship`, `help`).
 
 Still to match the original: health and armor damage/respawn, weapon visual-only recoil and pass-through damage,
 consumables details, enemies, and classic menu/UI polish.

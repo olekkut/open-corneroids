@@ -38,6 +38,14 @@ dropped in next to them.
     <td><img src="docs/media/crafting.webp" alt="The crafting table beside the inventory" width="100%"><br><sub><b>Crafting</b> from the itemset's own blueprints</sub></td>
     <td><img src="docs/media/inventory.webp" alt="The character window and inventory" width="100%"><br><sub><b>Inventory</b>, equipment, trash and the endless starting tools</sub></td>
   </tr>
+  <tr>
+    <td><img src="docs/media/binding.webp" alt="Console binding tool showing colour-coded 3D thruster footprint brackets" width="100%"><br><sub><b>Console binding</b>: colour-coded 8-corner brackets around bound thrusters and their exhaust space</sub></td>
+    <td><img src="docs/media/control-block.webp" alt="The Control block window assigning keys to console colour groups" width="100%"><br><sub><b>Control block</b>: assigning keys and cameras to console colour groups</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/media/help.webp" alt="The F1 Help and Controls window" width="100%"><br><sub><b>Help &amp; Controls</b> (<code>F1</code>): quick in-game reference for movement, building and ships</sub></td>
+    <td><img src="docs/media/debug-console.webp" alt="The in-game Debug Console opened with the backtick key" width="100%"><br><sub><b>Debug Console</b> (<code>`</code>): switch modes, change speed, teleport, spawn items and inspect ships</sub></td>
+  </tr>
 </table>
 
 ## Features
@@ -85,6 +93,7 @@ Each download is the game with its data included, so there is nothing to install
 | Use a block / edit it | `E` (consoles, crafting stations, doors) / `F` (console binding & key setup, power network info) |
 | Inventory | `C` |
 | Flashlight / fixed camera aboard | `T` / `K` |
+| Debug console | `` ` `` (`mode`, `speed`, `tp`, `give`, `noclip`, `god`, `heal`, `spawnship`, `help`) |
 | Help / debug readout / hide HUD / save | `F1` / `F3` / `F6` / `F5` |
 
 Flying a ship: by default, bound console group keys fire their thrusters and cannons while held (`V` seat/camera or

@@ -66,7 +66,8 @@ Arguments after `--`:
 | `--hold=<action>[+<action>...]:<seconds>` | Hold these input actions down for that many seconds of game time, as if the keys were pressed (the screenshot lock ignores only the real keyboard). Repeat the argument for a sequence. Actions: `move_forward`, `move_back`, `move_left`, `move_right`, `move_boost` (walking and piloting), `move_up`, `move_down` (walking only), `ship_up`, `ship_down`, `ship_pitch_up`, `ship_pitch_down`, `ship_yaw_left`, `ship_yaw_right` (piloting only), `ship_roll_left`, `ship_roll_right` (rolling the ship or the astronaut), and `primary` (the left mouse button: drill, shoot, or fire the ship's guns). Toggles (dampeners, flight assist, view) are not held: use `--flight-assist`, `--dampeners`, `--pilot=`. Game time counts each frame up to 0.25 s, as the ship physics does, so a loading hitch does not use up a hold |
 | `--frames=<n>` | Take the `--screenshot` at frame n (default 240), or with `--quit-after-save` run that many frames before saving and quitting (so held controls and flying ships are in the save). The screenshot run's frame rate is uncapped, so the moment n frames is depends on the machine: prefer `--seconds` |
 | `--seconds=<s>` | As `--frames`, but after s seconds of game time (the clock `--hold` counts in), the same moment on any machine. Wins over `--frames`. The log says the frame and time it fired at |
-| `--open=inventory` / `=crafting` / `=console` / `=power` / `=help` | Open that window once the first world (new or loaded) is up. `crafting` shows the first crafting-table station; `console` opens the "Control block" window of the first console; `power` opens the "Power network" popup of the first powered block; `help` opens the `F1` controls & mechanics window |
+| `--open=inventory` / `=crafting` / `=console` / `=power` / `=help` / `=debug` | Open that window once the first world (new or loaded) is up. `crafting` shows the first crafting-table station; `console` opens the "Control block" window of the first console; `power` opens the "Power network" popup of the first powered block; `help` opens the `F1` controls & mechanics window; `debug` opens the `` ` `` debug console |
+| `--console=<cmd>[;<cmd>...]` | Run one or more debug console commands after the first world is up (e.g. `--console="mode creative;speed 3;tp 64 80 100"`) |
 | `--bind-console` / `=wide` / `=close` | Equip the first console's binding tool and frame either the whole ship (`wide`, default) or a close deck view within 3 m of a thruster (`close`); for screenshots |
 | `--debug-hud` | Show the `F3` top-left technical readout (FPS, coordinates, ship telemetry) from startup |
 | `--give=<itemId>:<count>[,<itemId>:<count>...]` | Add items to the survival inventory of the first *new* world, after the starting kit. Not applied to loaded worlds or to worlds picked later from the menu |
@@ -114,9 +115,12 @@ Controls (survival) follow the original's defaults:
   flashlight.
 - **Windows & HUD:** C (or I) opens the inventory and character window (click a stack, then click where it goes, or onto
   its equipment slot to wear it; put it on the red trash slot to throw it away, click the trash to take the last
-  thrown stack back; the next throw destroys it and saves don't keep it). F1 opens the Help & Controls window, F3 toggles
-  the top-left technical readout (FPS, coordinates, flight telemetry), F6 hides or shows the HUD, and F5 saves the world.
-  Esc closes a window, frees the mouse, and again returns to the menu. Movement stops while a window is open.
+  thrown stack back; the next throw destroys it and saves don't keep it). `` ` `` opens the in-game **Debug Console** (for
+  switching between `creative` and `survival` modes on the fly, changing flight `speed`, teleporting with `tp`, spawning
+  items with `give`, toggling `noclip` or `god` mode, spawning ships, and more; `Up`/`Down` browse history and `Tab`
+  autocompletes commands). F1 opens the Help & Controls window, F3 toggles the top-left technical readout (FPS,
+  coordinates, flight telemetry), F6 hides or shows the HUD, and F5 saves the world. Esc closes a window, frees the
+  mouse, and again returns to the menu. Movement stops while a window is open.
 - **Ships:** come within about a metre of a ship's blocks and you are aboard (indicated by the magnetic-boot icon to the
   right of the hotbar): you move along with it, and when K ("Fixed camera when aboard") is on your view turns with the
   ship too, until you are about 2.5 m clear of it again.

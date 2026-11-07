@@ -25,13 +25,24 @@ public partial class HeldItem : Node3D
 
     public void Setup(PlayMode mode, ItemIcons icons)
     {
-        (_mode, _icons) = (mode, icons);
+        _icons = icons;
         _model = new MeshInstance3D { CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         // Icons have their barrel or bit on the left; turned this way, that end points into the screen.
         _model.RotationDegrees = new Vector3(4, -78, 0);
         AddChild(_model);
-        if (mode is SurvivalMode survival) survival.Fired += () => _kick = 1;
+        SetMode(mode);
     }
+
+    public void SetMode(PlayMode mode)
+    {
+        if (_mode is SurvivalMode prevSurvival) prevSurvival.Fired -= OnFired;
+        _mode = mode;
+        _shownItem = -1;
+        if (_model is not null) _model.Mesh = null;
+        if (mode is SurvivalMode survival) survival.Fired += OnFired;
+    }
+
+    void OnFired() => _kick = 1;
 
     public override void _Process(double delta)
     {

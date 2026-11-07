@@ -31,6 +31,9 @@ public sealed class PlayerMotor
     /// <summary>World space, m/s; relative to the ridden ship while riding one (see <see cref="Step"/>).</summary>
     public Vector3 Velocity { get; set; }
 
+    /// <summary>Multiplier applied to astronaut acceleration and cruise/boost speed limits via the debug console (1 = original).</summary>
+    public float SpeedMultiplier { get; set; } = 1f;
+
     /// <summary>
     /// Kept for saves written before boarding existed, which stored momentum taken from a ship here. The original
     /// coasts every motion to a stop, so the motor no longer keeps any: it is always zero after a step.
@@ -61,7 +64,7 @@ public sealed class PlayerMotor
     public Vector3 Step(Vector3 eye, AstronautMotion.Input input, float delta, GridSet grids, ShipGrid? riding = null)
     {
         float dt = Mathf.Clamp(delta, 0f, MaxStep);
-        var velocity = ToGodot(AstronautMotion.Step(ToNumerics(Velocity), input, dt));
+        var velocity = ToGodot(AstronautMotion.Step(ToNumerics(Velocity), input, dt, SpeedMultiplier));
         var drift = Vector3.Zero;
 
         var body = ToNumerics(eye) - new Num.Vector3(0, EyeHeight, 0);
@@ -113,7 +116,7 @@ public sealed class PlayerMotor
     /// axis) or, with no free spot, left where they are, inside the ship's cells rather than inside the rock (the ship
     /// is not stopped by the player). Ours: a player standing in a moving ship is not carried by it (no friction or
     /// "floor" frame), the ship's walls just push; a body deeper than <see cref="MaxPush"/> is left for
-    /// <see cref="VoxelCollider.Move"/>, which lets it out but never back in.
+    /// <see cref="VoxelCollider.Move"/>, which lets it out but never resolves by itself.
     /// </summary>
     static Num.Vector3 PushOut(ShipGrid grid, Num.Vector3 body, ref Vector3 velocity, ref Vector3 drift, GridSet grids)
     {

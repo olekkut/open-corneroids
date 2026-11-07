@@ -19,6 +19,7 @@ public partial class GameWindows : CanvasLayer
 {
     Control _root = null!;
     ColorRect _backdrop = null!;
+    HBoxContainer _row = null!;
     InventoryPanel? _inventory;
     CraftingPanel? _crafting;
     CharacterPanel? _character;
@@ -62,31 +63,21 @@ public partial class GameWindows : CanvasLayer
         center.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         _root.AddChild(center);
 
-        var row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
-        row.AddThemeConstantOverride("separation", 12);
-        center.AddChild(row);
+        _row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
+        _row.AddThemeConstantOverride("separation", 12);
+        center.AddChild(_row);
 
         if (inventory is not null && suit is not null)
-        {
-            _crafting = new CraftingPanel { Name = "Crafting", Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
-            row.AddChild(_crafting);
-            _crafting.Setup(inventory, itemset, icons);
-            _character = new CharacterPanel { Name = "Character", SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
-            row.AddChild(_character);
-            _inventory = new InventoryPanel { Name = "Inventory", SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
-            row.AddChild(_inventory);
-            _inventory.Setup(inventory, itemset, icons, endless);
-            _character.Setup(suit, inventory, _inventory, itemset, icons);
-        }
+            EnsureSurvival(inventory, suit, itemset, icons, endless);
 
         _consolePanel = BuildConsolePanel();
-        row.AddChild(_consolePanel);
+        _row.AddChild(_consolePanel);
 
         _powerPanel = BuildPowerPanel();
-        row.AddChild(_powerPanel);
+        _row.AddChild(_powerPanel);
 
         _helpPanel = BuildHelpPanel();
-        row.AddChild(_helpPanel);
+        _row.AddChild(_helpPanel);
 
         // Overlaid "Press any key" bevelled popup centred over "Control block", as in the original.
         _askKeyCenter = new CenterContainer { Visible = false, MouseFilter = Control.MouseFilterEnum.Stop };
@@ -101,6 +92,24 @@ public partial class GameWindows : CanvasLayer
         askBox.AddChild(askLabel);
         _askKeyCenter.AddChild(askBox);
         _root.AddChild(_askKeyCenter);
+    }
+
+    /// <summary>Creates the survival inventory, character and crafting panels if the world started in creative mode.</summary>
+    public void EnsureSurvival(Inventory inventory, Suit suit, ItemsetDef itemset, ItemIcons icons, IReadOnlyList<int> endless)
+    {
+        if (_inventory is not null && _character is not null) return;
+        _crafting = new CraftingPanel { Name = "Crafting", Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
+        _row.AddChild(_crafting);
+        _row.MoveChild(_crafting, 0);
+        _crafting.Setup(inventory, itemset, icons);
+        _character = new CharacterPanel { Name = "Character", Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
+        _row.AddChild(_character);
+        _row.MoveChild(_character, 1);
+        _inventory = new InventoryPanel { Name = "Inventory", Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
+        _row.AddChild(_inventory);
+        _row.MoveChild(_inventory, 2);
+        _inventory.Setup(inventory, itemset, icons, endless);
+        _character.Setup(suit, inventory, _inventory, itemset, icons);
     }
 
     ClassicWindow BuildConsolePanel()
@@ -198,7 +207,7 @@ public partial class GameWindows : CanvasLayer
             "press F on the console again to assign group keys or set a camera). F on power blocks shows network balance."));
         text.AddChild(HelpSection("Piloting & Shortcuts",
             "Seated: bound colour-group keys fire thrusters & cannons · H toggles automatic Flight Assistant (G dampeners)\n" +
-            "V switches seat / chase view · F1 Help · F3 Debug telemetry · F5 Quicksave · F6 Hide HUD"));
+            "V switches seat / chase view · ` Debug Console · F1 Help · F3 Debug telemetry · F5 Quicksave · F6 Hide HUD"));
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         vbox.AddChild(buttons);

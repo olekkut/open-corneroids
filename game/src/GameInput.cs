@@ -43,6 +43,8 @@ public static class GameInput
     public const string Save = "save_world";
     /// <summary>Shows or hides the entire HUD (F6, as in the original).</summary>
     public const string ToggleHud = "toggle_hud";
+    /// <summary>Opens or closes the in-game developer/debug console (` / ~).</summary>
+    public const string DebugConsole = "toggle_debug_console";
 
     // Piloting a ship. By default consoles use their bound colour-group keys (as in the original); H toggles our
     // optional flight assistant, where forward, back and strafing reuse the move actions and roll is Z/X.
@@ -84,6 +86,7 @@ public static class GameInput
         Add(DebugHud, Key.F3);
         Add(Save, Key.F5);
         Add(ToggleHud, Key.F6);
+        Add(DebugConsole, Key.Quoteleft, Key.Section);
         Add(FlightAssist, Key.H);
         Add(ShipUp, Key.Space);
         Add(ShipDown, Key.Ctrl);

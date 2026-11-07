@@ -99,6 +99,9 @@ public abstract class PlayMode
     /// <summary>Empties the player's hand / deselects the hotbar, as when equipping a console's binding tool.</summary>
     public virtual void Deselect() { }
 
+    /// <summary>Detaches any event listeners when switching to another mode.</summary>
+    public virtual void Detach() { }
+
     /// <summary>The primary button went down while aiming at <paramref name="target"/> (null when aiming at nothing).</summary>
     public virtual void PrimaryPressed(BlockTarget? target) { }
 

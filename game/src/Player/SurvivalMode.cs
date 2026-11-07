@@ -105,6 +105,13 @@ public sealed class SurvivalMode : PlayMode
 
     public override void Deselect() => SecondaryReleased();
 
+    public override void Detach()
+    {
+        StopDrilling();
+        _inventory.Changed -= ShowHotbar;
+        _suit.Changed -= ShowSuit;
+    }
+
     /// <summary>The drill in hand, if any: mining needs one held, as in the original.</summary>
     int HeldDrillPower => HeldItem?.Get<DrillComponent>()?.Power ?? 0;
 

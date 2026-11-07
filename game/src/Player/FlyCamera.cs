@@ -29,6 +29,7 @@ public partial class FlyCamera : Camera3D
     Hud _hud = null!;
     PlayMode _mode = null!;
     GameWindows? _windows;
+    DebugConsoleOverlay? _consoleOverlay;
     MeshInstance3D _highlight = null!;
     /// <summary>Ghost of the multi-block a placement would place: its footprint as a wire box, its model as the
     /// see-through textured model (so the player sees which way its faces point), tinted green when it fits and red
@@ -169,13 +170,15 @@ public partial class FlyCamera : Camera3D
     public event Action? SaveRequested;
 
     /// <param name="windows">The modal in-world windows (inventory, crafting, console binding, power network).</param>
-    public void Setup(GridSet grids, Hud hud, PlayMode mode, GameWindows? windows)
+    /// <param name="consoleOverlay">The drop-down developer/debug console toggled with <c>`</c>.</param>
+    public void Setup(GridSet grids, Hud hud, PlayMode mode, GameWindows? windows, DebugConsoleOverlay? consoleOverlay = null)
     {
         _grids = grids;
         var world = grids.World;
         _hud = hud;
         _mode = mode;
         _windows = windows;
+        _consoleOverlay = consoleOverlay;
         _mode.Push = kick => Motor.Velocity += kick;
         _cornerTexture = CornerBracketTexture();
         _highlight = new MeshInstance3D
@@ -237,7 +240,28 @@ public partial class FlyCamera : Camera3D
         Input.MouseMode = Input.MouseModeEnum.Captured;
     }
 
-    bool WindowOpen => _windows?.IsOpen == true;
+    bool WindowOpen => _windows?.IsOpen == true || _consoleOverlay?.IsOpen == true;
+
+    /// <summary>Switches the active <see cref="PlayMode"/> (e.g. between creative and survival via the debug console).</summary>
+    public void SetMode(PlayMode mode)
+    {
+        StopActions();
+        _bindTool = null;
+        _mode?.Detach();
+        _mode = mode;
+        _mode.Push = kick => Motor.Velocity += kick;
+    }
+
+    /// <summary>Teleports the player to <paramref name="worldPos"/>, unmounting from any ship seat and zeroing velocity.</summary>
+    public void TeleportTo(Vector3 worldPos)
+    {
+        if (_seat is not null) StandUp();
+        _riding = null;
+        PinnedAim = null;
+        GlobalPosition = worldPos;
+        Motor.Velocity = Vector3.Zero;
+        Motor.Drift = Vector3.Zero;
+    }
 
     public override void _UnhandledInput(InputEvent @event)
     {
@@ -246,9 +270,19 @@ public partial class FlyCamera : Camera3D
             GetViewport().SetInputAsHandled();
             return;
         }
+        if (_consoleOverlay?.IsOpen == true) return;
         if (@event is InputEventMouseMotion or InputEventKey { Pressed: true }) PinnedAim = null;
         if (@event is InputEventKey { Pressed: true, Echo: false } fnKey)
         {
+            if (fnKey.IsAction(GameInput.DebugConsole) ||
+                fnKey.PhysicalKeycode is Key.Quoteleft or Key.Section ||
+                fnKey.Keycode is Key.Quoteleft or Key.Asciitilde)
+            {
+                StopActions();
+                _consoleOverlay?.Open();
+                GetViewport().SetInputAsHandled();
+                return;
+            }
             if (fnKey.IsAction(GameInput.Save))
             {
                 SaveRequested?.Invoke();
