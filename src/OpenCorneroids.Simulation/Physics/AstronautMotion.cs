@@ -28,14 +28,41 @@ public static class AstronautMotion
     /// <param name="Boost">Boosting this frame: the key is held and the suit paid for it.</param>
     public readonly record struct Input(Vector3 Keys, Vector3 Forward, bool ForwardHeld, bool Boost);
 
-    /// <summary>The velocity after <paramref name="dt"/> seconds.</summary>
+    /// <summary>The accelerations and limits <see cref="Step"/> uses, in m/s² and m/s.</summary>
+    public readonly record struct Tuning(
+        float KeyAcceleration, float BoostAcceleration, float SpeedLimit, float BoostSpeedLimit,
+        float OverLimitDeceleration, float IdleDeceleration, float HardSpeedLimit)
+    {
+        /// <summary>The original game's values.</summary>
+        public static Tuning Original => new(
+            AstronautMotion.KeyAcceleration, AstronautMotion.BoostAcceleration, AstronautMotion.SpeedLimit,
+            AstronautMotion.BoostSpeedLimit, AstronautMotion.OverLimitDeceleration, AstronautMotion.IdleDeceleration,
+            AstronautMotion.HardSpeedLimit);
+
+        public static Tuning From(Settings.CvarStore cvars)
+        {
+            ArgumentNullException.ThrowIfNull(cvars);
+            return new(
+                cvars.Float(Settings.Cvars.PlayerAccel), cvars.Float(Settings.Cvars.PlayerBoostAccel),
+                cvars.Float(Settings.Cvars.PlayerSpeed), cvars.Float(Settings.Cvars.PlayerBoostSpeed),
+                cvars.Float(Settings.Cvars.PlayerOverSpeedDecel), cvars.Float(Settings.Cvars.PlayerStopDecel),
+                cvars.Float(Settings.Cvars.PlayerMaxSpeed));
+        }
+    }
+
+    /// <summary>The velocity after <paramref name="dt"/> seconds, with the original's numbers.</summary>
     /// <param name="speedMultiplier">Optional debug speed multiplier (1 = original speed).</param>
-    public static Vector3 Step(Vector3 velocity, Input input, float dt, float speedMultiplier = 1f)
+    public static Vector3 Step(Vector3 velocity, Input input, float dt, float speedMultiplier = 1f) =>
+        Step(velocity, input, dt, Tuning.Original, speedMultiplier);
+
+    /// <summary>The velocity after <paramref name="dt"/> seconds with the given <paramref name="tuning"/>.</summary>
+    /// <param name="speedMultiplier">Scales every acceleration and limit (1 = as tuned).</param>
+    public static Vector3 Step(Vector3 velocity, Input input, float dt, Tuning tuning, float speedMultiplier = 1f)
     {
         if (dt <= 0) return velocity;
         float scale = float.IsFinite(speedMultiplier) ? Math.Clamp(speedMultiplier, 0.05f, 100f) : 1f;
-        float keyAccel = KeyAcceleration * scale;
-        float boostAccel = BoostAcceleration * scale;
+        float keyAccel = tuning.KeyAcceleration * scale;
+        float boostAccel = tuning.BoostAcceleration * scale;
         var push = input.Keys * keyAccel;
         if (input.Boost)
         {
@@ -46,23 +73,23 @@ public static class AstronautMotion
         velocity += push * dt;
 
         float speed = velocity.Length();
-        float limit = (input.Boost ? BoostSpeedLimit : SpeedLimit) * scale;
+        float limit = (input.Boost ? tuning.BoostSpeedLimit : tuning.SpeedLimit) * scale;
         // Over the soft limit the speed bleeds off (never below the limit itself; the original lets plain thrust hover
         // just over it, the same thing to the eye).
         if (speed > limit)
         {
-            float slowed = MathF.Max(limit, speed - OverLimitDeceleration * scale * dt);
+            float slowed = MathF.Max(limit, speed - tuning.OverLimitDeceleration * scale * dt);
             velocity *= slowed / speed;
             speed = slowed;
         }
         // No push at all: coast to a stop.
         if (push == Vector3.Zero && speed > 0)
         {
-            float slowed = speed - IdleDeceleration * scale * dt;
+            float slowed = speed - tuning.IdleDeceleration * scale * dt;
             velocity = slowed <= 0 ? Vector3.Zero : velocity * (slowed / speed);
             speed = MathF.Max(0, slowed);
         }
-        float hardLimit = HardSpeedLimit * scale;
+        float hardLimit = tuning.HardSpeedLimit * scale;
         if (speed > hardLimit) velocity *= hardLimit / speed;
         return velocity;
     }

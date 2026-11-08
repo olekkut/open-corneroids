@@ -119,7 +119,7 @@ public partial class DebugConsoleOverlay : CanvasLayer
         {
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             CustomMinimumSize = new Vector2(0, 32),
-            PlaceholderText = "Type a command (mode creative|survival, speed 3, tp ~ ~10 ~, give minigun, noclip, god, help)...",
+            PlaceholderText = "Type a command or setting (sv_ricochet 1, find ship, differences, preset original, sv_cheats 1, help)...",
             CaretBlink = true,
             KeepEditingOnTextSubmit = true,
         };
@@ -153,7 +153,7 @@ public partial class DebugConsoleOverlay : CanvasLayer
         inputRow.AddChild(closeBtn);
 
         var hint = ClassicUi.Label(
-            "Commands: mode <creative|survival> · speed <0.1..50> · tp <x y z|spawn|ship> · give <id|name> [n] · noclip · god · heal · spawnship · help   (Tab complete · Up/Down history · ` or Esc close)",
+            "Settings: <name> [value] · find <text> · cvarlist · differences · reset · preset · exec <file>   Cheats (sv_cheats 1): noclip · god · give · tp · speed   (Tab complete · Up/Down history · ` or Esc close)",
             12, new Color(0.95f, 0.95f, 0.95f));
         vbox.AddChild(hint);
 
@@ -196,10 +196,10 @@ public partial class DebugConsoleOverlay : CanvasLayer
         {
             foreach (var child in _logBox.GetChildren()) child.QueueFree();
         }
-        foreach (var line in result.Lines)
+        for (int i = 0; i < result.Lines.Count; i++)
         {
-            AppendLine(line, result.IsError ? ErrorColor : OutputColor);
-            GD.Print($"[console] {line}");
+            AppendLine(result.Lines[i], result.IsErrorLine(i) ? ErrorColor : OutputColor);
+            GD.Print($"[console] {result.Lines[i]}");
         }
         return result;
     }
@@ -272,7 +272,7 @@ public partial class DebugConsoleOverlay : CanvasLayer
         }
         else if (k.Keycode == Key.Tab)
         {
-            _input.Text = _console.Autocomplete(_input.Text);
+            _input.Text = _console.Autocomplete(_input.Text, _host.Cvars);
             _input.CaretColumn = _input.Text.Length;
             GetViewport().SetInputAsHandled();
         }

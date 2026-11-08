@@ -155,6 +155,15 @@ public sealed record WorldSnapshot(
     /// </summary>
     public IReadOnlyList<SavedConsole> Consoles { get; init; } = [];
 
+    /// <summary>
+    /// Game rules (<c>sv_</c> settings) that differ from their defaults, name → value as typed in the console.
+    /// Optional in the file: older saves have none and play with the defaults, which is what they were played with.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Rules { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>Whether <c>sv_cheats</c> was ever turned on in this world. Optional in the file (false when missing).</summary>
+    public bool CheatsUsed { get; init; }
+
     /// <summary>Palette index and cell value of air.</summary>
     public const ushort Air = 0;
 

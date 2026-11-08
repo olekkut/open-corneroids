@@ -4,8 +4,10 @@ using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Game.Content;
 using OpenCorneroids.Game.Persistence;
 using OpenCorneroids.Game.Player;
+using OpenCorneroids.Game.Settings;
 using OpenCorneroids.Game.Ui;
 using OpenCorneroids.Simulation.Debugging;
+using OpenCorneroids.Simulation.Settings;
 using OpenCorneroids.Simulation.Items;
 using OpenCorneroids.Simulation.Persistence;
 using OpenCorneroids.Simulation.Shapes;
@@ -94,6 +96,10 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         var header = loaded.Entry.Header;
         Binding = new ItemsetBinding(header.Key, header.Name, loaded.Entry.Pack.Id, itemset.Fingerprint);
         bool creative = info.Creative;
+        // This world's rules: the saved ones, or the original game's for a new world. Preferences stay as they are.
+        foreach (var problem in Cvars.Import(saved?.Rules ?? new Dictionary<string, string>(), CvarFlags.World))
+            GD.PushWarning($"World rules of '{info.Name}': {problem}");
+        Cvars.CheatsUsed = saved?.CheatsUsed ?? false;
 
         if (onProgress != null) await onProgress("Initializing voxel environment...", 0.48, completed: "Textures & materials compiled");
 
@@ -243,9 +249,28 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         _held = held;
         Player = camera;
         _eye = eye;
+        camera.Fov = Cvars.Float(Simulation.Settings.Cvars.Fov);
+        Cvars.Changed += OnSettingChanged;
+
+        // The player's own commands for every world, e.g. their favourite rules.
+        if (GameSettings.TryReadConfig(GameSettings.AutoexecFile, out _, out _))
+            consoleOverlay.RunCommand($"exec {GameSettings.AutoexecFile}");
 
         if (onProgress != null) await onProgress("Ready to launch!", 1.0, completed: "Player & HUD ready");
         return true;
+    }
+
+    static CvarStore Cvars => GameSettings.Cvars;
+
+    void OnSettingChanged(Cvar cvar, double value)
+    {
+        if (cvar == Simulation.Settings.Cvars.Fov && IsInstanceValid(Player)) Player.Fov = (float)value;
+    }
+
+    public override void _ExitTree()
+    {
+        // The store outlives this world; leaving the handler would keep the whole view alive.
+        Cvars.Changed -= OnSettingChanged;
     }
 
     /// <summary>
@@ -309,6 +334,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             Consoles = Voxels.ExportConsoles(),
             Ships = [.. Grids.Ships.Where(s => !s.IsEmpty).Select(s => s.ToSnapshot())],
             Suit = Suit?.Save(),
+            Rules = Cvars.Export(CvarFlags.World),
+            CheatsUsed = Cvars.CheatsUsed,
         };
     }
 
@@ -422,35 +449,18 @@ public partial class WorldView : Node3D, IDebugConsoleHost
 
     void IDebugConsoleHost.Teleport(Num.Vector3 position) => Player.TeleportTo(ToGodot(position));
 
-    float IDebugConsoleHost.SpeedMultiplier
-    {
-        get => Player.Motor.SpeedMultiplier;
-        set => Player.Motor.SpeedMultiplier = value;
-    }
-
     bool IDebugConsoleHost.Noclip
     {
         get => Player.Motor.Noclip;
         set => Player.Motor.Noclip = value;
     }
 
-    bool IDebugConsoleHost.FlightAssist
-    {
-        get => Player.FlightAssist;
-        set => Player.FlightAssist = value;
-    }
+    CvarStore IDebugConsoleHost.Cvars => Cvars;
 
-    bool IDebugConsoleHost.FixedCamera
-    {
-        get => Player.FixedCamera;
-        set => Player.FixedCamera = value;
-    }
+    bool IDebugConsoleHost.TryReadConfig(string name, out string text, out string error) =>
+        GameSettings.TryReadConfig(name, out text, out error);
 
-    float IDebugConsoleHost.Fov
-    {
-        get => Player.Fov;
-        set => Player.Fov = value;
-    }
+    string? IDebugConsoleHost.WriteUserConfig() => GameSettings.WriteUserConfig();
 
     public void SetCreative(bool creative)
     {

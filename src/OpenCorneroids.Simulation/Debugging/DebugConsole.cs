@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Numerics;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Simulation.Items;
+using OpenCorneroids.Simulation.Settings;
 
 namespace OpenCorneroids.Simulation.Debugging;
 
@@ -12,7 +13,14 @@ public readonly record struct DebugShipSummary(string Name, int BlockCount, floa
 /// <param name="Lines">Output lines to print in the console log.</param>
 /// <param name="IsError">True when any command reported an error or unknown syntax.</param>
 /// <param name="ClearLog">True when <c>clear</c>/<c>cls</c> was run so prior log lines should be cleared first.</param>
-public sealed record DebugConsoleResult(IReadOnlyList<string> Lines, bool IsError = false, bool ClearLog = false);
+public sealed record DebugConsoleResult(IReadOnlyList<string> Lines, bool IsError = false, bool ClearLog = false)
+{
+    /// <summary>For each of <see cref="Lines"/>, whether it reports an error, so one failed command in a batch does not
+    /// colour the rest. Empty means every line takes <see cref="IsError"/>.</summary>
+    public IReadOnlyList<bool> LineErrors { get; init; } = [];
+
+    public bool IsErrorLine(int index) => index < LineErrors.Count ? LineErrors[index] : IsError;
+}
 
 /// <summary>
 /// Bridge implemented by the active world session so the Godot-free <see cref="DebugConsole"/> can inspect and
@@ -31,11 +39,16 @@ public interface IDebugConsoleHost
     Vector3 SpawnPosition { get; }
     void Teleport(Vector3 position);
 
-    float SpeedMultiplier { get; set; }
     bool Noclip { get; set; }
-    bool FlightAssist { get; set; }
-    bool FixedCamera { get; set; }
-    float Fov { get; set; }
+
+    /// <summary>The settings of this session: world rules and player preferences.</summary>
+    CvarStore Cvars { get; }
+
+    /// <summary>Reads a config file for <c>exec</c>; <paramref name="name"/> is as typed (".cfg" may be left out).</summary>
+    bool TryReadConfig(string name, out string text, out string error);
+
+    /// <summary>Writes the player's preferences to their config file now; null, or what went wrong.</summary>
+    string? WriteUserConfig();
 
     IReadOnlyList<DebugShipSummary> Ships { get; }
     bool TryTeleportToShip(string? selector, out string message);
@@ -53,33 +66,56 @@ public interface IDebugConsoleHost
 /// </summary>
 public sealed class DebugConsole
 {
-    public const float MinSpeedMultiplier = 0.1f;
-    public const float MaxSpeedMultiplier = 50f;
-    public const float MinFov = 30f;
-    public const float MaxFov = 130f;
-    public const float DefaultFov = 75f;
+    /// <summary>How deep <c>exec</c> may nest config files inside config files.</summary>
+    public const int MaxExecDepth = 8;
 
     public sealed record CommandHelp(string Name, string Usage, string Summary, params string[] Aliases);
 
+    /// <summary>A named set of settings: a few console lines, run like a config file.</summary>
+    public sealed record Preset(string Name, string Summary, string Commands);
+
+    public static readonly IReadOnlyList<Preset> Presets =
+    [
+        new("original", "The original game's rules and ship controls (the default).",
+            "reset rules; cl_flight_assist 0; cl_fixed_camera 0"),
+        new("assisted", "Ours: the automatic flight assistant and a level camera aboard ships; rules unchanged.",
+            "cl_flight_assist 1; cl_fixed_camera 1"),
+    ];
+
+    /// <summary>Commands that only work while <c>sv_cheats</c> is 1.</summary>
+    static readonly HashSet<string> CheatCommands =
+    [
+        "noclip", "nc", "god", "invincible", "give", "item", "kit", "heal", "health", "hp", "power", "tp", "teleport",
+    ];
+
     public static readonly IReadOnlyList<CommandHelp> Catalog =
     [
-        new("help", "help [command]", "List all commands or show detailed usage for one command.", "?"),
+        new("help", "help [command|setting]", "List all commands or show detailed usage for one command or setting.", "?"),
+        new("<setting>", "<setting> [value]", "Show a setting (with its default, range and meaning) or set it, e.g. 'sv_ricochet 1'."),
+        new("find", "find <text>", "List settings whose name or description contains the text.", "search"),
+        new("cvarlist", "cvarlist [prefix]", "List every setting and its value (e.g. 'cvarlist sv_ship').", "cvars"),
+        new("differences", "differences", "List the settings that differ from the original preset.", "diff"),
+        new("toggle", "toggle <setting>", "Flip an on/off setting."),
+        new("reset", "reset <setting|rules|prefs|all>", "Set one setting, all world rules (sv_), all preferences (cl_) or everything back to default."),
+        new("preset", "preset [name]", "List presets or apply one ('preset original' restores the original game)."),
+        new("exec", "exec <file[.cfg]>", "Run the commands in a config file from the game's config folder."),
+        new("writeconfig", "writeconfig", "Save your preferences (cl_ settings) to config.cfg now.", "host_writeconfig"),
         new("mode", "mode [creative|survival|toggle]", "Switch between Creative and Survival mode (or toggle).", "gamemode", "gm", "creative", "survival"),
-        new("speed", "speed [0.1..50|reset]", "Show or set the astronaut movement speed multiplier (default 1).", "flyspeed", "movespeed"),
-        new("tp", "tp <x> <y> <z> | tp spawn | tp center | tp ship [name|#]", "Teleport to coordinates (supports ~ relative offsets), spawn, center, or a ship.", "teleport"),
+        new("speed", "speed [0.1..50|reset]", "Show or set the astronaut speed multiplier, sv_player_speed_scale (cheat).", "flyspeed", "movespeed"),
+        new("tp", "tp <x> <y> <z> | tp spawn | tp center | tp ship [name|#]", "Teleport to coordinates (supports ~ relative offsets), spawn, center, or a ship (cheat).", "teleport"),
         new("pos", "pos", "Show current position, velocity, mode, speed, noclip, and ship count.", "where", "coords", "status"),
-        new("noclip", "noclip [on|off]", "Toggle or set flying through solid blocks.", "nc"),
-        new("god", "god [on|off]", "Toggle or set unlimited suit health and power in survival.", "invincible"),
-        new("give", "give <id|name> [count]", "Give items to the survival inventory by ID or name (e.g. give 51 1, give minigun, give 10:64).", "item"),
-        new("items", "items [filter]", "List item IDs and names in the current itemset matching an optional filter.", "search"),
-        new("kit", "kit", "Add the itemset's starting kit to the inventory."),
+        new("noclip", "noclip [on|off]", "Toggle or set flying through solid blocks (cheat).", "nc"),
+        new("god", "god [on|off]", "Toggle or set unlimited suit health and power in survival (cheat).", "invincible"),
+        new("give", "give <id|name> [count]", "Give items by ID or name, e.g. give 51 1, give minigun, give 10:64 (cheat).", "item"),
+        new("items", "items [filter]", "List item IDs and names in the current itemset matching an optional filter."),
+        new("kit", "kit", "Add the itemset's starting kit to the inventory (cheat)."),
         new("clearinv", "clearinv", "Remove all items from the survival inventory.", "clearinventory"),
-        new("heal", "heal", "Restore suit health and power to full."),
-        new("health", "health <amount>", "Set suit health in survival.", "hp"),
-        new("power", "power <amount>", "Set suit power in survival."),
-        new("fov", "fov [30..130|reset]", "Show or set camera field of view in degrees (default 75)."),
-        new("assist", "assist [on|off]", "Toggle or set the automatic ship Flight Assistant."),
-        new("fixedcam", "fixedcam [on|off]", "Toggle or set fixed camera orientation when aboard a ship."),
+        new("heal", "heal", "Restore suit health and power to full (cheat)."),
+        new("health", "health <amount>", "Set suit health in survival (cheat).", "hp"),
+        new("power", "power <amount>", "Set suit power in survival (cheat)."),
+        new("fov", "fov [30..130|reset]", "Show or set the field of view, cl_fov (default 75)."),
+        new("assist", "assist [on|off]", "Toggle or set the automatic flight assistant, cl_flight_assist."),
+        new("fixedcam", "fixedcam [on|off]", "Toggle or set the level camera aboard ships, cl_fixed_camera."),
         new("ships", "ships", "List active ships in the world with block count, mass, position and speed."),
         new("spawnship", "spawnship", "Build and launch a ready-to-fly demo ship near the player.", "demoship"),
         new("importship", "importship <path.sbs>", "Import and spawn a Spacebox structure (.sbs) into the world.", "sbsimport", "import"),
@@ -109,25 +145,80 @@ public sealed class DebugConsole
         _historyIndex = -1;
         _savedDraft = "";
 
-        var lines = new List<string>();
-        bool anyError = false;
-        bool clearLog = false;
+        var output = new Output();
+        var (anyError, clearLog) = RunLine(trimmed, host, 0, output);
+        return new DebugConsoleResult(output.Lines, anyError, clearLog) { LineErrors = output.Errors };
+    }
 
-        foreach (var segment in SplitStatements(trimmed))
+    /// <summary>Output lines, each marked with whether it reports an error.</summary>
+    sealed class Output
+    {
+        public List<string> Lines { get; } = [];
+        public List<bool> Errors { get; } = [];
+
+        public void Add(IEnumerable<string> lines, bool error)
+        {
+            foreach (var line in lines)
+            {
+                Lines.Add(line);
+                Errors.Add(error);
+            }
+        }
+
+        public void Add(string line, bool error = false) => Add([line], error);
+
+        public void Clear()
+        {
+            Lines.Clear();
+            Errors.Clear();
+        }
+    }
+
+    /// <summary>Runs one line of statements into <paramref name="output"/>; <paramref name="depth"/> counts nested execs.</summary>
+    static (bool Error, bool Clear) RunLine(string line, IDebugConsoleHost host, int depth, Output output)
+    {
+        bool anyError = false, clearLog = false;
+        foreach (var segment in SplitStatements(line))
         {
             var tokens = Tokenize(segment);
             if (tokens.Count == 0) continue;
-            var (outLines, isError, clear) = ExecuteSingle(tokens, host);
-            if (clear)
+            bool cheatsBefore = host.Cvars.CheatsEnabled;
+            var cmd = tokens[0].ToLowerInvariant();
+            var args = tokens.Skip(1).ToList();
+            // exec and preset run further lines, whose output keeps its own error marks.
+            if (cmd == "exec" && host.Cvars.Find(cmd) is null)
+                anyError |= RunExec(args, host, depth, output);
+            else if (cmd == "preset" && host.Cvars.Find(cmd) is null)
+                anyError |= RunPreset(args, host, depth, output);
+            else
             {
-                clearLog = true;
-                lines.Clear();
+                var (outLines, isError, clear) = ExecuteSingle(tokens, host);
+                if (clear)
+                {
+                    clearLog = true;
+                    output.Clear();
+                }
+                output.Add(outLines, isError);
+                anyError |= isError;
             }
-            lines.AddRange(outLines);
-            anyError |= isError;
+            if (cheatsBefore && !host.Cvars.CheatsEnabled) output.Add(UndoCheats(host), false);
         }
+        return (anyError, clearLog);
+    }
 
-        return new DebugConsoleResult(lines, anyError, clearLog);
+    /// <summary>With sv_cheats back at 0, noclip and god mode end too; cheat settings were already reset by the store.</summary>
+    static IEnumerable<string> UndoCheats(IDebugConsoleHost host)
+    {
+        if (host.Noclip)
+        {
+            host.Noclip = false;
+            yield return "Cheats off: noclip ended.";
+        }
+        if (host.Suit is { GodMode: true } suit)
+        {
+            suit.GodMode = false;
+            yield return "Cheats off: god mode ended.";
+        }
     }
 
     /// <summary>Steps backward through command history (Up arrow).</summary>
@@ -159,8 +250,11 @@ public sealed class DebugConsole
         return _savedDraft;
     }
 
-    /// <summary>Completes a partial command name (Tab key).</summary>
-    public string Autocomplete(string input)
+    /// <summary>
+    /// Completes a partial command or setting name (Tab key). With several matches it completes as far as they agree
+    /// (so "sv_ship_" stays open for the player to choose), and a full name gets a trailing space.
+    /// </summary>
+    public string Autocomplete(string input, CvarStore? cvars = null)
     {
         if (string.IsNullOrWhiteSpace(input)) return "help ";
         var trimmed = input.TrimStart();
@@ -168,12 +262,27 @@ public sealed class DebugConsole
 
         var matches = Catalog
             .SelectMany(c => new[] { c.Name }.Concat(c.Aliases))
+            .Where(name => !name.StartsWith('<'))
+            .Concat(cvars?.All.Select(c => c.Name) ?? [])
             .Where(name => name.StartsWith(trimmed, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(name => name.Length)
             .ThenBy(name => name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        return matches.Count > 0 ? matches[0] + " " : input;
+        if (matches.Count == 0) return input;
+        // A command name that is itself complete wins (as before), unless only settings match.
+        var prefix = matches.Aggregate((a, b) => CommonPrefix(a, b));
+        if (matches.Count == 1 || prefix.Length <= trimmed.Length)
+            return matches[0] + " ";
+        return prefix;
+    }
+
+    static string CommonPrefix(string a, string b)
+    {
+        int n = 0;
+        while (n < a.Length && n < b.Length && char.ToLowerInvariant(a[n]) == char.ToLowerInvariant(b[n])) n++;
+        return a[..n];
     }
 
     static (IReadOnlyList<string> Lines, bool IsError, bool Clear) ExecuteSingle(List<string> tokens, IDebugConsoleHost host)
@@ -181,10 +290,37 @@ public sealed class DebugConsole
         var cmd = tokens[0].ToLowerInvariant();
         var args = tokens.Skip(1).ToList();
 
+        if (CheatCommands.Contains(cmd) && !host.Cvars.CheatsEnabled)
+            return ([ $"'{tokens[0]}' is a cheat; set sv_cheats 1 first."], true, false);
+
+        if (host.Cvars.Find(cmd) is { } cvar)
+            return RunCvar(cvar, args, host.Cvars);
+
         switch (cmd)
         {
             case "help" or "?":
-                return RunHelp(args);
+                return RunHelp(args, host.Cvars);
+
+            case "find" or "search":
+                return RunFind(args, host.Cvars);
+
+            case "cvarlist" or "cvars":
+                return RunCvarList(args, host.Cvars);
+
+            case "differences" or "diff":
+                return RunDifferences(host.Cvars);
+
+            case "toggle":
+                return RunToggleCvar(args, host.Cvars);
+
+            case "reset":
+                return RunReset(args, host.Cvars);
+
+            case "writeconfig" or "host_writeconfig":
+            {
+                var error = host.WriteUserConfig();
+                return error is null ? (["Preferences saved to config.cfg."], false, false) : ([ $"Could not save preferences: {error}"], true, false);
+            }
 
             case "clear" or "cls":
                 return ([], false, true);
@@ -216,7 +352,7 @@ public sealed class DebugConsole
             case "give" or "item":
                 return RunGive(args, host);
 
-            case "items" or "search":
+            case "items":
                 return RunItems(args, host);
 
             case "kit":
@@ -238,10 +374,10 @@ public sealed class DebugConsole
                 return RunFov(args, host);
 
             case "assist":
-                return RunToggle("Flight Assistant", args, () => host.FlightAssist, v => host.FlightAssist = v);
+                return RunToggle("Flight Assistant", args, () => host.Cvars.Bool(Cvars.FlightAssist), v => host.Cvars.Set(Cvars.FlightAssist, v));
 
             case "fixedcam":
-                return RunToggle("Fixed camera when aboard", args, () => host.FixedCamera, v => host.FixedCamera = v);
+                return RunToggle("Fixed camera when aboard", args, () => host.Cvars.Bool(Cvars.FixedCamera), v => host.Cvars.Set(Cvars.FixedCamera, v));
 
             case "ships":
                 return RunShips(host);
@@ -277,8 +413,10 @@ public sealed class DebugConsole
         }
     }
 
-    static (IReadOnlyList<string>, bool, bool) RunHelp(List<string> args)
+    static (IReadOnlyList<string>, bool, bool) RunHelp(List<string> args, CvarStore cvars)
     {
+        if (args.Count > 0 && cvars.Find(args[0]) is { } setting)
+            return RunCvar(setting, [], cvars);
         if (args.Count > 0)
         {
             var query = args[0].ToLowerInvariant();
@@ -297,7 +435,159 @@ public sealed class DebugConsole
         };
         foreach (var entry in Catalog)
             output.Add($"  {entry.Usage,-46} - {entry.Summary}");
+        output.Add($"Settings: {cvars.All.Count} (type 'cvarlist' or 'find <text>'; Tab completes names).");
         return (output, false, false);
+    }
+
+    // ---- settings ----
+
+    static string Describe(Cvar cvar, CvarStore cvars)
+    {
+        var tags = new List<string> { $"default {cvar.Format(cvar.Default)}", cvar.RangeText };
+        if (cvar.Flags.HasFlag(CvarFlags.World)) tags.Add("world rule");
+        if (cvar.Flags.HasFlag(CvarFlags.User)) tags.Add("preference");
+        if (cvar.IsCheat) tags.Add("cheat");
+        return $"{cvar.Name} = {cvar.Format(cvars.Get(cvar))}  ({string.Join(", ", tags)})";
+    }
+
+    static (IReadOnlyList<string>, bool, bool) RunCvar(Cvar cvar, List<string> args, CvarStore cvars)
+    {
+        if (args.Count == 0)
+            return ([Describe(cvar, cvars), $"  {cvar.Description}"], false, false);
+        if (args[0].Equals("default", StringComparison.OrdinalIgnoreCase) || args[0].Equals("reset", StringComparison.OrdinalIgnoreCase))
+        {
+            cvars.Reset(cvar);
+            return ([ $"{cvar.Name} = {cvar.Format(cvars.Get(cvar))} (default)"], false, false);
+        }
+        if (!cvars.TrySet(cvar, string.Join(' ', args), out var error))
+            return ([error!], true, false);
+        return ([ $"{cvar.Name} = {cvar.Format(cvars.Get(cvar))}"], false, false);
+    }
+
+    static (IReadOnlyList<string>, bool, bool) RunFind(List<string> args, CvarStore cvars)
+    {
+        if (args.Count == 0) return (["Usage: find <text>"], true, false);
+        var text = string.Join(' ', args);
+        var matches = cvars.All.Where(c =>
+            c.Name.Contains(text, StringComparison.OrdinalIgnoreCase) ||
+            c.Description.Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (matches.Count == 0) return ([ $"No settings matching '{text}'."], false, false);
+        var lines = new List<string> { $"Settings matching '{text}' ({matches.Count}):" };
+        foreach (var c in matches)
+            lines.Add($"  {c.Name} = {c.Format(cvars.Get(c))}  - {c.Description}");
+        return (lines, false, false);
+    }
+
+    static (IReadOnlyList<string>, bool, bool) RunCvarList(List<string> args, CvarStore cvars)
+    {
+        var prefix = args.Count > 0 ? args[0] : "";
+        var list = cvars.All.Where(c => c.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (list.Count == 0) return ([ $"No settings start with '{prefix}'."], false, false);
+        var lines = new List<string>(list.Count + 1) { $"{list.Count} settings{(prefix.Length > 0 ? $" starting with '{prefix}'" : "")}:" };
+        foreach (var c in list)
+            lines.Add($"  {c.Name,-32} {c.Format(cvars.Get(c)),-8}{(cvars.IsDefault(c) ? "" : $" (default {c.Format(c.Default)})")}");
+        return (lines, false, false);
+    }
+
+    static (IReadOnlyList<string>, bool, bool) RunDifferences(CvarStore cvars)
+    {
+        var changed = cvars.Differences();
+        if (changed.Count == 0)
+            return ([ cvars.CheatsUsed ? "Every setting is at its default (cheats were used in this world)." : "Every setting is at its default: the original preset."], false, false);
+        var lines = new List<string> { $"{changed.Count} setting(s) differ from the defaults:" };
+        foreach (var c in changed)
+            lines.Add($"  {c.Name} = {c.Format(cvars.Get(c))}  (default {c.Format(c.Default)})");
+        if (cvars.CheatsUsed) lines.Add("Cheats were used in this world.");
+        return (lines, false, false);
+    }
+
+    static (IReadOnlyList<string>, bool, bool) RunToggleCvar(List<string> args, CvarStore cvars)
+    {
+        if (args.Count == 0) return (["Usage: toggle <setting>"], true, false);
+        if (cvars.Find(args[0]) is not { } cvar) return ([ $"Unknown setting '{args[0]}'."], true, false);
+        if (cvar.Kind != CvarKind.Bool) return ([ $"{cvar.Name} is not an on/off setting; set it with '{cvar.Name} <value>'."], true, false);
+        return RunCvar(cvar, [cvars.Bool(cvar) ? "0" : "1"], cvars);
+    }
+
+    static (IReadOnlyList<string>, bool, bool) RunReset(List<string> args, CvarStore cvars)
+    {
+        if (args.Count == 0) return (["Usage: reset <setting|rules|prefs|all>"], true, false);
+        switch (args[0].ToLowerInvariant())
+        {
+            case "rules":
+                cvars.ResetAll(CvarFlags.World);
+                return (["World rules (sv_) reset to the original game's."], false, false);
+            case "prefs" or "preferences":
+                cvars.ResetAll(CvarFlags.User);
+                return (["Preferences (cl_) reset to defaults."], false, false);
+            case "all":
+                cvars.ResetAll();
+                return (["Every setting reset to its default."], false, false);
+        }
+        if (cvars.Find(args[0]) is not { } cvar) return ([ $"Unknown setting '{args[0]}'."], true, false);
+        return RunCvar(cvar, ["default"], cvars);
+    }
+
+    /// <returns>Whether anything went wrong.</returns>
+    static bool RunPreset(List<string> args, IDebugConsoleHost host, int depth, Output output)
+    {
+        if (args.Count == 0)
+        {
+            output.Add("Presets (preset <name>):");
+            output.Add(Presets.Select(p => $"  {p.Name,-10} - {p.Summary}"), false);
+            output.Add("Your own: put commands in a .cfg file in the config folder and 'exec' it.");
+            return false;
+        }
+        var preset = Presets.FirstOrDefault(p => p.Name.Equals(args[0], StringComparison.OrdinalIgnoreCase));
+        if (preset is null)
+        {
+            output.Add($"Unknown preset '{args[0]}'. Type 'preset' for the list.", true);
+            return true;
+        }
+        var (error, _) = RunLine(preset.Commands, host, depth + 1, output);
+        output.Add(error ? $"Preset '{preset.Name}' applied with errors." : $"Preset '{preset.Name}' applied.", error);
+        return error;
+    }
+
+    /// <returns>Whether anything went wrong.</returns>
+    static bool RunExec(List<string> args, IDebugConsoleHost host, int depth, Output output)
+    {
+        string? problem = null;
+        string name = string.Join(' ', args), text = "";
+        if (args.Count == 0) problem = "Usage: exec <file[.cfg]>";
+        else if (depth >= MaxExecDepth) problem = $"exec: config files nest more than {MaxExecDepth} deep; stopped.";
+        else if (!host.TryReadConfig(name, out text, out var readError)) problem = $"exec: {readError}";
+        if (problem is not null)
+        {
+            output.Add(problem, true);
+            return true;
+        }
+
+        bool anyError = false;
+        int lineNumber = 0;
+        foreach (var raw in text.Split('\n'))
+        {
+            lineNumber++;
+            var line = StripComment(raw).Trim();
+            if (line.Length == 0) continue;
+            var (error, _) = RunLine(line, host, depth + 1, output);
+            if (error) output.Add($"  (in {name}, line {lineNumber})", true);
+            anyError |= error;
+        }
+        output.Add($"Executed {name}.");
+        return anyError;
+    }
+
+    /// <summary>A line without its <c>//</c> comment (outside quotes).</summary>
+    static string StripComment(string line)
+    {
+        bool inQuotes = false;
+        for (int i = 0; i < line.Length; i++)
+        {
+            if (line[i] == '"') inQuotes = !inQuotes;
+            else if (!inQuotes && line[i] == '/' && i + 1 < line.Length && line[i + 1] == '/') return line[..i];
+        }
+        return line;
     }
 
     static (IReadOnlyList<string>, bool, bool) RunMode(List<string> args, IDebugConsoleHost host)
@@ -324,28 +614,35 @@ public sealed class DebugConsole
         return ([ $"Player mode set to {(creative ? "Creative" : "Survival")}."], false, false);
     }
 
+    static string SpeedText(CvarStore cvars)
+    {
+        float scale = cvars.Float(Cvars.PlayerSpeedScale);
+        return FormattableString.Invariant(
+            $"{scale:0.##}x (cruise {cvars.Float(Cvars.PlayerSpeed) * scale:0.#} m/s, boost {cvars.Float(Cvars.PlayerBoostSpeed) * scale:0.#} m/s)");
+    }
+
     static (IReadOnlyList<string>, bool, bool) RunSpeed(List<string> args, IDebugConsoleHost host)
     {
+        var cvars = host.Cvars;
+        var setting = Cvars.PlayerSpeedScale;
         if (args.Count == 0)
-        {
-            return ([FormattableString.Invariant(
-                $"Speed multiplier: {host.SpeedMultiplier:0.##}x (cruise {4f * host.SpeedMultiplier:0.#} m/s, boost {8f * host.SpeedMultiplier:0.#} m/s)")], false, false);
-        }
+            return ([ $"Speed multiplier: {SpeedText(cvars)}"], false, false);
 
         if (args[0].Equals("reset", StringComparison.OrdinalIgnoreCase) ||
             args[0].Equals("default", StringComparison.OrdinalIgnoreCase))
         {
-            host.SpeedMultiplier = 1f;
-            return (["Speed multiplier reset to 1x (4 m/s cruise, 8 m/s boost)."], false, false);
+            cvars.Reset(setting);
+            return ([ $"Speed multiplier reset to {SpeedText(cvars)}."], false, false);
         }
 
         if (!float.TryParse(args[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float mult) || !float.IsFinite(mult))
             return ([ $"Invalid speed '{args[0]}'. Usage: speed <0.1..50|reset>"], true, false);
 
-        float clamped = Math.Clamp(mult, MinSpeedMultiplier, MaxSpeedMultiplier);
-        host.SpeedMultiplier = clamped;
-        return ([FormattableString.Invariant(
-            $"Speed multiplier set to {clamped:0.##}x (cruise {4f * clamped:0.#} m/s, boost {8f * clamped:0.#} m/s).")], false, false);
+        // The command clamps for convenience; the setting itself refuses out-of-range values.
+        double clamped = Math.Clamp(mult, setting.Min, setting.Max);
+        if (!cvars.TrySet(setting, clamped, out var error))
+            return ([error!], true, false);
+        return ([ $"Speed multiplier set to {SpeedText(cvars)}."], false, false);
     }
 
     static (IReadOnlyList<string>, bool, bool) RunTeleport(List<string> args, IDebugConsoleHost host)
@@ -415,9 +712,9 @@ public sealed class DebugConsole
         var v = host.Velocity;
         var mode = host.Creative ? "Creative" : "Survival";
         var noclip = host.Noclip ? "ON" : "OFF";
-        var assist = host.FlightAssist ? "ON" : "OFF";
+        var assist = host.Cvars.Bool(Cvars.FlightAssist) ? "ON" : "OFF";
         return ([
-            FormattableString.Invariant($"Position: ({p.X:0.##}, {p.Y:0.##}, {p.Z:0.##})  Speed: {v.Length():0.##} m/s ({host.SpeedMultiplier:0.##}x)"),
+            FormattableString.Invariant($"Position: ({p.X:0.##}, {p.Y:0.##}, {p.Z:0.##})  Speed: {v.Length():0.##} m/s ({host.Cvars.Float(Cvars.PlayerSpeedScale):0.##}x)"),
             FormattableString.Invariant($"Mode: {mode}  Noclip: {noclip}  FlightAssist: {assist}  Ships: {host.Ships.Count}")
         ], false, false);
     }
@@ -586,21 +883,22 @@ public sealed class DebugConsole
 
     static (IReadOnlyList<string>, bool, bool) RunFov(List<string> args, IDebugConsoleHost host)
     {
+        var setting = Cvars.Fov;
         if (args.Count == 0)
-            return ([FormattableString.Invariant($"Camera FOV: {host.Fov:0.#}° (default {DefaultFov:0}°)")], false, false);
+            return ([FormattableString.Invariant($"Camera FOV: {host.Cvars.Get(setting):0.#}° (default {setting.Default:0}°)")], false, false);
 
         if (args[0].Equals("reset", StringComparison.OrdinalIgnoreCase) ||
             args[0].Equals("default", StringComparison.OrdinalIgnoreCase))
         {
-            host.Fov = DefaultFov;
-            return ([FormattableString.Invariant($"Camera FOV reset to {DefaultFov:0}°.")], false, false);
+            host.Cvars.Reset(setting);
+            return ([FormattableString.Invariant($"Camera FOV reset to {setting.Default:0}°.")], false, false);
         }
 
         if (!float.TryParse(args[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float fov) || !float.IsFinite(fov))
             return ([ $"Invalid FOV '{args[0]}'. Usage: fov <30..130|reset>"], true, false);
 
-        float clamped = Math.Clamp(fov, MinFov, MaxFov);
-        host.Fov = clamped;
+        double clamped = Math.Clamp(fov, setting.Min, setting.Max);
+        host.Cvars.Set(setting, clamped);
         return ([FormattableString.Invariant($"Camera FOV set to {clamped:0.#}°.")], false, false);
     }
 

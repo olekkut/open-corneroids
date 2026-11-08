@@ -38,9 +38,17 @@ public static class Mining
     /// <summary>Seconds to break <paramref name="block"/> with a drill of <paramref name="drillPower"/>;
     /// <see cref="double.PositiveInfinity"/> when it can't.</summary>
     public static double SecondsToMine(int drillPower, BlockDef block) =>
-        CanMine(drillPower, block)
-            ? Math.Clamp(MaxSecondsToMine - SecondsPerSparePower * (drillPower - block.PowerToDrill), MinSecondsToMine, MaxSecondsToMine)
-            : double.PositiveInfinity;
+        SecondsToMine(drillPower, block, MaxSecondsToMine, MinSecondsToMine, SecondsPerSparePower);
+
+    /// <summary><see cref="SecondsToMine(int, BlockDef)"/> with tuned times (<c>sv_mine_time_*</c>). A minimum above
+    /// the maximum is read as the maximum.</summary>
+    public static double SecondsToMine(int drillPower, BlockDef block, double maxSeconds, double minSeconds, double secondsPerSparePower)
+    {
+        if (!CanMine(drillPower, block)) return double.PositiveInfinity;
+        maxSeconds = Math.Max(0, maxSeconds);
+        minSeconds = Math.Clamp(minSeconds, 0, maxSeconds);
+        return Math.Clamp(maxSeconds - Math.Max(0, secondsPerSparePower) * (drillPower - block.PowerToDrill), minSeconds, maxSeconds);
+    }
 
     /// <summary>A mined block yields one of its own item, ores included.</summary>
     public static ItemStack Drop(ItemDef minedBlockItem)

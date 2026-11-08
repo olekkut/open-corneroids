@@ -62,10 +62,12 @@ public sealed class SurvivalMode : PlayMode
         return false;
     }
 
-    /// <summary>The boost costs 20 suit power per second and needs this frame's share of it.</summary>
+    static Simulation.Settings.CvarStore Cvars => Settings.GameSettings.Cvars;
+
+    /// <summary>The boost costs 20 suit power per second (<c>sv_boost_cost</c>) and needs this frame's share of it.</summary>
     public override bool TryBoost(double delta)
     {
-        if (_suit.TrySpend(Simulation.Physics.AstronautMotion.BoostPowerPerSecond * delta)) return true;
+        if (_suit.TrySpend(Cvars.Get(Simulation.Settings.Cvars.BoostCost) * delta)) return true;
         // Said every couple of seconds while Shift stays down, not every frame.
         double now = Time.GetTicksMsec() / 1000.0;
         if (now - _boostWarned > 2)
@@ -196,7 +198,8 @@ public sealed class SurvivalMode : PlayMode
             return;
         }
 
-        double seconds = Mining.SecondsToMine(power, block);
+        double seconds = Mining.SecondsToMine(power, block, Cvars.Get(Simulation.Settings.Cvars.MineTimeMax),
+            Cvars.Get(Simulation.Settings.Cvars.MineTimeMin), Cvars.Get(Simulation.Settings.Cvars.MineTimePerPower));
         _drillTime = Math.Min(_drillTime + delta, seconds);
         Hud.ShowProgress(_drillTime / seconds);
         if (_drillTime < seconds) return;
@@ -209,8 +212,8 @@ public sealed class SurvivalMode : PlayMode
         ResetDrill();
     }
 
-    /// <summary>The original reaches 3 m with a drill, from the eye to the block.</summary>
-    public const float DrillReach = 3f;
+    /// <summary>The original reaches 3 m with a drill, from the eye to the block (<c>sv_mine_reach</c>).</summary>
+    public static float DrillReach => Cvars.Float(Simulation.Settings.Cvars.MineReach);
 
     /// <summary>Where mined items float and how they reach the player; set by the world.</summary>
     public FloatingItems? Drops { get; set; }
@@ -236,7 +239,8 @@ public sealed class SurvivalMode : PlayMode
 
     /// <summary>
     /// One shot if the weapon has reloaded and the suit has the power for it (the weapon's <c>powerUsage</c>), along the
-    /// view with the weapon's spread, kicking the player back (<see cref="Weapons.Recoil"/>).
+    /// view with the weapon's spread. The held weapon kicks on screen; as in the original the player is not moved,
+    /// unless <c>sv_recoil_push</c> is on (<see cref="Weapons.Recoil"/>).
     /// </summary>
     void Shoot(ItemDef held, WeaponComponent weapon)
     {
@@ -253,7 +257,9 @@ public sealed class SurvivalMode : PlayMode
         var (eye, forward, velocity) = View;
         var direction = Weapons.Spread(forward.ToNumerics(), weapon.Spread, Random.Shared.NextDouble(), Random.Shared.NextDouble()).ToGodot();
         Shots.Fire(projectile, eye + forward * 0.4f, direction, velocity);
-        Push?.Invoke(Weapons.Recoil(direction.ToNumerics(), weapon.Pushback, projectile).ToGodot());
+        if (Cvars.Bool(Simulation.Settings.Cvars.RecoilPush))
+            Push?.Invoke(Weapons.Recoil(direction.ToNumerics(), weapon.Pushback, projectile,
+                Cvars.Float(Simulation.Settings.Cvars.RecoilScale)).ToGodot());
         Fired?.Invoke();
     }
 

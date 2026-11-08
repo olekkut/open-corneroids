@@ -36,6 +36,7 @@ public partial class Main : Node
     {
         _args = GameArgs.Parse(OS.GetCmdlineUserArgs());
         GameInput.Register();
+        Settings.GameSettings.Load();
         // Closing the window must save first; _Notification accepts the quit once that is done.
         GetTree().AutoAcceptQuit = false;
         // The UI is laid out for 1280x720 and scaled to the window (project.godot, stretch mode canvas_items), so a
@@ -82,8 +83,9 @@ public partial class Main : Node
 
         if (_args.NewWorld is not null || _args.QuitAfterSave)
         {
-            // With --frames the world runs that long first (held controls, a flying ship) and is saved then.
-            if (_args.QuitAfterSave && ((_args.Frames is null && _args.Seconds is null) || world is null))
+            // With --frames or --seconds the world (started in the background) runs that long first (held controls, a
+            // flying ship) and is saved then, in _Process; only an untimed run saves and quits here.
+            if (immediateQuit)
             {
                 var error = world is null ? "no world was started" : world.Save();
                 GD.Print(error is not null ? $"Not saved ({error}); quitting"

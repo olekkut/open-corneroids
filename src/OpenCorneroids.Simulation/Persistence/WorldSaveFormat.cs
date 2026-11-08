@@ -658,6 +658,11 @@ public static class WorldSaveFormat
         // And console bindings; left out when there are none.
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ConsoleDto?[]? Consoles { get; set; }
+        // And game rules that differ from the defaults, name → value text; left out when all are defaults.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Dictionary<string, string?>? Rules { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public bool? CheatsUsed { get; set; }
 
         public static MetadataDto From(WorldSnapshot s) => new()
         {
@@ -685,6 +690,8 @@ public static class WorldSaveFormat
             Suit = s.Suit is null ? null : SuitDto.From(s.Suit),
             Turned = TurnedDto(s.Turned),
             Consoles = ConsolesDto(s.Consoles),
+            Rules = s.Rules.Count == 0 ? null : s.Rules.ToDictionary(p => p.Key, p => (string?)p.Value, StringComparer.Ordinal),
+            CheatsUsed = s.CheatsUsed ? true : null,
         };
 
         public static int[]?[]? TurnedDto(IReadOnlyList<TurnedCell> turned) =>
@@ -753,6 +760,11 @@ public static class WorldSaveFormat
                 Suit = Suit?.ToState(),
                 Turned = TurnedCells(Turned, "turned"),
                 Consoles = SavedConsoles(Consoles, "consoles"),
+                Rules = (Rules ?? []).ToDictionary(
+                    p => p.Key,
+                    p => p.Value ?? throw Damaged($"metadata field 'rules.{p.Key}' is null"),
+                    StringComparer.Ordinal),
+                CheatsUsed = CheatsUsed ?? false,
             };
             return (snapshot, [.. ships.Select((ship, i) => ship!.Cells ?? throw Missing($"ships[{i}].cells"))]);
         }

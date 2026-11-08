@@ -82,7 +82,7 @@ public sealed class ShipPhysics
             else
             {
                 state.StepOriginal(state.DirectionToWorld(force), state.DirectionToWorld(torque), mass, FixedStep,
-                    thrustersFiring: ship.Systems.AnyThrusting);
+                    thrustersFiring: ship.Systems.AnyThrusting, ShipLimits.From(Settings.GameSettings.Cvars));
             }
             ship.SetBodyState(state);
             _moved[i] = true;

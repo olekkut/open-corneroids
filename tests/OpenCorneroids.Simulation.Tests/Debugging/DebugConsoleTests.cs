@@ -3,6 +3,7 @@ using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Simulation.Debugging;
 using OpenCorneroids.Simulation.Items;
 using OpenCorneroids.Simulation.Physics;
+using OpenCorneroids.Simulation.Settings;
 using static OpenCorneroids.Simulation.Tests.Items.Support.TestItems;
 
 namespace OpenCorneroids.Simulation.Tests.Debugging;
@@ -35,11 +36,23 @@ public class DebugConsoleTests
             Velocity = Vector3.Zero;
         }
 
-        public float SpeedMultiplier { get; set; } = 1f;
         public bool Noclip { get; set; }
-        public bool FlightAssist { get; set; }
-        public bool FixedCamera { get; set; }
-        public float Fov { get; set; } = DebugConsole.DefaultFov;
+        public CvarStore Cvars { get; } = new();
+        public Dictionary<string, string> ConfigFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public int ConfigWrites { get; private set; }
+
+        public bool TryReadConfig(string name, out string text, out string error)
+        {
+            var key = name.EndsWith(".cfg", StringComparison.OrdinalIgnoreCase) ? name : name + ".cfg";
+            error = $"no config file '{key}'";
+            return ConfigFiles.TryGetValue(key, out text!);
+        }
+
+        public string? WriteUserConfig()
+        {
+            ConfigWrites++;
+            return null;
+        }
 
         public List<DebugShipSummary> ShipList { get; } =
         [
@@ -122,14 +135,19 @@ public class DebugConsoleTests
         var console = new DebugConsole();
         var host = new FakeConsoleHost();
 
-        console.Execute("speed 3.5", host);
-        Assert.Equal(3.5f, host.SpeedMultiplier);
+        var refused = console.Execute("speed 3.5", host);
+        Assert.True(refused.IsError);
+        Assert.Contains("sv_cheats", refused.Lines[0]);
+        Assert.Equal(1f, host.Cvars.Float(Cvars.PlayerSpeedScale));
+
+        console.Execute("sv_cheats 1; speed 3.5", host);
+        Assert.Equal(3.5f, host.Cvars.Float(Cvars.PlayerSpeedScale));
 
         console.Execute("speed 999", host);
-        Assert.Equal(DebugConsole.MaxSpeedMultiplier, host.SpeedMultiplier);
+        Assert.Equal(50f, host.Cvars.Float(Cvars.PlayerSpeedScale));
 
         console.Execute("speed reset", host);
-        Assert.Equal(1f, host.SpeedMultiplier);
+        Assert.Equal(1f, host.Cvars.Float(Cvars.PlayerSpeedScale));
 
         var input = new AstronautMotion.Input(Vector3.UnitZ, Vector3.UnitZ, true, false);
         var normal = AstronautMotion.Step(Vector3.Zero, input, 1f, 1f);
@@ -143,6 +161,7 @@ public class DebugConsoleTests
     {
         var console = new DebugConsole();
         var host = new FakeConsoleHost { Position = new(10f, 20f, 30f) };
+        console.Execute("sv_cheats 1", host);
 
         console.Execute("tp 100 50 -25", host);
         Assert.Equal(new Vector3(100f, 50f, -25f), host.Position);
@@ -163,6 +182,7 @@ public class DebugConsoleTests
     {
         var console = new DebugConsole();
         var host = new FakeConsoleHost();
+        console.Execute("sv_cheats 1", host);
 
         var r1 = console.Execute($"give {Ore}:12", host);
         Assert.False(r1.IsError);
@@ -182,6 +202,7 @@ public class DebugConsoleTests
     {
         var console = new DebugConsole();
         var host = new FakeConsoleHost();
+        console.Execute("sv_cheats 1", host);
 
         console.Execute("health 40; power 25", host);
         Assert.Equal(40, host.Suit!.Health);

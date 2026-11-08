@@ -88,6 +88,9 @@ Watched through its narration and stills taken from it (stored outside the repos
 - **Original art from the bundled data:** reading `.xnb` textures (font, HUD sprites, crosshairs, models later) is
   supported, with our own drawing as the fallback.
 - **Theme:** an interface theme faithful to the classic light-grey bevelled look.
+- **Original by default, everything tunable.** Rules and our additions are console settings (`sv_` world rules saved
+  with each world, `cl_` preferences in `config.cfg`) whose defaults are the original's behaviour. New mechanics, and
+  our departures from the original, land behind a setting rather than a fixed number; cheats need `sv_cheats 1`.
 
 ## 2a. Rules matched to the original
 
@@ -115,11 +118,14 @@ Watched through its narration and stills taken from it (stored outside the repos
 - **HUD and in-world windows:** classic raised light-grey bevelled panels (`#BEBEBE` face, 3D bevels, broken caption
   groove), 8-slot hotbar with top-left stack counts and magnetic-boot aboard indicator, contextual crosshair reticles and
   prompts (`"F to edit"`, `"E to use"`), `F1` Help & Controls window, `F3` toggleable debug telemetry, and `` ` ``
-  developer/debug console (ours: live `mode creative|survival`, `speed`, `tp`, `give`, `noclip`, `god`, `heal`, `ships`,
-  `spawnship`, `help`).
+  console (ours: every setting by name, `find`, `cvarlist`, `differences`, `reset`, `preset`, `exec`, `mode`, `ships`,
+  `spawnship`, `help`; cheats behind `sv_cheats 1`: `speed`, `tp`, `give`, `kit`, `noclip`, `god`, `heal`).
+- **Weapons:** no ricochets, recoil that does not move the shooter, and shots that do not take the shooter's velocity;
+  at most 512 shots in flight. Each of our former behaviours is still there behind a setting (`sv_ricochet`,
+  `sv_recoil_push`, `sv_projectile_inherit_velocity`).
 
-Still to match the original: health and armor damage/respawn, weapon visual-only recoil and pass-through damage,
-consumables details, enemies, and classic menu/UI polish.
+Still to match the original: health and armor damage/respawn, pass-through projectile damage, consumables details,
+enemies, and classic menu/UI polish.
 
 ## 3. Our additive rules and remaining placeholders
 
@@ -129,11 +135,11 @@ Tunable, and marked so in code.
   reach requested linear and angular velocities with optional inertial dampeners (`G`).
 - **Suit health and armor:** health is 100 plus worn `healthRating`; armor is the sum of `armorRating`. Damage, death
   and respawn come in the next milestone.
-- **Weapons and projectiles (placeholder parts still to align):** hand weapons currently apply physical kickback,
-  `ricochetAngle` bounce, and inherited shooter velocity; those will be replaced by visual-only recoil and pass-through
-  block damage in the combat milestone.
-- **Asteroid and ship markers:** one green marker per face-connected asteroid lump of at least 64 blocks with distance
-  and mass, and white markers for ships.
+- **Weapons and projectiles (opt-in):** physical kickback (`sv_recoil_push`, scaled by `sv_recoil_scale`),
+  `ricochetAngle` bounces (`sv_ricochet`, up to `sv_ricochet_bounces`) and inherited shooter velocity
+  (`sv_projectile_inherit_velocity`), all off by default. Pass-through block damage comes in the combat milestone.
+- **Asteroid and ship markers:** one green marker per face-connected asteroid lump of at least 64 blocks
+  (`cl_marker_min_blocks`) with distance and mass, and white markers for ships.
 - **Turning single blocks:** turnable single-cell blocks store their orientation per cell (format version 5 when any
   exist) and draw the facing arrow in the preview.
 - **Inventory:** the 8-slot hotbar plus four backpack rows of eight (40 slots).

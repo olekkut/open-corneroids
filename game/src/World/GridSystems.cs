@@ -318,13 +318,15 @@ public sealed class GridSystems
     {
         var power = Solve();
         bool changed = false;
+        // The mounts carry the default assistant force multiplier; sv_assist_force rescales it.
+        float assist = Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.AssistForce) / ThrusterMount.DefaultThrustScale;
         for (int i = 0; i < _thrusters.Count; i++)
         {
             var t = _thrusters[i];
             float availability = t.Node < 0 ? 1 : (power.IsActive(t.Node) ? 1 : 0);
             if (availability != t.Availability) changed = true;
             t.Availability = availability;
-            _scaled[i] = t.Mount with { MaxForce = t.Mount.MaxForce * availability };
+            _scaled[i] = t.Mount with { MaxForce = t.Mount.MaxForce * availability * assist };
         }
         return changed;
     }

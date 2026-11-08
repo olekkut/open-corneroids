@@ -67,7 +67,7 @@ Arguments after `--`:
 | `--frames=<n>` | Take the `--screenshot` at frame n (default 240), or with `--quit-after-save` run that many frames before saving and quitting (so held controls and flying ships are in the save). The screenshot run's frame rate is uncapped, so the moment n frames is depends on the machine: prefer `--seconds` |
 | `--seconds=<s>` | As `--frames`, but after s seconds of game time (the clock `--hold` counts in), the same moment on any machine. Wins over `--frames`. The log says the frame and time it fired at |
 | `--open=inventory` / `=crafting` / `=console` / `=power` / `=help` / `=debug` | Open that window once the first world (new or loaded) is up. `crafting` shows the first crafting-table station; `console` opens the "Control block" window of the first console; `power` opens the "Power network" popup of the first powered block; `help` opens the `F1` controls & mechanics window; `debug` opens the `` ` `` debug console |
-| `--console=<cmd>[;<cmd>...]` | Run one or more debug console commands after the first world is up (e.g. `--console="mode creative;speed 3;tp 64 80 100"`) |
+| `--console=<cmd>[;<cmd>...]` | Run one or more console commands after the first world is up (e.g. `--console="sv_ricochet 1;sv_cheats 1;speed 3;tp 64 80 100"`) |
 | `--bind-console` / `=wide` / `=close` | Equip the first console's binding tool and frame either the whole ship (`wide`, default) or a close deck view within 3 m of a thruster (`close`); for screenshots |
 | `--debug-hud` | Show the `F3` top-left technical readout (FPS, coordinates, ship telemetry) from startup |
 | `--give=<itemId>:<count>[,<itemId>:<count>...]` | Add items to the survival inventory of the first *new* world, after the starting kit. Not applied to loaded worlds or to worlds picked later from the menu |
@@ -99,7 +99,7 @@ Controls (survival) follow the original's defaults:
   (ours).
 - **Moving:** WASD, Space up and Ctrl down along your own up. Each key pushes at 5 m/s² and you cruise at 4 m/s; Shift
   boosts along the view at 10 m/s² up to 8 m/s for 20 suit power a second. Let go and you coast to a stop. N is noclip
-  (ours).
+  (ours; a cheat, so it needs `sv_cheats 1`).
 - **Hands:** the left button acts with what you hold. A drill drills (within 3 m: grey sparks when it bites, yellow when
   it is too weak) and a weapon fires while it is held down; a block is placed and a consumable used (or a wearable put
   on) when you let go. With a block in hand and no block face aimed at, the preview floats ahead of you in empty space:
@@ -115,10 +115,10 @@ Controls (survival) follow the original's defaults:
   flashlight.
 - **Windows & HUD:** C (or I) opens the inventory and character window (click a stack, then click where it goes, or onto
   its equipment slot to wear it; put it on the red trash slot to throw it away, click the trash to take the last
-  thrown stack back; the next throw destroys it and saves don't keep it). `` ` `` opens the in-game **Debug Console** (for
-  switching between `creative` and `survival` modes on the fly, changing flight `speed`, teleporting with `tp`, spawning
-  items with `give`, toggling `noclip` or `god` mode, spawning ships, and more; `Up`/`Down` browse history and `Tab`
-  autocompletes commands). F1 opens the Help & Controls window, F3 toggles the top-left technical readout (FPS,
+  thrown stack back; the next throw destroys it and saves don't keep it). `` ` `` opens the in-game **Console** (for
+  changing any game setting, see [Settings](#settings-console-variables) below, switching between `creative` and
+  `survival` modes, spawning ships, and, with `sv_cheats 1`, cheats such as `speed`, `tp`, `give`, `noclip` and `god`;
+  `Up`/`Down` browse history and `Tab` completes commands and setting names). F1 opens the Help & Controls window, F3 toggles the top-left technical readout (FPS,
   coordinates, flight telemetry), F6 hides or shows the HUD, and F5 saves the world. Esc closes a window, frees the
   mouse, and again returns to the menu. Movement stops while a window is open.
 - **Ships:** come within about a metre of a ship's blocks and you are aboard (indicated by the magnetic-boot icon to the
@@ -188,6 +188,53 @@ Two control schemes are available while seated (`H` toggles between them on flig
 Standing up puts the player at the nearest free spot beside the console moving with the ship's velocity as drift.
 Console colour-group keys, bound targets and bound cameras are saved with both the static world and every ship.
 
+## Settings (console variables)
+
+The game plays like the original out of the box, but nearly every rule can be changed from the console (`` ` ``), the
+way Source engine games do it. Settings starting with `sv_` are **world rules**: they are saved with the world, and a new
+world starts with the original game's. Settings starting with `cl_` are **your preferences**: they are kept in
+`config.cfg` and apply to every world.
+
+| Command | What it does |
+|---|---|
+| `<setting>` | Show the setting's value, default, range and what it does, e.g. `sv_ricochet` |
+| `<setting> <value>` | Set it, e.g. `sv_ricochet 1`, `sv_ship_max_speed 35`, `cl_fov 90` (`<setting> default` resets it) |
+| `find <text>` | Find settings by name or description, e.g. `find ship` |
+| `cvarlist [prefix]` | List every setting, or those starting with a prefix such as `sv_player` |
+| `differences` | List what differs from the original game (and whether cheats were ever used in this world) |
+| `toggle <setting>` | Flip an on/off setting |
+| `reset <setting\|rules\|prefs\|all>` | Back to defaults: one setting, all world rules, all preferences or everything |
+| `preset [name]` | `preset original` restores the original game's rules and controls; `preset assisted` turns on our flight assistant and the level camera aboard ships |
+| `exec <file>` | Run the commands in a `.cfg` file from the config folder (`%APPDATA%\OpenCorneroids` on Windows) |
+| `writeconfig` | Save your preferences to `config.cfg` now (they are also saved whenever one changes) |
+
+Some of the things that can be changed:
+
+- **Movement:** `sv_player_accel`, `sv_player_speed`, `sv_player_boost_speed`, `sv_player_max_speed`,
+  `sv_boost_cost` and more (`cvarlist sv_player`).
+- **Mining and drops:** `sv_mine_reach`, `sv_mine_time_max`, `sv_mine_time_min`, `sv_mine_time_per_power`,
+  `sv_item_lifetime`, `sv_item_pickup_reach`.
+- **Building and ships:** `sv_attach_distance`, `sv_bind_distance`, `sv_ship_max_speed`, `sv_ship_max_spin`,
+  `sv_ship_coast_decel`, `sv_assist_force`.
+- **Weapons:** `sv_ricochet` (off, as in the original), `sv_recoil_push` (off: recoil only kicks the weapon on screen),
+  `sv_projectile_inherit_velocity` (off: shots fly at their own speed), `sv_projectile_limit` (512).
+- **Preferences:** `cl_flight_assist` (`H`), `cl_fixed_camera` (`K`), `cl_fov`, `cl_sensitivity`, `cl_marker_min_blocks`.
+
+**Cheats.** `noclip` (and the `N` key), `god`, `give`, `kit`, `heal`, `health`, `power`, `tp` and `speed` only work after
+`sv_cheats 1`. Setting `sv_cheats 0` again ends noclip and god mode and resets the cheat settings. A world remembers that
+cheats were used in it, and `differences` says so.
+
+**Your own presets.** Put any commands in a `.cfg` file in the config folder and run it with `exec <name>`; lines may end
+in `// comments`. A file called `autoexec.cfg` runs by itself each time a world starts, which is the place for rules you
+want in every world. For example, an `arcade.cfg`:
+
+```
+// Faster ships, bouncing shots
+sv_ship_max_speed 40
+sv_ricochet 1
+sv_recoil_push 1
+```
+
 ## Worlds and Backward Compatibility
 
 Worlds are saved to `user://worlds` (`%APPDATA%\OpenCorneroids\worlds` on Windows), one `.ocworld` file per world:
@@ -205,7 +252,7 @@ When loading a `.wrl` file:
 In addition, mod packs can be placed as raw `.zip` archives directly in BYOA folders (e.g. `%APPDATA%\OpenCorneroids\byoa`
 or the game's `byoa/` folder) without manual extraction. Uncompressed folders shadow same-named `.zip` archives.
 
-For interoperability with Spacebox, structures can be imported and exported via the debug console (`` ` ``):
+For interoperability with Spacebox, structures can be imported and exported via the console (`` ` ``):
 - `importship <path.sbs>`: reads a GZIP-compressed NBT `.sbs` structure file and spawns it in front of the astronaut.
 - `exportship [ship#|name] <path.sbs>`: serializes the targeted or piloted ship to a Spacebox `.sbs` structure file.
 

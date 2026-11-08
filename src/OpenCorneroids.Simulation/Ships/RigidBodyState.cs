@@ -7,6 +7,26 @@ namespace OpenCorneroids.Simulation.Ships;
 /// of mass, so the body turns about it; a point at local (grid) coordinate p is at
 /// <c>Position + rotate(Orientation, p − centreOfMass)</c> (see <see cref="ToWorld"/>).
 /// </summary>
+/// <summary>A ship's speed caps and coasting slowdown for <see cref="RigidBodyState.StepOriginal"/>.</summary>
+/// <param name="MaxSpeed">Units per second.</param>
+/// <param name="MaxSpin">Radians per second.</param>
+/// <param name="CoastDeceleration">Units/s² while no thruster fires.</param>
+/// <param name="CoastSpinDeceleration">Rad/s² while no thruster fires.</param>
+public readonly record struct ShipLimits(float MaxSpeed, float MaxSpin, float CoastDeceleration, float CoastSpinDeceleration)
+{
+    /// <summary>The original game's values.</summary>
+    public static ShipLimits Original => new(
+        RigidBodyState.MaxLinearSpeed, RigidBodyState.MaxAngularSpeed,
+        RigidBodyState.CoastLinearDeceleration, RigidBodyState.CoastAngularDeceleration);
+
+    public static ShipLimits From(Settings.CvarStore cvars)
+    {
+        ArgumentNullException.ThrowIfNull(cvars);
+        return new(cvars.Float(Settings.Cvars.ShipMaxSpeed), cvars.Float(Settings.Cvars.ShipMaxSpin),
+            cvars.Float(Settings.Cvars.ShipCoastDecel), cvars.Float(Settings.Cvars.ShipCoastSpinDecel));
+    }
+}
+
 public sealed class RigidBodyState
 {
     /// <summary>
@@ -152,9 +172,11 @@ public sealed class RigidBodyState
     /// <see cref="MaxLinearSpeed"/> (20 u/s), angular speed capped at <see cref="MaxAngularSpeed"/> (1.5 rad/s), and
     /// linear/angular coasting slowdown when <paramref name="thrustersFiring"/> is <c>false</c>.
     /// </summary>
-    public void StepOriginal(Vector3 force, Vector3 torque, MassProperties mass, float dt, bool thrustersFiring)
+    /// <param name="limits">The speed caps and coasting slowdown; <see cref="ShipLimits.Original"/> when null.</param>
+    public void StepOriginal(Vector3 force, Vector3 torque, MassProperties mass, float dt, bool thrustersFiring, ShipLimits? limits = null)
     {
         ArgumentNullException.ThrowIfNull(mass);
+        var l = limits ?? ShipLimits.Original;
         if (!float.IsFinite(dt) || dt <= 0) return;
         dt = Math.Min(dt, MaxStep);
         force = Finite(force);
@@ -176,11 +198,11 @@ public sealed class RigidBodyState
             }
             if (!thrustersFiring)
             {
-                v = SlowDown(v, CoastLinearDeceleration * h, CoastLinearStop);
-                w = SlowDown(w, CoastAngularDeceleration * h, CoastAngularStop);
+                v = SlowDown(v, l.CoastDeceleration * h, CoastLinearStop);
+                w = SlowDown(w, l.CoastSpinDeceleration * h, CoastAngularStop);
             }
-            v = ClampMagnitude(v, MaxLinearSpeed);
-            w = ClampMagnitude(w, MaxAngularSpeed);
+            v = ClampMagnitude(v, l.MaxSpeed);
+            w = ClampMagnitude(w, l.MaxSpin);
             Position += v * h;
             q = Turn(q, w, h);
             LinearVelocity = v;

@@ -20,7 +20,7 @@ namespace OpenCorneroids.Game.Player;
 public partial class FlyCamera : Camera3D
 {
     /// <summary>Radians per pixel: the original's 0.01 times its default sensitivity 0.5.</summary>
-    const float MouseSensitivity = 0.005f;
+    const float BaseMouseSensitivity = 0.005f;
     const float Reach = 8f;
 
     /// <summary>Exposed so a save system can persist velocity and noclip.</summary>
@@ -114,11 +114,26 @@ public partial class FlyCamera : Camera3D
     public PilotView View { get; set; } = PilotView.Seat;
 
     /// <summary>Our optional automatic flight assistant (default off: seated pilots use the original's console
-    /// colour-group key bindings). H toggles.</summary>
-    public bool FlightAssist { get; set; }
+    /// colour-group key bindings). H toggles; the setting is <c>cl_flight_assist</c>.</summary>
+    public bool FlightAssist
+    {
+        get => Settings.GameSettings.Cvars.Bool(Simulation.Settings.Cvars.FlightAssist);
+        set => Settings.GameSettings.Cvars.Set(Simulation.Settings.Cvars.FlightAssist, value);
+    }
 
-    /// <summary>Locks the camera's up vector to the ship's deck while aboard (default off). K toggles.</summary>
-    public bool FixedCamera { get; set; }
+    /// <summary>Locks the camera's up vector to the ship's deck while aboard (default off). K toggles; the setting is
+    /// <c>cl_fixed_camera</c>.</summary>
+    public bool FixedCamera
+    {
+        get => Settings.GameSettings.Cvars.Bool(Simulation.Settings.Cvars.FixedCamera);
+        set => Settings.GameSettings.Cvars.Set(Simulation.Settings.Cvars.FixedCamera, value);
+    }
+
+    /// <summary>Radians of turn per pixel of mouse movement: the base rate times <c>cl_sensitivity</c>.</summary>
+    static float MouseSensitivity => BaseMouseSensitivity * Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.Sensitivity);
+
+    /// <summary>Reach of the console binding tool, <c>sv_bind_distance</c>.</summary>
+    static float BindReach => Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.BindDistance);
 
     /// <summary>Inertial dampeners: in flight-assistant mode, also brings the ship to rest when nothing is asked. G toggles.</summary>
     public bool Dampeners { get; set; } = true;
@@ -379,7 +394,7 @@ public partial class FlyCamera : Camera3D
                     else ExitRequested?.Invoke();
                 }
                 else if (key.IsAction(GameInput.Noclip))
-                    Motor.Noclip = !Motor.Noclip;
+                    ToggleNoclip();
                 else if (key.IsAction(GameInput.Level))
                 {
                     LevelAstronautView();
@@ -437,6 +452,19 @@ public partial class FlyCamera : Camera3D
             return;
         }
         Rotation = LevelRotation(-GlobalTransform.Basis.Z);
+    }
+
+    /// <summary>N: noclip, a cheat like the console's <c>noclip</c>, so it needs <c>sv_cheats 1</c>; turning noclip off
+    /// always works.</summary>
+    void ToggleNoclip()
+    {
+        if (!Motor.Noclip && !Settings.GameSettings.Cvars.CheatsEnabled)
+        {
+            _hud.Flash("Noclip is a cheat: type sv_cheats 1 in the console (`) first", warning: true);
+            return;
+        }
+        Motor.Noclip = !Motor.Noclip;
+        _hud.Flash(Motor.Noclip ? "Noclip on" : "Noclip off");
     }
 
     void ToggleFixedCamera()
@@ -864,9 +892,9 @@ public partial class FlyCamera : Camera3D
     void ApplyBindToolClick()
     {
         if (_bindTool is not { } bt) return;
-        if (!_hasTarget || _target.Grid != bt.Grid || _aimDistance > ConsoleBinding.MaxBindDistance)
+        if (!_hasTarget || _target.Grid != bt.Grid || _aimDistance > BindReach)
         {
-            if (_hasTarget && _target.Grid == bt.Grid && _aimDistance > ConsoleBinding.MaxBindDistance)
+            if (_hasTarget && _target.Grid == bt.Grid && _aimDistance > BindReach)
                 _hud.Flash("Move closer (within 3 m) to bind blocks", warning: true);
             else if (_hasTarget && _target.Grid != bt.Grid)
                 _hud.Flash("Blocks can only be bound on the same ship or structure", warning: true);
@@ -1437,7 +1465,7 @@ public partial class FlyCamera : Camera3D
             AddBox(bt.Grid, cam.ToGodot(), new Color(1f, 0.2f, 1f), 1.04f);
 
         // White highlight on aimed bindable block within 3.0 units on the same grid, as in the original.
-        if (!WindowOpen && _hasTarget && _target.Grid == bt.Grid && _aimDistance <= ConsoleBinding.MaxBindDistance)
+        if (!WindowOpen && _hasTarget && _target.Grid == bt.Grid && _aimDistance <= BindReach)
         {
             var aimedCell = _target.Object is { } ao ? ao.Origin.ToGodot() : _target.Cell;
             if (aimedCell != bt.ConsoleCell)

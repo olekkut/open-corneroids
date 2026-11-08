@@ -12,8 +12,10 @@ namespace OpenCorneroids.Game.World;
 /// </summary>
 public partial class FloatingItems : Node3D
 {
-    public const double LifetimeSeconds = 30;
-    public const float PickupReach = 1.5f;
+    /// <summary><c>sv_item_lifetime</c>: 30 s, as in the original.</summary>
+    public static double LifetimeSeconds => Settings.GameSettings.Cvars.Get(Simulation.Settings.Cvars.ItemLifetime);
+    /// <summary><c>sv_item_pickup_reach</c>: 1.5 m, as in the original.</summary>
+    public static float PickupReach => Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.ItemPickupReach);
     /// <summary>How long the flight to the player takes. Ours.</summary>
     const double FlightSeconds = 0.15;
     /// <summary>Drawn this big, in metres. Ours.</summary>

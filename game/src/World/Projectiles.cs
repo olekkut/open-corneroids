@@ -9,15 +9,18 @@ namespace OpenCorneroids.Game.World;
 
 /// <summary>
 /// Shots in flight, from hand weapons and ship guns. Each frame a shot moves along its velocity; the segment it
-/// covers is cast through every grid (<see cref="GridSet.Raycast"/>), and the first block it meets either glances
-/// it off (<see cref="Weapons.Ricochet"/>) or takes its damage, breaking when the damage reaches the block's health
+/// covers is cast through every grid (<see cref="GridSet.Raycast"/>), and the first block it meets takes its damage
+/// (or, with <c>sv_ricochet 1</c>, may glance it off, <see cref="Weapons.Ricochet"/>), breaking when the damage reaches the block's health
 /// (<see cref="BlockDamage{TKey}"/>). Broken blocks drop nothing: shooting is not mining. Shots live for their
 /// projectile's <c>lifetime</c>. Rules are in the Simulation library; this node only moves and draws.
 /// </summary>
 public partial class Projectiles : Node3D
 {
-    /// <summary>More than this many shots in flight and the oldest go first, so a minigun battle can't pile up.</summary>
-    const int MaxShots = 400;
+    static Simulation.Settings.CvarStore Cvars => Settings.GameSettings.Cvars;
+
+    /// <summary>More than this many shots in flight and the oldest go first, so a minigun battle can't pile up
+    /// (<c>sv_projectile_limit</c>, 512 as in the original).</summary>
+    static int MaxShots => Cvars.Int(Simulation.Settings.Cvars.ProjectileLimit);
 
     sealed class Shot
     {
@@ -52,11 +55,13 @@ public partial class Projectiles : Node3D
     public int InFlight => _shots.Count;
 
     /// <summary>Launches one shot from <paramref name="from"/> along <paramref name="direction"/>; <paramref name="carrier"/>
-    /// is the shooter's own velocity, which the shot keeps.</summary>
+    /// is the shooter's own velocity, which the shot keeps only with <c>sv_projectile_inherit_velocity</c> (the
+    /// original's shots fly at their own speed whatever the shooter does).</summary>
     public void Fire(ProjectileDef def, Vector3 from, Vector3 direction, Vector3 carrier)
     {
         if (direction == Vector3.Zero) return;
-        if (_shots.Count >= MaxShots)
+        int limit = Math.Max(1, MaxShots);
+        while (_shots.Count >= limit)
         {
             _shots[0].Mesh.QueueFree();
             _shots.RemoveAt(0);
@@ -64,6 +69,7 @@ public partial class Projectiles : Node3D
         var (mesh, material) = LookOf(def);
         var instance = new MeshInstance3D { Mesh = mesh, MaterialOverride = material, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(instance);
+        if (!Cvars.Bool(Simulation.Settings.Cvars.ProjectileInheritVelocity)) carrier = Vector3.Zero;
         var shot = new Shot { Def = def, Mesh = instance, Position = from, Velocity = direction.Normalized() * def.Speed + carrier };
         Place(shot);
         _shots.Add(shot);
@@ -182,7 +188,9 @@ public partial class Projectiles : Node3D
         var direction = shot.Velocity.Normalized();
         var impact = shot.Position + direction * distance;
         var normal = aim.Grid.GlobalBasis * (Vector3)(aim.Before - aim.Hit);
-        if (aim.Before != aim.Hit && normal != Vector3.Zero && shot.Bounces < 3 &&
+        // Ricochets are ours and off by default (sv_ricochet): the original's shots hit whatever they meet.
+        if (Cvars.Bool(Simulation.Settings.Cvars.Ricochet) && aim.Before != aim.Hit && normal != Vector3.Zero &&
+            shot.Bounces < Cvars.Int(Simulation.Settings.Cvars.RicochetBounces) &&
             Weapons.Ricochet(shot.Velocity.ToNumerics(), normal.Normalized().ToNumerics(), shot.Def.RicochetAngle) is { } bounced)
         {
             // Off the face it struck, a hair outside it, heading away; the rest of this frame's travel is dropped.

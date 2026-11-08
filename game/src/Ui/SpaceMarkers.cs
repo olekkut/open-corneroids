@@ -13,8 +13,8 @@ namespace OpenCorneroids.Game.Ui;
 /// </summary>
 public partial class SpaceMarkers : Control
 {
-    /// <summary>Lumps smaller than this (a few placed blocks) get no marker. Ours, tunable.</summary>
-    const int MinAsteroidCells = 64;
+    /// <summary>Lumps smaller than this (a few placed blocks) get no marker. Ours, <c>cl_marker_min_blocks</c>.</summary>
+    static int MinAsteroidCells => Settings.GameSettings.Cvars.Int(Simulation.Settings.Cvars.MarkerMinBlocks);
     /// <summary>Seconds between re-finding asteroids after the world changed; mining changes it constantly.</summary>
     const double RefreshSeconds = 3;
 

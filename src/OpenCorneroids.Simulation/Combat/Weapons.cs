@@ -29,11 +29,12 @@ public static class Weapons
     /// <see cref="RecoilScale"/>. The original's unit for pushback is unknown; this makes a pistol shot a nudge
     /// (about 0.06 m/s) and the plasma launcher a shove (0.25 m/s).
     /// </summary>
-    public static Vector3 Recoil(Vector3 direction, float pushback, ProjectileDef projectile)
+    /// <param name="scale">m/s per unit of pushback × speed (<c>sv_recoil_scale</c>).</param>
+    public static Vector3 Recoil(Vector3 direction, float pushback, ProjectileDef projectile, float scale = RecoilScale)
     {
         ArgumentNullException.ThrowIfNull(projectile);
         if (direction == Vector3.Zero) return Vector3.Zero;
-        return -Vector3.Normalize(direction) * pushback * projectile.Speed * RecoilScale;
+        return -Vector3.Normalize(direction) * pushback * projectile.Speed * scale;
     }
 
     /// <summary>

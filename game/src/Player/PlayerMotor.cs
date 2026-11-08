@@ -31,8 +31,6 @@ public sealed class PlayerMotor
     /// <summary>World space, m/s; relative to the ridden ship while riding one (see <see cref="Step"/>).</summary>
     public Vector3 Velocity { get; set; }
 
-    /// <summary>Multiplier applied to astronaut acceleration and cruise/boost speed limits via the debug console (1 = original).</summary>
-    public float SpeedMultiplier { get; set; } = 1f;
 
     /// <summary>
     /// Kept for saves written before boarding existed, which stored momentum taken from a ship here. The original
@@ -64,7 +62,10 @@ public sealed class PlayerMotor
     public Vector3 Step(Vector3 eye, AstronautMotion.Input input, float delta, GridSet grids, ShipGrid? riding = null)
     {
         float dt = Mathf.Clamp(delta, 0f, MaxStep);
-        var velocity = ToGodot(AstronautMotion.Step(ToNumerics(Velocity), input, dt, SpeedMultiplier));
+        // The sv_player_* rules, and the sv_player_speed_scale cheat on top.
+        var cvars = Settings.GameSettings.Cvars;
+        var velocity = ToGodot(AstronautMotion.Step(ToNumerics(Velocity), input, dt, AstronautMotion.Tuning.From(cvars),
+            cvars.Float(Simulation.Settings.Cvars.PlayerSpeedScale)));
         var drift = Vector3.Zero;
 
         var body = ToNumerics(eye) - new Num.Vector3(0, EyeHeight, 0);

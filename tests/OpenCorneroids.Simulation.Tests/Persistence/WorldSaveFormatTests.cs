@@ -18,6 +18,25 @@ public class WorldSaveFormatTests
     }
 
     [Fact]
+    public void Game_rules_and_cheat_history_round_trip_and_are_left_out_when_default()
+    {
+        var plain = SmallWorld();
+        var plainCopy = FromBytes(ToBytes(plain));
+        Assert.Empty(plainCopy.Rules);
+        Assert.False(plainCopy.CheatsUsed);
+        Assert.DoesNotContain("rules", Encoding.UTF8.GetString(ToBytes(plain)), StringComparison.OrdinalIgnoreCase);
+
+        var tuned = plain with
+        {
+            Rules = new Dictionary<string, string> { ["sv_ricochet"] = "1", ["sv_ship_max_speed"] = "35.5" },
+            CheatsUsed = true,
+        };
+        var copy = FromBytes(ToBytes(tuned));
+        Assert.Equal(tuned.Rules, copy.Rules);
+        Assert.True(copy.CheatsUsed);
+    }
+
+    [Fact]
     public void BlockId_zero_stays_distinct_from_air()
     {
         int[] palette = [WorldSnapshot.AirBlockId, 0];

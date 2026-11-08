@@ -250,15 +250,17 @@ public sealed class GridSet
 
     /// <summary>
     /// Finds the grid whose closest solid block is nearest to <paramref name="worldPos"/> within
-    /// <paramref name="maxDistance"/> (16 units in the original). Returns the grid, the local cell of that nearest
-    /// block, and the world-space point the red attachment line connects to (the ship's or asteroid's centre of mass).
+    /// <paramref name="maxDistance"/> (<c>sv_attach_distance</c> when left out: 16 units, as in the original). Returns
+    /// the grid, the local cell of that nearest block, and the world-space point the red attachment line connects to
+    /// (the ship's or asteroid's centre of mass).
     /// </summary>
     public (BlockGrid Grid, Vector3I NearestCell, Vector3 LineTargetWorld)? NearestAttachment(
-        Vector3 worldPos, float maxDistance = ConsoleBinding.MaxAttachmentDistance)
+        Vector3 worldPos, float? maxDistance = null)
     {
+        maxDistance ??= Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.AttachDistance);
         BlockGrid? bestGrid = null;
         Vector3I bestCell = default;
-        float bestDistance = maxDistance;
+        float bestDistance = maxDistance.Value;
 
         void Check(BlockGrid grid)
         {

@@ -73,7 +73,12 @@ dropped in next to them.
   original's.
 - **Saves.** Worlds save their blocks, ships in flight, console bindings, your suit and inventory, and remember which
   itemset they need.
-- **Tested.** The content loader and the game rules live in plain C# libraries with 1,270+ automated tests; Godot only
+- **Yours to tune.** The original game's rules are the default, and the console changes almost any of them, the way
+  Source engine games do: `sv_ricochet 1`, `sv_ship_max_speed 40`, `sv_mine_time_max 0.4`, `cl_fov 90`. World rules
+  are saved with each world, preferences in `config.cfg`; `preset original` puts everything back, `exec` runs your own
+  `.cfg` presets, and cheats such as `noclip`, `god` and `give` need `sv_cheats 1`. See the
+  [guide](docs/guide.md#settings-console-variables).
+- **Tested.** The content loader and the game rules live in plain C# libraries with 1,370+ automated tests; Godot only
   draws and takes input.
 - **Backward compatibility & modding.** Loads original 2012 Corneroids `.wrl` SQLite 3 maps seamlessly alongside native
   `.ocworld` saves, discovers and loads mod packages directly from `.zip` archives in BYOA folders without manual
@@ -100,7 +105,7 @@ Each download is the game with its data included, so there is nothing to install
 | Use a block / edit it | `E` (consoles, crafting stations, doors) / `F` (console binding & key setup, power network info) |
 | Inventory | `C` |
 | Flashlight / fixed camera aboard | `T` / `K` |
-| Debug console | `` ` `` (`mode`, `speed`, `tp`, `give`, `noclip`, `god`, `heal`, `spawnship`, `importship`, `exportship`, `help`) |
+| Console | `` ` `` (any setting by name, `find`, `differences`, `preset`, `exec`, `mode`, `spawnship`, `importship`, `exportship`, `help`; with `sv_cheats 1` also `speed`, `tp`, `give`, `noclip`, `god`, `heal`) |
 | Help / debug readout / hide HUD / save | `F1` / `F3` / `F6` / `F5` |
 
 Flying a ship: by default, bound console group keys fire their thrusters and cannons while held (`V` seat/camera or
@@ -131,14 +136,14 @@ flowchart LR
     content --> sim["OpenCorneroids.Simulation<br/>mining, crafting, suit, ships,<br/>weapons, saves"]
     content --> game["game/ (Godot 4)<br/>rendering, input, UI"]
     sim --> game
-    tests["tests/<br/>670+ xUnit tests"] -.-> content
+    tests["tests/<br/>1,370+ xUnit tests"] -.-> content
     tests -.-> sim
 ```
 
 | Folder | What it holds |
 |---|---|
 | `src/OpenCorneroids.Content` | Finds packs, parses itemsets, resolves texture atlases. No Godot. |
-| `src/OpenCorneroids.Simulation` | Game rules: inventory, crafting, mining, suit, ship physics and power, weapons, save format. No Godot. |
+| `src/OpenCorneroids.Simulation` | Game rules: inventory, crafting, mining, suit, ship physics and power, weapons, settings, console, save format. No Godot. |
 | `game/` | The Godot project: voxel meshing, the player, ships, HUD and windows. |
 | `tests/` | Tests for both libraries, including checks against the bundled real data. |
 | `tools/` | A command-line dump of what the loader finds. |
@@ -154,6 +159,7 @@ flowchart LR
 - [x] Ships: launching, piloting, power, collisions, riding along
 - [x] Weapons and ship cannons
 - [x] Console button binding and placing blocks in empty space, as the original builds ships
+- [x] Console settings: the original's rules by default, nearly every one tunable, saved per world
 - [ ] Damage to the player, death and respawn
 - [ ] Enemies
 - [ ] Options menu, sound
