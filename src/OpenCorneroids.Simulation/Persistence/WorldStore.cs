@@ -92,26 +92,51 @@ public static class WorldStore
         }
     }
 
+    static bool IsOcws(string path)
+    {
+        try
+        {
+            using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Span<byte> magic = stackalloc byte[4];
+            return file.Read(magic) == 4 && magic.SequenceEqual("OCWS"u8);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     /// <exception cref="WorldSaveException">The file is not a readable world save.</exception>
     public static WorldSnapshot Load(string path)
     {
+        if (IsOcws(path))
+        {
+            using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return WorldSaveFormat.Read(file);
+        }
         if (Path.GetExtension(path).Equals(".wrl", StringComparison.OrdinalIgnoreCase))
             return CorneroidsWrlReader.Read(path);
-        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return WorldSaveFormat.Read(file);
+        using var fallback = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return WorldSaveFormat.Read(fallback);
     }
 
     /// <summary>See <see cref="WorldSaveFormat.Verify"/>: reads the whole file as <see cref="Load"/> would, keeping nothing.</summary>
     /// <exception cref="WorldSaveException">The file is not a readable world save.</exception>
     public static void Verify(string path)
     {
-        if (Path.GetExtension(path).Equals(".wrl", StringComparison.OrdinalIgnoreCase))
+        if (IsOcws(path))
         {
-            CorneroidsWrlReader.Read(path);
+            using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            WorldSaveFormat.Verify(file);
             return;
         }
-        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        WorldSaveFormat.Verify(file);
+        if (Path.GetExtension(path).Equals(".wrl", StringComparison.OrdinalIgnoreCase))
+        {
+            CorneroidsWrlReader.Verify(path);
+            return;
+        }
+        using var fallback = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        WorldSaveFormat.Verify(fallback);
     }
 
     /// <summary>
@@ -143,8 +168,15 @@ public static class WorldStore
             {
                 try
                 {
-                    var snap = CorneroidsWrlReader.Read(path);
-                    summaries.Add(new WorldSummary(snap.Name, snap.SavedAt, snap.Itemset, Path.GetFullPath(path)) { Creative = snap.Creative });
+                    if (IsOcws(path))
+                    {
+                        using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        summaries.Add(WorldSaveFormat.ReadSummary(file) with { FilePath = Path.GetFullPath(path) });
+                    }
+                    else
+                    {
+                        summaries.Add(CorneroidsWrlReader.ReadSummary(path));
+                    }
                 }
                 catch (Exception e) when (e is WorldSaveException or IOException or UnauthorizedAccessException)
                 {

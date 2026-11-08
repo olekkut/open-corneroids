@@ -27,6 +27,7 @@ public partial class Main : Node
     /// <summary>The timed screenshot or save is done; quitting may take another frame, which must not do it again.</summary>
     bool _timedDone;
     bool _hooksApplied;
+    bool _leavingWorld;
     ulong _measureStartMs;
     /// <summary>Parsed itemsets by entry, for matching a save's fingerprint; Def is null when the itemset does not parse.</summary>
     readonly Dictionary<ItemsetEntry, (ItemsetDef? Def, DiagnosticBag Diagnostics)> _parsed = new();
@@ -47,10 +48,15 @@ public partial class Main : Node
         GD.Print($"BYOA roots: {string.Join("; ", _roots)}; {_library.Packs.Count} packs, {_library.Itemsets.Count} itemsets");
         GD.Print($"Worlds folder: {WorldSaves.Folder}");
 
+        bool immediateQuit = _args.QuitAfterSave && _args.Frames is null && _args.Seconds is null;
         WorldView? world = null;
         if (_args.Load is { } name)
         {
-            if (WorldSaves.FindFile(name) is { } file) world = LoadWorld(file);
+            if (WorldSaves.FindFile(name) is { } file)
+            {
+                if (immediateQuit) world = LoadWorld(file);
+                else _ = LoadWorldAsync(file);
+            }
             else ShowMenu($"There is no saved world called '{name}'.");
         }
         else if ((_args.Itemset ?? (_args.NewWorld is not null ? "auto" : null)) is { } choice)
@@ -59,7 +65,9 @@ public partial class Main : Node
             {
                 var packs = _args.TexturePacks.Select(_library.FindPack).OfType<PackInfo>().ToList();
                 var worldName = _args.NewWorld is { Length: > 0 } n ? n : WorldSaves.NextDefaultName();
-                world = StartNewWorld(new NewWorldSettings(entry, packs, worldName, _args.Seed ?? WorldSaves.DefaultSeed, _args.Creative));
+                var settings = new NewWorldSettings(entry, packs, worldName, _args.Seed ?? WorldSaves.DefaultSeed, _args.Creative);
+                if (immediateQuit) world = StartNewWorld(settings);
+                else _ = StartNewWorldAsync(settings);
             }
             else
             {
@@ -74,10 +82,10 @@ public partial class Main : Node
 
         if (_args.NewWorld is not null || _args.QuitAfterSave)
         {
-            var error = world is null ? "no world was started" : world.Save();
             // With --frames the world runs that long first (held controls, a flying ship) and is saved then.
             if (_args.QuitAfterSave && ((_args.Frames is null && _args.Seconds is null) || world is null))
             {
+                var error = world is null ? "no world was started" : world.Save();
                 GD.Print(error is not null ? $"Not saved ({error}); quitting"
                     : world!.HoldSaves ? "Not saved (the load is waiting for a confirmation); quitting"
                     : "Saved; quitting (--quit-after-save)");
@@ -165,6 +173,55 @@ public partial class Main : Node
         return _library.FindItemset(choice, out problem);
     }
 
+    async Task<WorldView?> StartNewWorldAsync(NewWorldSettings settings)
+    {
+        var loading = new LoadingScreen();
+        loading.Setup(settings.Name);
+        Swap(loading);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+        await loading.SetStep("Loading itemset & texture packs...", 0.15);
+
+        var info = new WorldInfo(settings.Name, settings.Seed, settings.Creative, settings.TexturePacks.Select(p => p.Id).ToList(),
+            WorldSaves.PathFor(settings.Name));
+
+        var loaded = await Task.Run(() => _library.Load(settings.Itemset, settings.TexturePacks));
+        foreach (var d in loaded.Diagnostics.AtLeast(Severity.Warning)) GD.PushWarning(d.ToString());
+        if (loaded.Itemset is null || loaded.BlockAtlas is null)
+        {
+            ShowMenu($"Could not load {settings.Itemset.Header.Name}: " +
+                     string.Join("; ", loaded.Diagnostics.AtLeast(Severity.Error).Take(3)));
+            return null;
+        }
+
+        await loading.SetStep("Initializing voxel world...", 0.35, completedNotice: "Itemset & textures loaded");
+
+        var world = new WorldView { Mapping = _args.TextureMapping };
+        world.ExitRequested += () => LeaveWorld(world);
+
+        bool ok = await world.SetupAsync(loaded, info, saved: null, async (step, frac, detail, completed) =>
+        {
+            await loading.SetStep(step, frac, detail, completed);
+        });
+
+        if (!ok)
+        {
+            ShowMenu($"{settings.Itemset.Header.Name} has no placeable single-cell blocks with textures.");
+            return null;
+        }
+
+        await loading.SetStep("Finalizing world...", 0.98, completedNotice: "Asteroids generated");
+
+        if (_args.Showcase) world.Showcase();
+        if (_args.DemoShip) world.DemoShip();
+        if (!_hooksApplied && !world.Creative) world.Give(_args.Give);
+        if (!_hooksApplied && !world.Creative) world.DropInFront(_args.Drop);
+        ApplyHooks(world);
+
+        Swap(world);
+        return world;
+    }
+
     WorldView? StartNewWorld(NewWorldSettings settings)
     {
         var info = new WorldInfo(settings.Name, settings.Seed, settings.Creative, settings.TexturePacks.Select(p => p.Id).ToList(),
@@ -242,13 +299,34 @@ public partial class Main : Node
     }
 
     /// <summary>Esc twice: save, then the menu. If saving fails the world stays until the player decides.</summary>
-    void LeaveWorld(WorldView world)
+    async void LeaveWorld(WorldView world)
     {
-        if (world.Save() is not { } error)
+        if (_leavingWorld) return;
+        _leavingWorld = true;
+
+        world.Player.InputLocked = true;
+        world.Flash("Saving world...", warning: false, seconds: 5);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+        string? error = null;
+        try
+        {
+            error = world.Save();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+
+        if (error is null)
         {
             ShowMenu(null);
+            _leavingWorld = false;
             return;
         }
+
+        _leavingWorld = false;
+        world.Player.InputLocked = false;
         AskInWorld(world, "Could not save", $"{error}\n\nLeave to the menu anyway? Everything since the last successful save is lost.",
             "Leave without saving", "Keep playing", () => ShowMenu($"'{world.Info.Name}' was not saved: {error}"));
     }
@@ -270,6 +348,68 @@ public partial class Main : Node
     }
 
     // ---- loading ----
+
+    async Task<WorldView?> LoadWorldAsync(string path)
+    {
+        var loading = new LoadingScreen();
+        loading.Setup(Path.GetFileNameWithoutExtension(path));
+        Swap(loading);
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+
+        await loading.SetStep("Reading world save...", 0.10);
+
+        WorldSnapshot saved;
+        try
+        {
+            saved = await Task.Run(() => WorldStore.Load(path));
+        }
+        catch (Exception e) when (e is WorldSaveException or IOException or UnauthorizedAccessException)
+        {
+            ShowMenu($"Could not load {Path.GetFileName(path)}: {e.Message}");
+            return null;
+        }
+
+        await loading.SetStep("Resolving itemset compatibility...", 0.20, completedNotice: $"World save loaded: {saved.Name}");
+
+        var match = ResolveItemset(saved);
+        if (match.Entry is not { } entry || match.Check.Status == BindingStatus.DifferentItemset)
+        {
+            ShowMenu(match.Check.Message);
+            return null;
+        }
+        var check = match.Check;
+
+        int cells = 0;
+        var question = new List<string>();
+        if (match.OtherPack)
+        {
+            question.Add($"'{saved.Name}' was made with {saved.Itemset.Name} from '{saved.Itemset.PackId}', which is not installed. " +
+                         $"{entry.Header.Name} from '{entry.Pack.Id}' uses the same itemset key ({entry.Header.Key}) but is another " +
+                         "pack: blocks and items keep their ids, but may behave differently or be different things.");
+        }
+        else if (check.Status != BindingStatus.Exact)
+            question.Add($"'{saved.Name}' was saved with a different version of {saved.Itemset.Name} from '{saved.Itemset.PackId}'.");
+        if (check.Status == BindingStatus.Incompatible)
+        {
+            var missing = check.MissingBlockIds.ToHashSet();
+            cells = saved.Cells.Count(c => c != WorldSnapshot.Air && missing.Contains(saved.Palette[c])) +
+                    saved.Objects.Count(o => missing.Contains(o.BlockId)) +
+                    saved.Ships.Sum(ship => ship.Cells.Count(c => c != WorldSnapshot.Air && missing.Contains(ship.Palette[c])) +
+                                            ship.Objects.Count(o => missing.Contains(o.BlockId)));
+            question.Add($"{check.MissingBlockIds.Count} block type(s) the world uses do not exist in {entry.Header.Name} from " +
+                         $"'{entry.Pack.Id}' (blockIds {string.Join(", ", check.MissingBlockIds)}). At least {cells} placed block(s) " +
+                         "of those types will become empty space.");
+        }
+        if (!match.OtherPack && check.Status != BindingStatus.Incompatible) return await OpenSavedAsync(saved, path, entry, check, acceptedLoss: 0, loading);
+
+        if (!saved.Creative && saved.Inventory.Any(s => s is not null))
+            question.Add("Inventory items are matched by item id, so some may now be different items.");
+        question.Add("The world is bound to this itemset from its next save on. Load anyway?");
+        var menu = ShowMenu(null);
+        menu.Confirm(match.OtherPack ? "Different pack" : "Itemset changed", string.Join("\n\n", question),
+            () => _ = OpenSavedAsync(saved, path, entry, check, acceptedLoss: cells, null), okText: "Load anyway");
+        return null;
+    }
 
     /// <summary>
     /// Reads a save and finds the itemset it needs. An exact fingerprint match loads silently; the same itemset from
@@ -330,6 +470,90 @@ public partial class Main : Node
         return null;
     }
 
+    async Task<WorldView?> OpenSavedAsync(WorldSnapshot saved, string path, ItemsetEntry entry, BindingResult check, int acceptedLoss, LoadingScreen? loading)
+    {
+        if (loading is null)
+        {
+            loading = new LoadingScreen();
+            loading.Setup(saved.Name);
+            Swap(loading);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        }
+
+        await loading.SetStep("Finding texture packs...", 0.25, completedNotice: $"Itemset '{entry.Header.Name}' matched");
+
+        var packs = new List<PackInfo>();
+        foreach (var id in saved.TexturePacks)
+        {
+            if (_library.FindPack(id) is { } pack) packs.Add(pack);
+            else GD.PushWarning($"World '{saved.Name}' uses texture pack '{id}', which is not installed; loading without it");
+        }
+
+        var savePath = path.EndsWith(".wrl", StringComparison.OrdinalIgnoreCase)
+            ? Path.ChangeExtension(path, WorldStore.Extension)
+            : path;
+        var info = new WorldInfo(saved.Name, saved.Seed, saved.Creative, saved.TexturePacks, savePath);
+
+        await loading.SetStep("Loading textures and content...", 0.32);
+
+        var loaded = await Task.Run(() => _library.Load(entry, packs));
+        foreach (var d in loaded.Diagnostics.AtLeast(Severity.Warning)) GD.PushWarning(d.ToString());
+        if (loaded.Itemset is null || loaded.BlockAtlas is null)
+        {
+            ShowMenu($"Could not load {entry.Header.Name}: " +
+                     string.Join("; ", loaded.Diagnostics.AtLeast(Severity.Error).Take(3)));
+            return null;
+        }
+
+        await loading.SetStep("Creating world...", 0.38, completedNotice: "Textures & materials loaded");
+
+        var world = new WorldView { Mapping = _args.TextureMapping };
+        world.ExitRequested += () => LeaveWorld(world);
+
+        bool ok = await world.SetupAsync(loaded, info, saved, async (step, frac, detail, completed) =>
+        {
+            await loading.SetStep(step, frac, detail, completed);
+        });
+
+        if (!ok)
+        {
+            ShowMenu($"{entry.Header.Name} has no placeable single-cell blocks with textures.");
+            return null;
+        }
+
+        await loading.SetStep("Entering world...", 0.98, completedNotice: "World rebuilt");
+
+        Swap(world);
+        GD.Print($"Loaded world '{saved.Name}' from {path} ({check.Status}): {check.Message}");
+
+        var notes = new List<string>();
+        if (check.Status != BindingStatus.Exact) notes.Add(check.Message);
+        if (world.InventoryNote is { } inventory) notes.Add(inventory);
+        if (packs.Count < saved.TexturePacks.Count) notes.Add("Some of this world's texture packs are not installed.");
+        if (notes.Count > 0)
+        {
+            var text = string.Join("  ", notes);
+            GD.PushWarning(text);
+            world.Flash(text, warning: true, seconds: 10);
+        }
+        ApplyHooks(world);
+
+        if (world.LostCells > acceptedLoss)
+        {
+            GD.PushWarning($"{world.LostCells} placed block(s) of '{saved.Name}' could not be restored");
+            world.HoldSaves = true;
+            AskInWorld(world, "Blocks could not be restored",
+                $"{world.LostCells} placed block(s) of '{saved.Name}' could not be restored and are empty space now: this itemset " +
+                "and its textures can't show their block type, or they lie outside the world.\n\n" +
+                "The save file still has them. Keep playing, and the next save (F5, leaving or closing) drops them for good; " +
+                "or go back to the menu without saving and restore the missing content first.",
+                "Back to menu", "Keep playing",
+                onOk: () => ShowMenu($"'{saved.Name}' was not changed."),
+                onCancel: () => world.HoldSaves = false);
+        }
+        return world;
+    }
+
     /// <param name="acceptedLoss">Lost cells the player already agreed to; any loss beyond it asks again.</param>
     WorldView? OpenSaved(WorldSnapshot saved, string path, ItemsetEntry entry, BindingResult check, int acceptedLoss)
     {
@@ -340,7 +564,10 @@ public partial class Main : Node
             else GD.PushWarning($"World '{saved.Name}' uses texture pack '{id}', which is not installed; loading without it");
         }
 
-        var info = new WorldInfo(saved.Name, saved.Seed, saved.Creative, saved.TexturePacks, path);
+        var savePath = path.EndsWith(".wrl", StringComparison.OrdinalIgnoreCase)
+            ? Path.ChangeExtension(path, WorldStore.Extension)
+            : path;
+        var info = new WorldInfo(saved.Name, saved.Seed, saved.Creative, saved.TexturePacks, savePath);
         var world = StartWorld(entry, packs, info, saved);
         if (world is null) return null;
         GD.Print($"Loaded world '{saved.Name}' from {path} ({check.Status}): {check.Message}");
@@ -448,8 +675,8 @@ public partial class Main : Node
         if (error is not null) GD.PushWarning(error);
         Input.MouseMode = Input.MouseModeEnum.Visible;
         var menu = new MainMenu();
-        menu.NewWorldRequested += settings => StartNewWorld(settings);
-        menu.LoadRequested += path => LoadWorld(path);
+        menu.NewWorldRequested += settings => _ = StartNewWorldAsync(settings);
+        menu.LoadRequested += path => _ = LoadWorldAsync(path);
         Swap(menu);
         menu.Setup(_library, _roots, error);
         return menu;

@@ -114,6 +114,130 @@ public static class CorneroidsWrlReader
         new(DecodeCoord(rawX), DecodeCoord(rawY), DecodeCoord(rawZ));
 
     /// <summary>
+    /// Reads summary metadata from a Corneroids 2012 .wrl SQLite world file without decompressing or parsing chunks.
+    /// </summary>
+    public static WorldSummary ReadSummary(string sqliteFilePath, string? defaultItemsetKey = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sqliteFilePath);
+        if (!File.Exists(sqliteFilePath))
+            throw new FileNotFoundException($"Corneroids world database '{sqliteFilePath}' was not found.", sqliteFilePath);
+
+        var csb = new SqliteConnectionStringBuilder
+        {
+            DataSource = sqliteFilePath,
+            Mode = SqliteOpenMode.ReadOnly,
+            Pooling = false,
+        };
+
+        try
+        {
+            using var connection = new SqliteConnection(csb.ToString());
+            connection.Open();
+            return ReadSummaryFromConnection(connection, sqliteFilePath, defaultItemsetKey);
+        }
+        catch (SqliteException ex)
+        {
+            SqliteConnection.ClearAllPools();
+            throw new WorldSaveException($"Failed to read Corneroids database summary '{sqliteFilePath}': {ex.Message}", ex);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+        }
+    }
+
+    /// <summary>
+    /// Reads summary metadata via an open <see cref="SqliteConnection"/>. Leaves caller connection open.
+    /// </summary>
+    public static WorldSummary ReadSummaryFromConnection(SqliteConnection connection, string sqliteFilePath, string? defaultItemsetKey = null)
+    {
+        ArgumentNullException.ThrowIfNull(connection);
+
+        if (!TableExists(connection, "worldinfo"))
+            throw new WorldSaveException("Invalid Corneroids world: missing 'worldinfo' table.");
+
+        string worldName = Path.GetFileNameWithoutExtension(sqliteFilePath);
+        string itemsetKey = defaultItemsetKey ?? "Default";
+        DateTimeOffset savedAt = DateTimeOffset.UnixEpoch;
+
+        using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = "SELECT name, version, seed, itemsetKey, timestamp FROM worldinfo LIMIT 1;";
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                if (!reader.IsDBNull(0))
+                {
+                    var rawName = reader.GetString(0);
+                    if (!string.IsNullOrWhiteSpace(rawName)) worldName = rawName;
+                }
+
+                if (!reader.IsDBNull(3))
+                {
+                    string? rawKey = reader.GetString(3);
+                    if (!string.IsNullOrWhiteSpace(rawKey))
+                        itemsetKey = rawKey;
+                }
+
+                if (!reader.IsDBNull(4))
+                {
+                    long ts = reader.GetInt64(4);
+                    savedAt = ts > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(ts) : DateTimeOffset.UnixEpoch;
+                }
+            }
+        }
+
+        var itemsetBinding = new ItemsetBinding(itemsetKey, itemsetKey, itemsetKey, "legacy-corneroids-2012");
+        return new WorldSummary(worldName, savedAt, itemsetBinding, Path.GetFullPath(sqliteFilePath)) { Creative = false };
+    }
+
+    /// <summary>
+    /// Verifies the SQLite database integrity and required tables of a Corneroids 2012 .wrl file.
+    /// </summary>
+    public static void Verify(string sqliteFilePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sqliteFilePath);
+        if (!File.Exists(sqliteFilePath))
+            throw new FileNotFoundException($"Corneroids world database '{sqliteFilePath}' was not found.", sqliteFilePath);
+
+        var csb = new SqliteConnectionStringBuilder
+        {
+            DataSource = sqliteFilePath,
+            Mode = SqliteOpenMode.ReadOnly,
+            Pooling = false,
+        };
+
+        try
+        {
+            using var connection = new SqliteConnection(csb.ToString());
+            connection.Open();
+            if (!TableExists(connection, "worldinfo"))
+                throw new WorldSaveException("Invalid Corneroids world: missing 'worldinfo' table.");
+            if (!TableExists(connection, "players"))
+                throw new WorldSaveException("Invalid Corneroids world: missing 'players' table.");
+            if (!TableExists(connection, "entities"))
+                throw new WorldSaveException("Invalid Corneroids world: missing 'entities' table.");
+            if (!TableExists(connection, "blocksectors"))
+                throw new WorldSaveException("Invalid Corneroids world: missing 'blocksectors' table.");
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "PRAGMA quick_check(1);";
+            var result = cmd.ExecuteScalar()?.ToString();
+            if (result != "ok")
+                throw new WorldSaveException($"Corneroids database integrity check failed: {result}");
+        }
+        catch (SqliteException ex)
+        {
+            SqliteConnection.ClearAllPools();
+            throw new WorldSaveException($"Failed to verify Corneroids database '{sqliteFilePath}': {ex.Message}", ex);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+        }
+    }
+
+    /// <summary>
     /// Reads a Corneroids 2012 .wrl SQLite world file from disk into a <see cref="WorldSnapshot"/>.
     /// </summary>
     public static WorldSnapshot Read(string sqliteFilePath, string? defaultItemsetKey = null)

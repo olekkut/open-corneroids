@@ -587,4 +587,57 @@ public class CorneroidsWrlReaderTests
         Assert.Equal("LeftControl", CorneroidsWrlReader.ResolveXnaKey(162));
         Assert.Equal("None", CorneroidsWrlReader.ResolveXnaKey(99999));
     }
+
+    [Fact]
+    public void ReadSummary_returns_summary_correctly()
+    {
+        using var fixture = new CorneroidsWrlFixtureBuilder();
+        fixture.WithWorldInfo("Test World", 1.2f, 1337, "CustomSet", 1600000000000L);
+        var summary = CorneroidsWrlReader.ReadSummaryFromConnection(fixture.Connection, "test.wrl");
+        Assert.Equal("Test World", summary.Name);
+        Assert.Equal("CustomSet", summary.Itemset.Key);
+        Assert.Equal(DateTimeOffset.FromUnixTimeMilliseconds(1600000000000L), summary.SavedAt);
+    }
+
+    [Fact]
+    public void Verify_accepts_valid_database_and_throws_for_missing_tables()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid():N}.wrl");
+        try
+        {
+            using (var conn = new SqliteConnection($"Data Source={tempFile};Pooling=false"))
+            {
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "CREATE TABLE worldinfo (name VARCHAR(50));";
+                cmd.ExecuteNonQuery();
+            }
+            SqliteConnection.ClearAllPools();
+
+            // Missing players, entities, blocksectors
+            Assert.Throws<WorldSaveException>(() => CorneroidsWrlReader.Verify(tempFile));
+
+            // Complete schema
+            using (var conn = new SqliteConnection($"Data Source={tempFile};Pooling=false"))
+            {
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = @"
+                    CREATE TABLE players (id INT PRIMARY KEY);
+                    CREATE TABLE entities (id INT PRIMARY KEY);
+                    CREATE TABLE blocksectors (id INT PRIMARY KEY);
+                ";
+                cmd.ExecuteNonQuery();
+            }
+            SqliteConnection.ClearAllPools();
+
+            // Now valid
+            CorneroidsWrlReader.Verify(tempFile);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
 }

@@ -1,4 +1,4 @@
-﻿// Lists every pack and itemset in one or more BYOA roots, loads each itemset through its view, and prints what
+// Lists every pack and itemset in one or more BYOA roots, loads each itemset through its view, and prints what
 // resolved and what went wrong. Exit code 1 if anything failed with an error.
 //
 //   dotnet run --project tools/OpenCorneroids.ContentDump -- [--verbose] [--textures <packId>...] [root...]
@@ -25,7 +25,13 @@ Console.WriteLine("Packs:");
 foreach (var pack in library.Packs)
 {
     var vanilla = pack.VanillaVersion is { } v ? $"  vanilla {v}" : "";
-    Console.WriteLine($"  {pack.Kind,-12} {pack.Id}{vanilla}  ({pack.Source.Paths.Count} files)");
+    var count = pack.Source switch
+    {
+        OpenCorneroids.Content.Vfs.IndexedSource idx => $"  ({idx.Paths.Count} files)",
+        OpenCorneroids.Content.Vfs.ZipSource zip => $"  ({zip.Paths.Count} files)",
+        _ => ""
+    };
+    Console.WriteLine($"  {pack.Kind,-12} {pack.Id}{vanilla}{count}");
 }
 
 var failed = library.Diagnostics.HasErrors;

@@ -70,10 +70,17 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     /// <summary>In-game drop-down developer/debug console (<c>`</c>).</summary>
     public DebugConsoleOverlay DebugConsole { get; private set; } = null!;
 
+    public delegate Task ProgressReporter(string step, double fraction, string? detail = null, string? completed = null);
+
     /// <summary>Builds the world from a loaded itemset. Must be called once the view is in the scene tree.</summary>
     /// <param name="saved">The save to restore, or null to generate asteroids from <see cref="WorldInfo.Seed"/>.</param>
-    public bool Setup(LoadedItemset loaded, WorldInfo info, WorldSnapshot? saved = null)
+    public bool Setup(LoadedItemset loaded, WorldInfo info, WorldSnapshot? saved = null) =>
+        SetupAsync(loaded, info, saved, null).GetAwaiter().GetResult();
+
+    /// <summary>Builds the world asynchronously, optionally reporting step-by-step progress.</summary>
+    public async Task<bool> SetupAsync(LoadedItemset loaded, WorldInfo info, WorldSnapshot? saved = null, ProgressReporter? onProgress = null)
     {
+        if (onProgress != null) await onProgress("Compiling block textures & materials...", 0.40);
         var itemset = loaded.Itemset!;
         var textures = BlockTextures.Create(loaded);
         var palette = BlockPalette.Build(itemset, textures);
@@ -88,6 +95,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         Binding = new ItemsetBinding(header.Key, header.Name, loaded.Entry.Pack.Id, itemset.Fingerprint);
         bool creative = info.Creative;
 
+        if (onProgress != null) await onProgress("Initializing voxel environment...", 0.48, completed: "Textures & materials compiled");
+
         AddEnvironment();
 
         var world = new VoxelWorld { Name = "VoxelWorld" };
@@ -98,18 +107,31 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         Vector3 eye, target = default;
         if (saved is null)
         {
+            if (onProgress != null) await onProgress("Generating asteroid field...", 0.55);
             (eye, target) = AsteroidGenerator.Generate(world, info.Seed);
+            if (onProgress != null) await onProgress("Building asteroid meshes...", 0.70, completed: "Asteroids generated");
             world.RebuildAll();
         }
         else
         {
+            if (onProgress != null) await onProgress("Importing voxel world...", 0.50);
             // Objects whose block is gone, or that no longer fit this world, are dropped and counted like lost cells.
             LostCells = world.Import(saved.Palette, saved.Cells, saved.Size) + world.ImportObjects(saved.Objects);
             if (world.ImportTurned(saved.Turned) is > 0 and var unturned)
                 GD.PushWarning($"{unturned} turned blocks of the world could not be turned again and face the default way");
             world.ImportConsoles(saved.Consoles);
-            foreach (var savedShip in saved.Ships)
+
+            if (onProgress != null) await onProgress("Importing ships...", 0.60, completed: "World voxels rebuilt");
+
+            int shipCount = saved.Ships.Count;
+            for (int i = 0; i < shipCount; i++)
             {
+                var savedShip = saved.Ships[i];
+                if (onProgress != null && (shipCount <= 10 || (i + 1) % 5 == 0 || i == shipCount - 1))
+                {
+                    double frac = 0.60 + 0.25 * ((double)(i + 1) / shipCount);
+                    await onProgress($"Loading ships ({i + 1} of {shipCount})...", frac, detail: $"Size {savedShip.Size}³ ship");
+                }
                 var ship = Grids.AddShip(ShipGrid.SizeFor(savedShip.Size));
                 ship.RestoreMotion(savedShip);
                 LostCells += ship.Import(savedShip.Palette, savedShip.Cells, savedShip.Size) + ship.ImportObjects(savedShip.Objects);
@@ -123,6 +145,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             }
             eye = ToGodot(saved.Player.Position);
         }
+
+        if (onProgress != null) await onProgress("Configuring HUD & player systems...", 0.88, completed: saved != null ? $"{saved.Ships.Count} ships imported" : "Asteroid meshes built");
 
         var hud = new Hud { Name = "Hud" };
         AddChild(hud);
@@ -213,6 +237,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         _held = held;
         Player = camera;
         _eye = eye;
+
+        if (onProgress != null) await onProgress("Ready to launch!", 1.0, completed: "Player & HUD ready");
         return true;
     }
 
