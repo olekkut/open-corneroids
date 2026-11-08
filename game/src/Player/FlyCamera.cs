@@ -1364,7 +1364,11 @@ public partial class FlyCamera : Camera3D
     }
 
     static string ShipNote(BlockGrid grid) =>
-        grid is ShipGrid ship ? FormattableString.Invariant($" ({ship.Name}, {ship.BlockCount} blocks, mass {ship.Mass.Mass:0.#})") : "";
+        grid is ShipGrid ship
+            ? (ship.IsAsteroid
+                ? FormattableString.Invariant($" (Asteroid, {ship.BlockCount} blocks, mass {ship.Mass.Mass:0.#})")
+                : FormattableString.Invariant($" ({ship.Name}, {ship.BlockCount} blocks, mass {ship.Mass.Mass:0.#})"))
+            : "";
 
     void ShowHighlight()
     {

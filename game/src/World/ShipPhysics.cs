@@ -56,6 +56,12 @@ public sealed class ShipPhysics
             var ship = ships[i];
             _previous.Add(ship.Transform);
             _moved.Add(false);
+            if (ship.IsAsteroid)
+            {
+                ship.LinearVelocity = Vector3.Zero;
+                ship.AngularVelocity = Vector3.Zero;
+                continue;
+            }
             var mass = ship.Mass;
             bool controlled = ship == piloted;
             if (mass.IsMassless || (!controlled && Asleep(ship)))
@@ -157,6 +163,7 @@ public sealed class ShipPhysics
     /// </summary>
     void AgainstShip(ShipGrid a, Transform3D previousA, ShipGrid b, Transform3D previousB)
     {
+        if (a.IsAsteroid && b.IsAsteroid) return;
         var (centerA, radiusA) = a.WorldExtent;
         var (centerB, radiusB) = b.WorldExtent;
         if (centerA.DistanceTo(centerB) > radiusA + radiusB + 1) return;
@@ -182,22 +189,44 @@ public sealed class ShipPhysics
         bool stuck = Meet(previousA, previousB);
         if (stuck)
         {
-            a.Transform = currentA with { Origin = currentA.Origin + normal * (ShipContact.PushOutPerStep * 0.5f) };
-            b.Transform = currentB with { Origin = currentB.Origin - normal * (ShipContact.PushOutPerStep * 0.5f) };
+            if (a.IsAsteroid)
+            {
+                b.Transform = currentB with { Origin = currentB.Origin - normal * ShipContact.PushOutPerStep };
+            }
+            else if (b.IsAsteroid)
+            {
+                a.Transform = currentA with { Origin = currentA.Origin + normal * ShipContact.PushOutPerStep };
+            }
+            else
+            {
+                a.Transform = currentA with { Origin = currentA.Origin + normal * (ShipContact.PushOutPerStep * 0.5f) };
+                b.Transform = currentB with { Origin = currentB.Origin - normal * (ShipContact.PushOutPerStep * 0.5f) };
+            }
         }
         else
         {
-            float t = ShipContact.LastFree(f => Meet(a.Interpolate(previousA, currentA, f), b.Interpolate(previousB, currentB, f)));
-            a.Transform = a.Interpolate(previousA, currentA, t);
-            b.Transform = b.Interpolate(previousB, currentB, t);
-            a.AngularVelocity *= ShipContact.ContactSpinDamping;
-            b.AngularVelocity *= ShipContact.ContactSpinDamping;
+            float t = ShipContact.LastFree(f => Meet(
+                a.IsAsteroid ? currentA : a.Interpolate(previousA, currentA, f),
+                b.IsAsteroid ? currentB : b.Interpolate(previousB, currentB, f)));
+            if (!a.IsAsteroid)
+            {
+                a.Transform = a.Interpolate(previousA, currentA, t);
+                a.AngularVelocity *= ShipContact.ContactSpinDamping;
+            }
+            if (!b.IsAsteroid)
+            {
+                b.Transform = b.Interpolate(previousB, currentB, t);
+                b.AngularVelocity *= ShipContact.ContactSpinDamping;
+            }
         }
-        LogHit(a, b.Name, -(a.LinearVelocity - b.LinearVelocity).Dot(normal), normal);
-        var (va, vb) = ShipContact.Bounce(a.LinearVelocity.ToNumerics(), a.Mass.InverseMass, b.LinearVelocity.ToNumerics(), b.Mass.InverseMass,
+        string targetName = a.IsAsteroid ? "the asteroids" : (b.IsAsteroid ? "the asteroids" : b.Name);
+        LogHit(a.IsAsteroid ? b : a, targetName, -(a.LinearVelocity - b.LinearVelocity).Dot(normal), normal);
+        float invMassA = a.IsAsteroid ? 0f : a.Mass.InverseMass;
+        float invMassB = b.IsAsteroid ? 0f : b.Mass.InverseMass;
+        var (va, vb) = ShipContact.Bounce(a.LinearVelocity.ToNumerics(), invMassA, b.LinearVelocity.ToNumerics(), invMassB,
             normal.ToNumerics(), stuck ? 0 : ShipContact.Restitution);
-        a.LinearVelocity = va.ToGodot();
-        b.LinearVelocity = vb.ToGodot();
+        if (!a.IsAsteroid) a.LinearVelocity = va.ToGodot();
+        if (!b.IsAsteroid) b.LinearVelocity = vb.ToGodot();
     }
 
     /// <summary>A hit worth noting in the log: closing faster than <see cref="LoggedSpeed"/>, so a ship resting against

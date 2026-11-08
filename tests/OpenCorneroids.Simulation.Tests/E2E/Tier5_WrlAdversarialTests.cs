@@ -250,7 +250,7 @@ public sealed class Tier5_WrlAdversarialTests
     }
 
     [Fact]
-    public void Entities_SectorsBeyond1024Limit_CapsAt1024WithoutIndexOutOfRange()
+    public void Entities_SectorsBeyond512Limit_CapsAt512WithoutIndexOutOfRange()
     {
         using var conn = WrlFixtures.CreateMemoryDatabase();
         WrlFixtures.InsertWorldInfo(conn, "HugeSpanWorld", 1.2f, 1, "default", 1000L);
@@ -263,17 +263,17 @@ public sealed class Tier5_WrlAdversarialTests
             WrlFixtures.CompressGzip([1]),
             WrlFixtures.CompressGzip([0]));
 
-        // Sector (100, 0, 0) -> global X = 1600. Span = 1601 > 1024
+        // Sector (100, 0, 0) -> global X = 1600. Span = 1601 > 512
         var mask100 = WrlFixtures.BuildFormationMask([(0, 0, 0)]);
         WrlFixtures.InsertBlockSector(conn, 1, 100, 0, 0,
             WrlFixtures.CompressGzip(mask100),
             WrlFixtures.CompressGzip([2]),
             WrlFixtures.CompressGzip([0]));
 
-        // Reader caps size at 1024; voxels outside grid boundary are safely skipped
+        // Reader caps size at 512; voxels outside grid boundary are safely skipped
         var snapshot = CorneroidsWrlReader.ReadFromConnection(conn);
         var ship = Assert.Single(snapshot.Ships);
-        Assert.Equal(1024, ship.Size);
+        Assert.Equal(512, ship.Size);
         // The block at (0, 0, 0) is preserved
         Assert.Contains(1, ship.Palette);
     }

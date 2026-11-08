@@ -76,7 +76,10 @@ public partial class SpaceMarkers : Control
             var mass = ship.Mass;
             if (mass.IsMassless) continue;
             var center = ship.ToGlobal(mass.CenterOfMass.ToGodot());
-            Mark(camera, eye, center, ship.GridSize * 0.5f, $"{ship.Name}  {mass.Mass:0} tn", ShipColor);
+            if (ship.IsAsteroid)
+                Mark(camera, eye, center, ship.GridSize * 0.5f, $"{mass.Mass:0} tn", AsteroidColor);
+            else
+                Mark(camera, eye, center, ship.GridSize * 0.5f, $"{ship.Name}  {mass.Mass:0} tn", ShipColor);
         }
     }
 

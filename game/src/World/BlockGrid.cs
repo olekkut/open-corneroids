@@ -184,6 +184,65 @@ public abstract partial class BlockGrid : Node3D
         return bestCell is { } found ? (found, MathF.Sqrt(bestDistSq)) : null;
     }
 
+    protected static readonly Vector3I[] Steps = [Vector3I.Right, Vector3I.Left, Vector3I.Up, Vector3I.Down, Vector3I.Back, Vector3I.Forward];
+
+    int _clusterRevision = -1;
+    readonly Dictionary<Vector3I, Vector3> _clusterCenterCache = new();
+
+    /// <summary>
+    /// Returns the world-space centre of mass of the connected solid cluster containing <paramref name="cell"/>.
+    /// Cached and invalidated when the grid revision changes.
+    /// </summary>
+    public Vector3 ClusterCenterOfMass(Vector3I cell)
+    {
+        if (Revision != _clusterRevision)
+        {
+            _clusterCenterCache.Clear();
+            _clusterRevision = Revision;
+        }
+
+        if (_clusterCenterCache.TryGetValue(cell, out var cached))
+            return cached;
+
+        if (!InGrid(cell) || !IsSolid(cell))
+            return ToGlobal((Vector3)cell + new Vector3(0.5f, 0.5f, 0.5f));
+
+        var visited = new List<Vector3I>();
+        var queue = new Queue<Vector3I>();
+        var seen = new HashSet<Vector3I>();
+
+        queue.Enqueue(cell);
+        seen.Add(cell);
+
+        var sum = Vector3.Zero;
+        double totalMass = 0;
+
+        while (queue.TryDequeue(out var current))
+        {
+            visited.Add(current);
+            ushort block = Get(current);
+            float mass = Palette.Item(block).Block?.Mass ?? 1f;
+            if (mass <= 0f) mass = 1f;
+            sum += ((Vector3)current + new Vector3(0.5f, 0.5f, 0.5f)) * mass;
+            totalMass += mass;
+
+            foreach (var step in Steps)
+            {
+                var next = current + step;
+                if (InGrid(next) && IsSolid(next) && seen.Add(next))
+                    queue.Enqueue(next);
+            }
+        }
+
+        var center = totalMass > 0 ? (sum / (float)totalMass) : ((Vector3)cell + new Vector3(0.5f, 0.5f, 0.5f));
+        var worldCenter = ToGlobal(center);
+
+        foreach (var v in visited)
+            _clusterCenterCache[v] = worldCenter;
+
+        return worldCenter;
+    }
+
     // ---- cells ----
 
     public bool InGrid(Vector3I p) =>

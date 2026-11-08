@@ -34,6 +34,9 @@ public partial class ShipGrid : BlockGrid
     bool _posesValid;
     Vector3 _massCenter;
 
+    /// <summary>Whether this floating grid is a static natural asteroid rather than a ship.</summary>
+    public bool IsAsteroid { get; set; }
+
     /// <summary>Velocity of the centre of mass, world space, units per second. Saved.</summary>
     public Vector3 LinearVelocity { get; set; }
 
@@ -180,8 +183,6 @@ public partial class ShipGrid : BlockGrid
         }
     }
 
-    static readonly Vector3I[] Steps = [Vector3I.Right, Vector3I.Left, Vector3I.Up, Vector3I.Down, Vector3I.Back, Vector3I.Forward];
-
     /// <summary>
     /// Mass, centre of mass and inertia in local coordinates, from each block's <c>BlockDef.Mass</c>: a grid block is a
     /// solid unit cube, a multi-block a solid box of its model with the block's whole mass (an itemset gives one mass
@@ -245,6 +246,8 @@ public partial class ShipGrid : BlockGrid
             Objects = ExportObjects(),
             Turned = ExportTurned(),
             Consoles = ExportConsoles(),
+            IsAsteroid = IsAsteroid,
+            Name = IsAsteroid ? "Asteroid" : Name,
         };
     }
 
@@ -254,8 +257,17 @@ public partial class ShipGrid : BlockGrid
     {
         var q = new Quaternion(saved.Rotation.X, saved.Rotation.Y, saved.Rotation.Z, saved.Rotation.W).Normalized();
         Transform = new Transform3D(new Basis(q), saved.Position.ToGodot());
-        LinearVelocity = saved.LinearVelocity.ToGodot();
-        AngularVelocity = saved.AngularVelocity.ToGodot();
+        IsAsteroid = saved.IsAsteroid;
+        if (saved.IsAsteroid)
+        {
+            LinearVelocity = Vector3.Zero;
+            AngularVelocity = Vector3.Zero;
+        }
+        else
+        {
+            LinearVelocity = saved.LinearVelocity.ToGodot();
+            AngularVelocity = saved.AngularVelocity.ToGodot();
+        }
     }
 
     /// <summary>The smallest ship grid edge (a multiple of <see cref="BlockGrid.ChunkSize"/>) that holds a saved

@@ -792,6 +792,10 @@ public static class WorldSaveFormat
         public int[]?[]? Turned { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ConsoleDto?[]? Consoles { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool IsAsteroid { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Name { get; set; }
 
         public static ShipDto From(ShipSnapshot ship)
         {
@@ -808,6 +812,8 @@ public static class WorldSaveFormat
                 Objects = [.. ship.Objects.Select(ObjectDto.From)],
                 Turned = MetadataDto.TurnedDto(ship.Turned),
                 Consoles = MetadataDto.ConsolesDto(ship.Consoles),
+                IsAsteroid = ship.IsAsteroid,
+                Name = ship.Name,
             };
         }
 
@@ -827,6 +833,8 @@ public static class WorldSaveFormat
                 Objects = MetadataDto.PlacedObjects(Objects, $"{field}.objects"),
                 Turned = MetadataDto.TurnedCells(Turned, $"{field}.turned"),
                 Consoles = MetadataDto.SavedConsoles(Consoles, $"{field}.consoles"),
+                IsAsteroid = IsAsteroid,
+                Name = Name,
             };
         }
     }

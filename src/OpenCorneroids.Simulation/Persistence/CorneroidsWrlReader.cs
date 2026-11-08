@@ -375,6 +375,42 @@ public static class CorneroidsWrlReader
         var ships = new List<ShipSnapshot>();
         if (TableExists(connection, "entities"))
         {
+            var entitiesWithControls = new HashSet<int>();
+            if (TableExists(connection, "controlblocks"))
+            {
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT DISTINCT ownerEntityId FROM controlblocks;";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read()) entitiesWithControls.Add(reader.GetInt32(0));
+            }
+
+            var entitiesWithControlled = new HashSet<int>();
+            if (TableExists(connection, "controlledblocks"))
+            {
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT DISTINCT ownerEntityId FROM controlledblocks;";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read()) entitiesWithControlled.Add(reader.GetInt32(0));
+            }
+
+            var entitiesWithKeyMappings = new HashSet<int>();
+            if (TableExists(connection, "keyColorMappings"))
+            {
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT DISTINCT ownerEntityId FROM keyColorMappings;";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read()) entitiesWithKeyMappings.Add(reader.GetInt32(0));
+            }
+
+            var boardedEntities = new HashSet<int>();
+            if (TableExists(connection, "players"))
+            {
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT DISTINCT boardedEntity FROM players WHERE boardedEntity IS NOT NULL AND boardedEntity >= 0;";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read()) boardedEntities.Add(reader.GetInt32(0));
+            }
+
             var entityRecords = new List<(int Id, bool Loaded, Vector3 Pos, Quaternion Rot)>();
             using (var cmd = connection.CreateCommand())
             {
@@ -499,7 +535,7 @@ public static class CorneroidsWrlReader
                 int maxDim = Math.Max(dimX, Math.Max(dimY, dimZ));
 
                 int size = 16;
-                while (size < maxDim && size < 1024)
+                while (size < maxDim && size < 512)
                     size *= 2;
 
                 var shift = new Int3(minX, minY, minZ);
@@ -531,11 +567,14 @@ public static class CorneroidsWrlReader
                 }
 
                 var consoles = ReadConsolesForEntity(connection, entityId, shift, size);
+                bool isShip = IsShipEntity(entityId, entitiesWithControls, entitiesWithControlled, entitiesWithKeyMappings, boardedEntities, palette);
 
                 ships.Add(new ShipSnapshot(adjustedPos, erot, Vector3.Zero, Vector3.Zero, size, palette, cells)
                 {
                     Turned = turned,
                     Consoles = consoles,
+                    IsAsteroid = !isShip,
+                    Name = !isShip ? "Asteroid" : null,
                 });
             }
         }
@@ -756,6 +795,43 @@ public static class CorneroidsWrlReader
         if (lenSq < 1e-6f || !float.IsFinite(lenSq))
             return Quaternion.Identity;
         return Quaternion.Normalize(q);
+    }
+
+    private static readonly HashSet<int> NaturalAsteroidBlockIds =
+    [
+        0, 1, 2,       // Vanilla rocks (light, medium/granite, heavy/core stone)
+        3, 4, 5,       // Vanilla minerals (coal, iron ore, gold ore)
+        16, 17, 18,    // Vanilla minerals (platinum ore, silver ore, uranium ore)
+        32, 33,        // Vanilla minerals (titanium ore, cobalt ore)
+        48, 49,        // Vanilla minerals (ice / icy rock, cobaltite rock)
+        65, 131, 154, 186 // Modded minerals in PasterLak (Zilium ore, Nitridium ore, etc.)
+    ];
+
+    private static bool IsShipEntity(
+        int entityId,
+        HashSet<int> withControls,
+        HashSet<int> withControlled,
+        HashSet<int> withKeys,
+        HashSet<int> boarded,
+        IReadOnlyList<int> palette)
+    {
+        if (withControls.Contains(entityId) ||
+            withControlled.Contains(entityId) ||
+            withKeys.Contains(entityId) ||
+            boarded.Contains(entityId))
+        {
+            return true;
+        }
+
+        // Palette index 0 is air sentinel (-1). If any actual block is not natural celestial rock or ore, it's a ship.
+        for (int i = 1; i < palette.Count; i++)
+        {
+            int blockId = palette[i];
+            if (!NaturalAsteroidBlockIds.Contains(blockId))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool InGrid(Int3 p, int size) =>

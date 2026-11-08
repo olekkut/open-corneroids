@@ -91,6 +91,12 @@ public sealed record ShipSnapshot(
 
     /// <summary>Console colour-group and camera bindings on this ship, in ship-local cells. Optional in the file.</summary>
     public IReadOnlyList<SavedConsole> Consoles { get; init; } = [];
+
+    /// <summary>Whether this floating body is a static natural asteroid rather than a ship.</summary>
+    public bool IsAsteroid { get; init; } = false;
+
+    /// <summary>Custom or imported name of this vessel or celestial body.</summary>
+    public string? Name { get; init; }
 }
 
 /// <summary>Everything a save file holds, as plain data so the simulation can be rebuilt without Godot.</summary>

@@ -58,6 +58,16 @@ public sealed class GridSet
         return ship;
     }
 
+    /// <summary>An empty static asteroid grid at the world origin, unturned.</summary>
+    public ShipGrid AddAsteroid(int size = ShipLaunch.ShipGridSize)
+    {
+        var ship = new ShipGrid(size) { Name = "Asteroid", IsAsteroid = true, AutoCloseDoors = false };
+        ship.Initialize(World.Palette, World.Textures, World.Mapping);
+        _shipParent.AddChild(ship);
+        _ships.Add(ship);
+        return ship;
+    }
+
     public void RemoveShip(ShipGrid ship)
     {
         if (!_ships.Remove(ship)) return;
@@ -241,8 +251,7 @@ public sealed class GridSet
     /// <summary>
     /// Finds the grid whose closest solid block is nearest to <paramref name="worldPos"/> within
     /// <paramref name="maxDistance"/> (16 units in the original). Returns the grid, the local cell of that nearest
-    /// block, and the world-space point the red attachment line connects to (the ship's centre of mass for a ship, or
-    /// the nearest block's centre for the static world).
+    /// block, and the world-space point the red attachment line connects to (the ship's or asteroid's centre of mass).
     /// </summary>
     public (BlockGrid Grid, Vector3I NearestCell, Vector3 LineTargetWorld)? NearestAttachment(
         Vector3 worldPos, float maxDistance = ConsoleBinding.MaxAttachmentDistance)
@@ -268,7 +277,7 @@ public sealed class GridSet
         if (bestGrid is null) return null;
         var targetWorld = bestGrid is ShipGrid ship
             ? ship.GlobalTransform * ship.Mass.CenterOfMass.ToGodot()
-            : bestGrid.ToGlobal((Vector3)bestCell + new Vector3(0.5f, 0.5f, 0.5f));
+            : bestGrid.ClusterCenterOfMass(bestCell);
         return (bestGrid, bestCell, targetWorld);
     }
 

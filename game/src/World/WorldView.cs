@@ -130,10 +130,16 @@ public partial class WorldView : Node3D, IDebugConsoleHost
                 if (onProgress != null && (shipCount <= 10 || (i + 1) % 5 == 0 || i == shipCount - 1))
                 {
                     double frac = 0.60 + 0.25 * ((double)(i + 1) / shipCount);
-                    await onProgress($"Loading ships ({i + 1} of {shipCount})...", frac, detail: $"Size {savedShip.Size}³ ship");
+                    string kind = savedShip.IsAsteroid ? "asteroid" : "ship";
+                    await onProgress($"Loading {kind}s ({i + 1} of {shipCount})...", frac, detail: $"Size {savedShip.Size}³ {kind}");
                 }
-                var ship = Grids.AddShip(ShipGrid.SizeFor(savedShip.Size));
+                var ship = savedShip.IsAsteroid
+                    ? Grids.AddAsteroid(ShipGrid.SizeFor(savedShip.Size))
+                    : Grids.AddShip(ShipGrid.SizeFor(savedShip.Size));
                 ship.RestoreMotion(savedShip);
+                if (!savedShip.IsAsteroid && !string.IsNullOrEmpty(savedShip.Name))
+                    ship.Name = savedShip.Name;
+
                 LostCells += ship.Import(savedShip.Palette, savedShip.Cells, savedShip.Size) + ship.ImportObjects(savedShip.Objects);
                 if (ship.ImportTurned(savedShip.Turned) is > 0 and var shipUnturned)
                     GD.PushWarning($"{shipUnturned} turned blocks of a ship could not be turned again and face the default way");

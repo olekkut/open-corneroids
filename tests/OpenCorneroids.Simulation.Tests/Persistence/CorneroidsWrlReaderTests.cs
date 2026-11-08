@@ -640,4 +640,65 @@ public class CorneroidsWrlReaderTests
             if (File.Exists(tempFile)) File.Delete(tempFile);
         }
     }
+
+    [Fact]
+    public void Entity_WithOnlyNaturalRockAndOres_IsClassifiedAsAsteroid()
+    {
+        using var fixture = new CorneroidsWrlFixtureBuilder()
+            .WithWorldInfo("AsteroidField")
+            .WithPlayer(boardedEntity: -1)
+            .WithEntity(id: 1)
+            .WithSingleBlockSector(ownerId: 1, 0, 0, 0, 0, 0, 0, blockId: 0, orientationByte: 0); // 0 = Light rock
+
+        var snapshot = CorneroidsWrlReader.ReadFromConnection(fixture.Connection);
+        var entity = Assert.Single(snapshot.Ships);
+        Assert.True(entity.IsAsteroid);
+        Assert.Equal("Asteroid", entity.Name);
+    }
+
+    [Fact]
+    public void Entity_WithControlBlocks_IsClassifiedAsShip()
+    {
+        using var fixture = new CorneroidsWrlFixtureBuilder()
+            .WithWorldInfo("ShipWorld")
+            .WithPlayer(boardedEntity: 2)
+            .WithEntity(id: 2)
+            .WithSingleBlockSector(ownerId: 2, 0, 0, 0, 0, 0, 0, blockId: 7, orientationByte: 0) // 7 = Console
+            .WithConsole(id: 1, ownerEntityId: 2, 0, 0, 0);
+
+        var snapshot = CorneroidsWrlReader.ReadFromConnection(fixture.Connection);
+        var entity = Assert.Single(snapshot.Ships);
+        Assert.False(entity.IsAsteroid);
+        Assert.Null(entity.Name);
+    }
+
+    [Fact]
+    public void Entity_WithShipBlocksEvenWithoutControlBlocks_IsClassifiedAsShip()
+    {
+        using var fixture = new CorneroidsWrlFixtureBuilder()
+            .WithWorldInfo("DroneWorld")
+            .WithPlayer(boardedEntity: -1)
+            .WithEntity(id: 3)
+            .WithSingleBlockSector(ownerId: 3, 0, 0, 0, 0, 0, 0, blockId: 19, orientationByte: 0); // 19 = Light aluminium hull
+
+        var snapshot = CorneroidsWrlReader.ReadFromConnection(fixture.Connection);
+        var entity = Assert.Single(snapshot.Ships);
+        Assert.False(entity.IsAsteroid);
+    }
+
+    [Fact]
+    public void Read_RealWorldDatabases_CorrectlySeparatesShipsAndAsteroids()
+    {
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var adjusterPath = Path.Combine(appData, "OpenCorneroids", "worlds", "Adjuster.wrl");
+        if (!File.Exists(adjusterPath)) return;
+
+        var snapshot = CorneroidsWrlReader.Read(adjusterPath);
+        var realShips = snapshot.Ships.Where(s => !s.IsAsteroid).ToList();
+        var asteroids = snapshot.Ships.Where(s => s.IsAsteroid).ToList();
+
+        Assert.Single(realShips);
+        Assert.Equal(19, asteroids.Count);
+        Assert.All(asteroids, a => Assert.Equal("Asteroid", a.Name));
+    }
 }
