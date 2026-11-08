@@ -1,0 +1,5652 @@
+[
+  {
+    "sbid": "basic_aluminium_crate",
+    "sbname": "Basic Aluminium Crate",
+    "category": "Crates",
+    "best_bid": 8,
+    "corneroids_name": "Light aluminium block",
+    "confidence": 35.16155790441176,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "aluChestSide",
+        "file": "aluChestSide.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9848747702205882,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "aluChestFront",
+        "file": "aluChestFront.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9635110294117647,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "aluChestTop",
+        "file": "aluChestTop.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9817440257352941,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "basic_iron_crate",
+    "sbname": "Basic Iron Crate",
+    "category": "Crates",
+    "best_bid": 46,
+    "corneroids_name": "Container block",
+    "confidence": 13.260834099264706,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "ironChestSide",
+        "file": "ironChestSide.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9881548713235294,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "ironChestFront",
+        "file": "ironChestFront.png",
+        "cell": [
+          12,
+          4
+        ],
+        "score": 0.9822840073529412,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "ironChestTop",
+        "file": "ironChestTop.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9668351715686274,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "basic_titanium_crate",
+    "sbname": "Basic Titanium Crate",
+    "category": "Crates",
+    "best_bid": 8,
+    "corneroids_name": "Light aluminium block",
+    "confidence": 29.48988970588235,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "aluChestSide",
+        "file": "aluChestSide.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9848747702205882,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "aluChestTop",
+        "file": "aluChestTop.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9817440257352941,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "aluChestTop",
+        "file": "aluChestTop.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9817440257352941,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "safe",
+    "sbname": "Armored Safe",
+    "category": "Crates",
+    "best_bid": 13,
+    "corneroids_name": "Light titanium block",
+    "confidence": 40.25380284926471,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "safe_side",
+        "file": "safe_side.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9571155024509804,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "safe_top",
+        "file": "safe_top.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9602653952205882,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "safe_top",
+        "file": "safe_top.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9602653952205882,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "safe_face",
+        "file": "safe_face.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9569699754901961,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "claim_beacon",
+    "sbname": "Claim Beacon",
+    "category": "Devices",
+    "best_bid": 28,
+    "corneroids_name": "Iron blast door",
+    "confidence": 4.171353687959559,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "claimBeaconSide",
+        "file": "claimBeaconSide.png",
+        "cell": [
+          14,
+          0
+        ],
+        "score": 0.9269674862132353,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "claimBeaconTop",
+        "file": "claimBeaconTop.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 0.8997233072916666,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "claimBeaconTop",
+        "file": "claimBeaconTop.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 0.8997233072916666,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "dna_reconstructor",
+    "sbname": "DNA Reconstructor",
+    "category": "Devices",
+    "best_bid": 7,
+    "corneroids_name": "Light iron block",
+    "confidence": 11.217221871170342,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "spawnerSide",
+        "file": "spawnerSide.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9254222196691176,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "spawnerTop",
+        "file": "spawnerTop.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9272910922181372,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "spawnerSideOff",
+        "file": "spawnerSideOff.png",
+        "cell": [
+          11,
+          2
+        ],
+        "score": 0.9310814950980392,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "spawnerTopOff",
+        "file": "spawnerTopOff.png",
+        "cell": [
+          12,
+          1
+        ],
+        "score": 0.934307981004902,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "gravity_generator",
+    "sbname": "Gravity Generator",
+    "category": "Devices",
+    "best_bid": 7,
+    "corneroids_name": "Light iron block",
+    "confidence": 3.7887741268382347,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "gravitySide",
+        "file": "gravitySide.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 0.9200798483455882,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "gravityTop",
+        "file": "gravityTop.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9020890778186275,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "gravityBottom",
+        "file": "gravityBottom.png",
+        "cell": [
+          12,
+          1
+        ],
+        "score": 0.9092361749387254,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "gravitySideOff",
+        "file": "gravitySideOff.png",
+        "cell": [
+          11,
+          2
+        ],
+        "score": 0.9278119255514706,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "gravityTopOff",
+        "file": "gravityTopOff.png",
+        "cell": [
+          14,
+          0
+        ],
+        "score": 0.9317976409313725,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "gravityBottomOff",
+        "file": "gravityBottomOff.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.9312442555147059,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "oxygen_generator",
+    "sbname": "Oxygen Generator",
+    "category": "Devices",
+    "best_bid": 24,
+    "corneroids_name": "Anti-Personnel Cannon",
+    "confidence": 4.050525620404412,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "oxygenGeneratorSides",
+        "file": "oxygenGeneratorSides.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9120796951593138,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "oxygenGenerator",
+        "file": "oxygenGenerator.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 0.9001168045343138,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "generatorDown",
+        "file": "generatorDown.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "oxygenGeneratorSidesOff",
+        "file": "oxygenGeneratorSidesOff.png",
+        "cell": [
+          14,
+          0
+        ],
+        "score": 0.9311274509803922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "oxygenGeneratorOff",
+        "file": "oxygenGeneratorOff.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 0.9290422028186275,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "generatorDownOff",
+        "file": "generatorDownOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "radar",
+    "sbname": "Radar",
+    "category": "Devices",
+    "best_bid": 27,
+    "corneroids_name": "Cannon Console Block",
+    "confidence": 9.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "electricalSide",
+        "file": "electricalSide.png",
+        "cell": [
+          5,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "radar",
+        "file": "radar.png",
+        "cell": [
+          3,
+          6
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "generatorDown",
+        "file": "generatorDown.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "electricalSideOff",
+        "file": "electricalSideOff.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "radarOff",
+        "file": "radarOff.png",
+        "cell": [
+          2,
+          6
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "generatorDownOff",
+        "file": "generatorDownOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "aluminium_door",
+    "sbname": "Aluminium Door",
+    "category": "Doors",
+    "best_bid": 29,
+    "corneroids_name": "Aluminium blast door",
+    "confidence": 22.449850643382355,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "aluMedium",
+        "file": "aluMedium.png",
+        "cell": [
+          1,
+          1
+        ],
+        "score": 0.9977711397058824,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "doorAluminium",
+        "file": "doorAluminium.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9419912300857843,
+        "rot": 0,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Back",
+        "tex_name": "doorAluminium",
+        "file": "doorAluminium.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9419912300857843,
+        "rot": 0,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "iron_door",
+    "sbname": "Iron Door",
+    "category": "Doors",
+    "best_bid": 28,
+    "corneroids_name": "Iron blast door",
+    "confidence": 41.22953096277573,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "ironMedium",
+        "file": "ironMedium.png",
+        "cell": [
+          4,
+          1
+        ],
+        "score": 0.9787281709558824,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "doorIron",
+        "file": "doorIron.png",
+        "cell": [
+          14,
+          1
+        ],
+        "score": 0.9485504748774509,
+        "rot": 0,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Back",
+        "tex_name": "doorIron",
+        "file": "doorIron.png",
+        "cell": [
+          14,
+          1
+        ],
+        "score": 0.9485504748774509,
+        "rot": 0,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "titanium_door",
+    "sbname": "Titanium Door",
+    "category": "Doors",
+    "best_bid": 13,
+    "corneroids_name": "Light titanium block",
+    "confidence": 28.878670726102946,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "titMedium",
+        "file": "titMedium.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9591107536764706,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "doorTitanium",
+        "file": "doorTitanium.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9649634267769608,
+        "rot": 270,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Back",
+        "tex_name": "doorTitanium",
+        "file": "doorTitanium.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9649634267769608,
+        "rot": 270,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cobalt_bomb",
+    "sbname": "Cobalt Bomb",
+    "category": "Explosives",
+    "best_bid": 7,
+    "corneroids_name": "Light iron block",
+    "confidence": 6.184486730238971,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cobaltBombSide",
+        "file": "cobaltBombSide.png",
+        "cell": [
+          3,
+          6
+        ],
+        "score": 0.866436887254902,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "uranium_bomb",
+    "sbname": "Uranium Bomb",
+    "category": "Explosives",
+    "best_bid": 0,
+    "corneroids_name": "Light rock",
+    "confidence": 10.404296875,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "uraniumBombSide",
+        "file": "uraniumBombSide.png",
+        "cell": [
+          0,
+          0
+        ],
+        "score": 0.8670247395833334,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "picture_frame_iron_1x1",
+    "sbname": "Iron Picture Frame",
+    "category": "Frames",
+    "best_bid": 29,
+    "corneroids_name": "Aluminium blast door",
+    "confidence": 6.251492130055146,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "frameIronEdge",
+        "file": "frameIronEdge.png",
+        "cell": [
+          14,
+          2
+        ],
+        "score": 0.9261469822303922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "frameIron1x1",
+        "file": "frameIron1x1.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.9104434742647058,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "frameIronEdge",
+        "file": "frameIronEdge.png",
+        "cell": [
+          14,
+          2
+        ],
+        "score": 0.9261469822303922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "picture_frame_iron_2x1",
+    "sbname": "Wide Iron Picture Frame",
+    "category": "Frames",
+    "best_bid": 29,
+    "corneroids_name": "Aluminium blast door",
+    "confidence": 6.251492130055146,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "frameIronEdge",
+        "file": "frameIronEdge.png",
+        "cell": [
+          14,
+          2
+        ],
+        "score": 0.9261469822303922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "frameIron2x1",
+        "file": "frameIron2x1.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.9230631510416667,
+        "rot": 0,
+        "size": [
+          64,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "frameIronEdge",
+        "file": "frameIronEdge.png",
+        "cell": [
+          14,
+          2
+        ],
+        "score": 0.9261469822303922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "picture_frame_iron_2x2",
+    "sbname": "Large Iron Picture Frame",
+    "category": "Frames",
+    "best_bid": 29,
+    "corneroids_name": "Aluminium blast door",
+    "confidence": 6.251492130055146,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "frameIronEdge",
+        "file": "frameIronEdge.png",
+        "cell": [
+          14,
+          2
+        ],
+        "score": 0.9261469822303922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "frameIron2x2",
+        "file": "frameIron2x2.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.9301671645220588,
+        "rot": 270,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "frameIronEdge",
+        "file": "frameIronEdge.png",
+        "cell": [
+          14,
+          2
+        ],
+        "score": 0.9261469822303922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "picture_frame_plastic_1x1",
+    "sbname": "Plastic Picture Frame",
+    "category": "Frames",
+    "best_bid": 9,
+    "corneroids_name": "Medium aluminium block",
+    "confidence": 14.91791704963235,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "framePlasticEdge",
+        "file": "framePlasticEdge.png",
+        "cell": [
+          1,
+          1
+        ],
+        "score": 0.8287731694240196,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "framePlastic1x1",
+        "file": "framePlastic1x1.png",
+        "cell": [
+          14,
+          0
+        ],
+        "score": 0.8791781556372549,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "framePlasticEdge",
+        "file": "framePlasticEdge.png",
+        "cell": [
+          1,
+          1
+        ],
+        "score": 0.8287731694240196,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "picture_frame_plastic_2x1",
+    "sbname": "Wide Plastic Picture Frame",
+    "category": "Frames",
+    "best_bid": 9,
+    "corneroids_name": "Medium aluminium block",
+    "confidence": 14.91791704963235,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "framePlasticEdge",
+        "file": "framePlasticEdge.png",
+        "cell": [
+          1,
+          1
+        ],
+        "score": 0.8287731694240196,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "framePlastic2x1",
+        "file": "framePlastic2x1.png",
+        "cell": [
+          14,
+          0
+        ],
+        "score": 0.8982938878676471,
+        "rot": 180,
+        "size": [
+          64,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "framePlasticEdge",
+        "file": "framePlasticEdge.png",
+        "cell": [
+          1,
+          1
+        ],
+        "score": 0.8287731694240196,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "picture_frame_plastic_2x2",
+    "sbname": "Large Plastic Picture Frame",
+    "category": "Frames",
+    "best_bid": 9,
+    "corneroids_name": "Medium aluminium block",
+    "confidence": 14.91791704963235,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "framePlasticEdge",
+        "file": "framePlasticEdge.png",
+        "cell": [
+          1,
+          1
+        ],
+        "score": 0.8287731694240196,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "framePlastic2x2",
+        "file": "framePlastic2x2.png",
+        "cell": [
+          14,
+          0
+        ],
+        "score": 0.9172765395220588,
+        "rot": 270,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "framePlasticEdge",
+        "file": "framePlasticEdge.png",
+        "cell": [
+          1,
+          1
+        ],
+        "score": 0.8287731694240196,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_blue",
+    "sbname": "Sapphire Wall Torch",
+    "category": "Lights",
+    "best_bid": 25,
+    "corneroids_name": "Cobalt wall torch",
+    "confidence": 11.441425458122703,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "torchBlue",
+        "file": "torchBlue.png",
+        "cell": [
+          10,
+          1
+        ],
+        "score": 0.844109987745098,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_cyan",
+    "sbname": "Azure Wall Torch",
+    "category": "Lights",
+    "best_bid": 25,
+    "corneroids_name": "Cobalt wall torch",
+    "confidence": 22.519482960420497,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "torchCyan",
+        "file": "torchCyan.png",
+        "cell": [
+          0,
+          8
+        ],
+        "score": 0.8205968520220588,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_green",
+    "sbname": "Emerald Wall Torch",
+    "category": "Lights",
+    "best_bid": 25,
+    "corneroids_name": "Cobalt wall torch",
+    "confidence": 11.441425458122703,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "torchGreen",
+        "file": "torchGreen.png",
+        "cell": [
+          3,
+          6
+        ],
+        "score": 0.8444948682598039,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_orange",
+    "sbname": "Ember Wall Torch",
+    "category": "Lights",
+    "best_bid": 25,
+    "corneroids_name": "Cobalt wall torch",
+    "confidence": 11.441425458122703,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "torchOrange",
+        "file": "torchOrange.png",
+        "cell": [
+          7,
+          2
+        ],
+        "score": 0.8374502144607843,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_pink",
+    "sbname": "Violet Wall Torch",
+    "category": "Lights",
+    "best_bid": 25,
+    "corneroids_name": "Cobalt wall torch",
+    "confidence": 22.77459842457491,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "torchPink",
+        "file": "torchPink.png",
+        "cell": [
+          0,
+          8
+        ],
+        "score": 0.8394942938112745,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_red",
+    "sbname": "Crimson Wall Torch",
+    "category": "Lights",
+    "best_bid": 25,
+    "corneroids_name": "Cobalt wall torch",
+    "confidence": 11.441425458122703,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "torchRed",
+        "file": "torchRed.png",
+        "cell": [
+          2,
+          6
+        ],
+        "score": 0.846356081495098,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_white",
+    "sbname": "Ivory Wall Torch",
+    "category": "Lights",
+    "best_bid": 25,
+    "corneroids_name": "Cobalt wall torch",
+    "confidence": 22.249477790383732,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "torchWhite",
+        "file": "torchWhite.png",
+        "cell": [
+          0,
+          8
+        ],
+        "score": 0.8005964690563725,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_yellow",
+    "sbname": "Amber Wall Torch",
+    "category": "Lights",
+    "best_bid": 25,
+    "corneroids_name": "Cobalt wall torch",
+    "confidence": 11.441425458122703,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "torchYellow",
+        "file": "torchYellow.png",
+        "cell": [
+          7,
+          2
+        ],
+        "score": 0.8243690640318627,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "torchMetal",
+        "file": "torchMetal.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9685862821691177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "item_pipe",
+    "sbname": "Item Pipe",
+    "category": "Logistics",
+    "best_bid": 19,
+    "corneroids_name": "Cable block",
+    "confidence": 0.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "pipeOutput",
+        "file": "pipeOutput.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.903283930759804,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "pipeInput",
+        "file": "pipeInput.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 0.9073720894607843,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "pipeOutputOff",
+        "file": "pipeOutputOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.9300570618872549,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "pipeInputOff",
+        "file": "pipeInputOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.9340044806985294,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "item_pipe_merger",
+    "sbname": "Merging Item Pipe",
+    "category": "Logistics",
+    "best_bid": 19,
+    "corneroids_name": "Cable block",
+    "confidence": 0.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "pipeStraightSide",
+        "file": "pipeStraightSide.png",
+        "cell": [
+          10,
+          2
+        ],
+        "score": 0.9205757889093137,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "pipeOutput",
+        "file": "pipeOutput.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.903283930759804,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "pipeInput",
+        "file": "pipeInput.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 0.9073720894607843,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Left",
+        "tex_name": "pipeInput",
+        "file": "pipeInput.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 0.9073720894607843,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Right",
+        "tex_name": "pipeInput",
+        "file": "pipeInput.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 0.9073720894607843,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "pipeStraightSideOff",
+        "file": "pipeStraightSideOff.png",
+        "cell": [
+          10,
+          2
+        ],
+        "score": 0.9301288679534314,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "pipeOutputOff",
+        "file": "pipeOutputOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.9300570618872549,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "pipeInputOff",
+        "file": "pipeInputOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.9340044806985294,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Left",
+        "tex_name": "pipeInputOff",
+        "file": "pipeInputOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.9340044806985294,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Right",
+        "tex_name": "pipeInputOff",
+        "file": "pipeInputOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.9340044806985294,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "item_pipe_straight",
+    "sbname": "Straight Item Pipe",
+    "category": "Logistics",
+    "best_bid": 19,
+    "corneroids_name": "Cable block",
+    "confidence": 0.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "pipeStraightSide",
+        "file": "pipeStraightSide.png",
+        "cell": [
+          10,
+          2
+        ],
+        "score": 0.9205757889093137,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "pipeOutput",
+        "file": "pipeOutput.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.903283930759804,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "pipeInput",
+        "file": "pipeInput.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 0.9073720894607843,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "pipeStraightSideOff",
+        "file": "pipeStraightSideOff.png",
+        "cell": [
+          10,
+          2
+        ],
+        "score": 0.9301288679534314,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "pipeOutputOff",
+        "file": "pipeOutputOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.9300570618872549,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "pipeInputOff",
+        "file": "pipeInputOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 0.9340044806985294,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "analyzer",
+    "sbname": "Ore scanner",
+    "category": "Machines",
+    "best_bid": 27,
+    "corneroids_name": "Cannon Console Block",
+    "confidence": 8.734100700827206,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "electricalSide",
+        "file": "electricalSide.png",
+        "cell": [
+          5,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "analyzer",
+        "file": "analyzer.png",
+        "cell": [
+          3,
+          6
+        ],
+        "score": 0.9409112668504902,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "generatorDown",
+        "file": "generatorDown.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "electricalSideOff",
+        "file": "electricalSideOff.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "analyzerOff",
+        "file": "analyzerOff.png",
+        "cell": [
+          2,
+          6
+        ],
+        "score": 0.9396685431985294,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "generatorDownOff",
+        "file": "generatorDownOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "basic_machine",
+    "sbname": "Basic Machine",
+    "category": "Machines",
+    "best_bid": 36,
+    "corneroids_name": "Ore furnace",
+    "confidence": 7.583314065372242,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "basicMachine",
+        "file": "basicMachine.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9629605162377451,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "crafting_table",
+    "sbname": "Crafting Table",
+    "category": "Machines",
+    "best_bid": 34,
+    "corneroids_name": "Crafting table",
+    "confidence": 35.59231287339155,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "craftSide",
+        "file": "craftSide.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.984051393995098,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "craftTop",
+        "file": "craftTop.png",
+        "cell": [
+          10,
+          1
+        ],
+        "score": 0.9740942861519608,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "crusher",
+    "sbname": "Crusher",
+    "category": "Machines",
+    "best_bid": 34,
+    "corneroids_name": "Crafting table",
+    "confidence": 24.411830408432905,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "crusherSide",
+        "file": "crusherSide.png",
+        "cell": [
+          11,
+          1
+        ],
+        "score": 0.9682368259803922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "crusherTop",
+        "file": "crusherTop.png",
+        "cell": [
+          13,
+          4
+        ],
+        "score": 0.9711684283088236,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "crusherSideOff",
+        "file": "crusherSideOff.png",
+        "cell": [
+          11,
+          1
+        ],
+        "score": 0.9737515318627451,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "crusherTop",
+        "file": "crusherTop.png",
+        "cell": [
+          13,
+          4
+        ],
+        "score": 0.9711684283088236,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "disassembler",
+    "sbname": "Disassembler",
+    "category": "Machines",
+    "best_bid": 36,
+    "corneroids_name": "Ore furnace",
+    "confidence": 19.30611877441406,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "disassemblerSide",
+        "file": "disassemblerSide.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9787865732230392,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "disassemblerTop2",
+        "file": "disassemblerTop2.png",
+        "cell": [
+          13,
+          4
+        ],
+        "score": 0.9880198759191177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "disassemblerSideOff",
+        "file": "disassemblerSideOff.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9820953967524509,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "disassemblerTop2",
+        "file": "disassemblerTop2.png",
+        "cell": [
+          13,
+          4
+        ],
+        "score": 0.9880198759191177,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "enhanced_crusher",
+    "sbname": "Enhanced Crusher",
+    "category": "Machines",
+    "best_bid": 35,
+    "corneroids_name": "Mineral extractor",
+    "confidence": 25.076869470932905,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "crusherSide2",
+        "file": "crusherSide2.png",
+        "cell": [
+          11,
+          1
+        ],
+        "score": 0.9484805836397059,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "crusherTop2",
+        "file": "crusherTop2.png",
+        "cell": [
+          12,
+          1
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "crusherSide2Off",
+        "file": "crusherSide2Off.png",
+        "cell": [
+          11,
+          1
+        ],
+        "score": 0.9539952895220588,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "crusherTop2",
+        "file": "crusherTop2.png",
+        "cell": [
+          12,
+          1
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "enhanced_furnace",
+    "sbname": "Enhanced Furnace",
+    "category": "Machines",
+    "best_bid": 35,
+    "corneroids_name": "Mineral extractor",
+    "confidence": 26.5322114832261,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "furnace2",
+        "file": "furnace2.png",
+        "cell": [
+          12,
+          1
+        ],
+        "score": 0.9511910232843137,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Forward",
+        "tex_name": "furnace2Off",
+        "file": "furnace2Off.png",
+        "cell": [
+          12,
+          1
+        ],
+        "score": 0.948599303002451,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "furnace",
+    "sbname": "Furnace",
+    "category": "Machines",
+    "best_bid": 36,
+    "corneroids_name": "Ore furnace",
+    "confidence": 69.23570125804228,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "furnace",
+        "file": "furnace.png",
+        "cell": [
+          9,
+          1
+        ],
+        "score": 0.9684733072916667,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "bottom",
+        "file": "bottom.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9816645603553922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Forward",
+        "tex_name": "furnaceOff",
+        "file": "furnaceOff.png",
+        "cell": [
+          9,
+          1
+        ],
+        "score": 0.9621237362132353,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "aluminium_block_heavy",
+    "sbname": "Aluminium Heavy Block",
+    "category": "MetalBlocks",
+    "best_bid": 10,
+    "corneroids_name": "Heavy aluminium block",
+    "confidence": 35.8376953125,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "aluHeavy",
+        "file": "aluHeavy.png",
+        "cell": [
+          2,
+          1
+        ],
+        "score": 0.9954915364583333,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "aluminium_block_light",
+    "sbname": "Aluminium Light Block",
+    "category": "MetalBlocks",
+    "best_bid": 8,
+    "corneroids_name": "Light aluminium block",
+    "confidence": 35.890119485294115,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "aluLight",
+        "file": "aluLight.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9969477634803922,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "aluminium_block_medium",
+    "sbname": "Aluminium Medium Block",
+    "category": "MetalBlocks",
+    "best_bid": 9,
+    "corneroids_name": "Medium aluminium block",
+    "confidence": 35.91976102941177,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "aluMedium",
+        "file": "aluMedium.png",
+        "cell": [
+          1,
+          1
+        ],
+        "score": 0.9977711397058824,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "iron_block_heavy",
+    "sbname": "Iron Heavy Block",
+    "category": "MetalBlocks",
+    "best_bid": 7,
+    "corneroids_name": "Light iron block",
+    "confidence": 12.269691521139706,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "ironHeavy",
+        "file": "ironHeavy.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9737850413602941,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "iron_block_light",
+    "sbname": "Iron Light Block",
+    "category": "MetalBlocks",
+    "best_bid": 7,
+    "corneroids_name": "Light iron block",
+    "confidence": 12.441486672794117,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "ironLight",
+        "file": "ironLight.png",
+        "cell": [
+          3,
+          1
+        ],
+        "score": 0.9874195772058824,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "iron_block_medium",
+    "sbname": "Iron Medium Block",
+    "category": "MetalBlocks",
+    "best_bid": 11,
+    "corneroids_name": "Medium iron block",
+    "confidence": 35.23421415441177,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "ironMedium",
+        "file": "ironMedium.png",
+        "cell": [
+          4,
+          1
+        ],
+        "score": 0.9787281709558824,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "titanium_block_heavy",
+    "sbname": "Titanium Heavy Block",
+    "category": "MetalBlocks",
+    "best_bid": 13,
+    "corneroids_name": "Light titanium block",
+    "confidence": 34.408318014705884,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "titHeavy",
+        "file": "titHeavy.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9557866115196079,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "titanium_block_light",
+    "sbname": "Titanium Light Block",
+    "category": "MetalBlocks",
+    "best_bid": 13,
+    "corneroids_name": "Light titanium block",
+    "confidence": 34.660753676470584,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "titLight",
+        "file": "titLight.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9627987132352941,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "titanium_block_medium",
+    "sbname": "Titanium Medium Block",
+    "category": "MetalBlocks",
+    "best_bid": 13,
+    "corneroids_name": "Light titanium block",
+    "confidence": 34.52798713235294,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "titMedium",
+        "file": "titMedium.png",
+        "cell": [
+          6,
+          1
+        ],
+        "score": 0.9591107536764706,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "barrier",
+    "sbname": "Barrier",
+    "category": "Other",
+    "best_bid": 22,
+    "corneroids_name": "Weak hydrogen thruster",
+    "confidence": 3.4801197725183823,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "barrier",
+        "file": "barrier.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.7733599494485294,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "moritz",
+    "sbname": "Moritz",
+    "category": "Other",
+    "best_bid": 21,
+    "corneroids_name": "Powerful cobalt power block",
+    "confidence": 5.590762867647058,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "moritz",
+        "file": "moritz.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 0.7454350490196078,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cable_block",
+    "sbname": "Cable Block",
+    "category": "Power",
+    "best_bid": 19,
+    "corneroids_name": "Cable block",
+    "confidence": 71.49008573644299,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "wire",
+        "file": "wire.png",
+        "cell": [
+          1,
+          3
+        ],
+        "score": 0.9133319929534314,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": true
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "wireTop",
+        "file": "wireTop.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "wireTop",
+        "file": "wireTop.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "wireOff",
+        "file": "wireOff.png",
+        "cell": [
+          12,
+          1
+        ],
+        "score": 0.9369609757965687,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": true
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "wireTopOff",
+        "file": "wireTopOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "wireTopOff",
+        "file": "wireTopOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Cable.Port",
+        "tex_name": "wireTop",
+        "file": "wireTop.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Cable.PortOff",
+        "tex_name": "wireTopOff",
+        "file": "wireTopOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Cable.Straight",
+        "tex_name": "wire",
+        "file": "wire.png",
+        "cell": [
+          1,
+          3
+        ],
+        "score": 0.9133319929534314,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": true
+      },
+      {
+        "face": "Cable.StraightOff",
+        "tex_name": "wireOff",
+        "file": "wireOff.png",
+        "cell": [
+          12,
+          1
+        ],
+        "score": 0.9369609757965687,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": true
+      },
+      {
+        "face": "Cable.Angle",
+        "tex_name": "wireAngle",
+        "file": "wireAngle.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 0.9464250153186274,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": true
+      },
+      {
+        "face": "Cable.AngleOff",
+        "tex_name": "wireAngleOff",
+        "file": "wireAngleOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 0.9637063419117647,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": true
+      },
+      {
+        "face": "Cable.Hub",
+        "tex_name": "wireHub",
+        "file": "wireHub.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 0.9078862208946078,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": true
+      },
+      {
+        "face": "Cable.HubOff",
+        "tex_name": "wireHubOff",
+        "file": "wireHubOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 0.936227596507353,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": true
+      }
+    ]
+  },
+  {
+    "sbid": "cobalt_power_block",
+    "sbname": "Standard Cobalt Power Block",
+    "category": "Power",
+    "best_bid": 20,
+    "corneroids_name": "Standard cobalt power block",
+    "confidence": 109.41189395680146,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cobaltGeneratorSideTall",
+        "file": "cobaltGeneratorSideTall.png",
+        "cell": [
+          3,
+          3
+        ],
+        "score": 0.9313754212622549,
+        "rot": 0,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "cobaltGeneratorTop",
+        "file": "cobaltGeneratorTop.png",
+        "cell": [
+          3,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "cobaltGeneratorTop",
+        "file": "cobaltGeneratorTop.png",
+        "cell": [
+          3,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "cobaltGeneratorSideTallOff",
+        "file": "cobaltGeneratorSideTallOff.png",
+        "cell": [
+          3,
+          2
+        ],
+        "score": 0.9528617110906863,
+        "rot": 0,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "cobaltGeneratorTopOff",
+        "file": "cobaltGeneratorTopOff.png",
+        "cell": [
+          3,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "cobaltGeneratorTopOff",
+        "file": "cobaltGeneratorTopOff.png",
+        "cell": [
+          3,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "nuclear_power_block",
+    "sbname": "Powerful Nuclear Power Block",
+    "category": "Power",
+    "best_bid": 19,
+    "corneroids_name": "Cable block",
+    "confidence": 11.812499999999998,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "nuclear_generator",
+        "file": "nuclear_generator.png",
+        "cell": [
+          5,
+          7
+        ],
+        "score": 0.8956437653186274,
+        "rot": 0,
+        "size": [
+          64,
+          96
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "wireTop",
+        "file": "wireTop.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "wireTop",
+        "file": "wireTop.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "nuclear_generatorOff",
+        "file": "nuclear_generatorOff.png",
+        "cell": [
+          5,
+          7
+        ],
+        "score": 0.9188361672794118,
+        "rot": 0,
+        "size": [
+          64,
+          96
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "wireTopOff",
+        "file": "wireTopOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "wireTopOff",
+        "file": "wireTopOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "powerful_cobalt_power_block",
+    "sbname": "Powerful Cobalt Power Block",
+    "category": "Power",
+    "best_bid": 21,
+    "corneroids_name": "Powerful cobalt power block",
+    "confidence": 67.5,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "powerfulCobaltGenerator",
+        "file": "powerfulCobaltGenerator.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 0.922378599877451,
+        "rot": 0,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "generatorDown",
+        "file": "generatorDown.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "generatorDown",
+        "file": "generatorDown.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "powerfulCobaltGeneratorOff",
+        "file": "powerfulCobaltGeneratorOff.png",
+        "cell": [
+          6,
+          2
+        ],
+        "score": 0.9444958256740196,
+        "rot": 180,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "generatorDownOff",
+        "file": "generatorDownOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "generatorDownOff",
+        "file": "generatorDownOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "standard_nuclear_power_block",
+    "sbname": "Standard Nuclear Power Block",
+    "category": "Power",
+    "best_bid": 39,
+    "corneroids_name": "Standard nuclear power block",
+    "confidence": 67.5,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "standard_nuclear_generator",
+        "file": "standard_nuclear_generator.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 0.9200970818014705,
+        "rot": 180,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "generatorDown",
+        "file": "generatorDown.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "generatorDown",
+        "file": "generatorDown.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "standard_nuclear_generatorOff",
+        "file": "standard_nuclear_generatorOff.png",
+        "cell": [
+          4,
+          5
+        ],
+        "score": 0.917516850490196,
+        "rot": 0,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "generatorDownOff",
+        "file": "generatorDownOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "generatorDownOff",
+        "file": "generatorDownOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "aluminium_ore",
+    "sbname": "Aluminium Ore",
+    "category": "Resources",
+    "best_bid": 5,
+    "corneroids_name": "Aluminium ore",
+    "confidence": 71.58053768382352,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "aluOre",
+        "file": "aluOre.png",
+        "cell": [
+          5,
+          0
+        ],
+        "score": 0.994174134497549,
+        "rot": 90,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cobaltite_rock",
+    "sbname": "Cobaltite Rock",
+    "category": "Resources",
+    "best_bid": 33,
+    "corneroids_name": "Cobaltite rock",
+    "confidence": 72.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cobaltite",
+        "file": "cobaltite.png",
+        "cell": [
+          3,
+          0
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "dense_ice_rock",
+    "sbname": "Dense Ice Rock",
+    "category": "Resources",
+    "best_bid": 8,
+    "corneroids_name": "Light aluminium block",
+    "confidence": 11.429021139705881,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "iceBlock2",
+        "file": "iceBlock2.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9524184283088235,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "heavy_rock",
+    "sbname": "Heavy Rock",
+    "category": "Resources",
+    "best_bid": 2,
+    "corneroids_name": "Heavy rock",
+    "confidence": 72.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "heavyRock",
+        "file": "heavyRock.png",
+        "cell": [
+          10,
+          0
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "ice_rock",
+    "sbname": "Icy Rock",
+    "category": "Resources",
+    "best_bid": 32,
+    "corneroids_name": "Icy rock",
+    "confidence": 34.777045036764704,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "iceBlock",
+        "file": "iceBlock.png",
+        "cell": [
+          1,
+          0
+        ],
+        "score": 0.9660290287990196,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "iron_ore",
+    "sbname": "Iron Ore",
+    "category": "Resources",
+    "best_bid": 4,
+    "corneroids_name": "Iron ore",
+    "confidence": 71.96256893382353,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "ironOre",
+        "file": "ironOre.png",
+        "cell": [
+          6,
+          0
+        ],
+        "score": 0.9994801240808824,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "light_rock",
+    "sbname": "Light Rock",
+    "category": "Resources",
+    "best_bid": 0,
+    "corneroids_name": "Light rock",
+    "confidence": 71.9015625,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "lightRock",
+        "file": "lightRock.png",
+        "cell": [
+          0,
+          0
+        ],
+        "score": 0.9986328125,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "medium_rock",
+    "sbname": "Medium Rock",
+    "category": "Resources",
+    "best_bid": 1,
+    "corneroids_name": "Medium rock",
+    "confidence": 68.30935202205882,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "mediumRock",
+        "file": "mediumRock.png",
+        "cell": [
+          7,
+          0
+        ],
+        "score": 0.9487410003063725,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "obscurium_ore",
+    "sbname": "Obscurium Ore",
+    "category": "Resources",
+    "best_bid": 18,
+    "corneroids_name": "Ponium ore",
+    "confidence": 35.47982536764706,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "pinkOre",
+        "file": "pinkOre.png",
+        "cell": [
+          11,
+          0
+        ],
+        "score": 0.9855507046568628,
+        "rot": 180,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "thulium_ore",
+    "sbname": "Thulium Ore",
+    "category": "Resources",
+    "best_bid": 17,
+    "corneroids_name": "Thulium ore",
+    "confidence": 67.64944852941177,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "yellowOre",
+        "file": "yellowOre.png",
+        "cell": [
+          9,
+          0
+        ],
+        "score": 0.9395756740196078,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "titanium_ore",
+    "sbname": "Titanium Ore",
+    "category": "Resources",
+    "best_bid": 16,
+    "corneroids_name": "Titanium ore",
+    "confidence": 72.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "titaniumOre",
+        "file": "titaniumOre.png",
+        "cell": [
+          8,
+          0
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "uranium_ore",
+    "sbname": "Uranium Ore",
+    "category": "Resources",
+    "best_bid": 17,
+    "corneroids_name": "Thulium ore",
+    "confidence": 36.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "greenOre",
+        "file": "greenOre.png",
+        "cell": [
+          9,
+          0
+        ],
+        "score": 1.0,
+        "rot": 270,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cannon_anticorvette",
+    "sbname": "Anti-Corvette Gun",
+    "category": "Cannons",
+    "best_bid": 42,
+    "corneroids_name": "Light Assault Cannon",
+    "confidence": 31.127395450367647,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cannonAntiCorvetteWalls",
+        "file": "cannonAntiCorvetteWalls.png",
+        "cell": [
+          13,
+          2
+        ],
+        "score": 0.9302964154411765,
+        "rot": 0,
+        "size": [
+          64,
+          96
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "cannonAntiCorvetteTop",
+        "file": "cannonAntiCorvetteTop.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "cannonAntiCorvetteBottom",
+        "file": "cannonAntiCorvetteBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "cannonAntiCorvetteWallsOff",
+        "file": "cannonAntiCorvetteWallsOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 0.9378992417279411,
+        "rot": 90,
+        "size": [
+          64,
+          96
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "cannonAntiCorvetteTopOff",
+        "file": "cannonAntiCorvetteTopOff.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "cannonAntiCorvetteBottomOff",
+        "file": "cannonAntiCorvetteBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cannon_antifrigate",
+    "sbname": "Anti-Frigate Gun",
+    "category": "Cannons",
+    "best_bid": 42,
+    "corneroids_name": "Light Assault Cannon",
+    "confidence": 39.43782456341912,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cannonAntiFrigateWalls",
+        "file": "cannonAntiFrigateWalls.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 0.9219219132965686,
+        "rot": 90,
+        "size": [
+          64,
+          128
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "cannonAntiFrigateTop",
+        "file": "cannonAntiFrigateTop.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "cannonAntiFrigateBottom",
+        "file": "cannonAntiFrigateBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "cannonAntiFrigateWallsOff",
+        "file": "cannonAntiFrigateWallsOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 0.940087890625,
+        "rot": 90,
+        "size": [
+          64,
+          128
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "cannonAntiFrigateTopOff",
+        "file": "cannonAntiFrigateTopOff.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "cannonAntiFrigateBottomOff",
+        "file": "cannonAntiFrigateBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cannon_antipersonnel",
+    "sbname": "Anti-Personnel Gun",
+    "category": "Cannons",
+    "best_bid": 24,
+    "corneroids_name": "Anti-Personnel Cannon",
+    "confidence": 37.575,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cannonAntiPersonnelWalls",
+        "file": "cannonAntiPersonnelWalls.png",
+        "cell": [
+          2,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "cannonAntiPersonnelTop",
+        "file": "cannonAntiPersonnelTop.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "cannonAntiPersonnelBottom",
+        "file": "cannonAntiPersonnelBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "cannonAntiPersonnelWallsOff",
+        "file": "cannonAntiPersonnelWallsOff.png",
+        "cell": [
+          1,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "cannonAntiPersonnelTopOff",
+        "file": "cannonAntiPersonnelTopOff.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "cannonAntiPersonnelBottomOff",
+        "file": "cannonAntiPersonnelBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cannon_heavy_assault",
+    "sbname": "Heavy Assault Gun",
+    "category": "Cannons",
+    "best_bid": 42,
+    "corneroids_name": "Light Assault Cannon",
+    "confidence": 25.5,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cannonHeavyAssaultWalls",
+        "file": "cannonHeavyAssaultWalls.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 0.9188361672794118,
+        "rot": 270,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "cannonHeavyAssaultTop",
+        "file": "cannonHeavyAssaultTop.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "cannonHeavyAssaultBottom",
+        "file": "cannonHeavyAssaultBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "cannonHeavyAssaultWallsOff",
+        "file": "cannonHeavyAssaultWallsOff.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 0.9384018841911764,
+        "rot": 270,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "cannonHeavyAssaultTopOff",
+        "file": "cannonHeavyAssaultTopOff.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "cannonHeavyAssaultBottomOff",
+        "file": "cannonHeavyAssaultBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cannon_light_assault",
+    "sbname": "Light Assault Gun",
+    "category": "Cannons",
+    "best_bid": 42,
+    "corneroids_name": "Light Assault Cannon",
+    "confidence": 30.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cannonLightAssaultWalls",
+        "file": "cannonLightAssaultWalls.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 0.9272939644607843,
+        "rot": 270,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "cannonLightAssaultTop",
+        "file": "cannonLightAssaultTop.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "cannonLightAssaultBottom",
+        "file": "cannonLightAssaultBottom.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "cannonLightAssaultWallsOff",
+        "file": "cannonLightAssaultWallsOff.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 0.9384018841911764,
+        "rot": 270,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "cannonLightAssaultTopOff",
+        "file": "cannonLightAssaultTopOff.png",
+        "cell": [
+          0,
+          7
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "cannonLightAssaultBottomOff",
+        "file": "cannonLightAssaultBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "cannon_console",
+    "sbname": "Cannon Console",
+    "category": "Control",
+    "best_bid": 27,
+    "corneroids_name": "Cannon Console Block",
+    "confidence": 57.15,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "cannonConsoleWalls",
+        "file": "cannonConsoleWalls.png",
+        "cell": [
+          5,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "cannonConsoleTop",
+        "file": "cannonConsoleTop.png",
+        "cell": [
+          3,
+          6
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "cannonConsoleBottom",
+        "file": "cannonConsoleBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "cannonConsoleWallsOff",
+        "file": "cannonConsoleWallsOff.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "cannonConsoleTopOff",
+        "file": "cannonConsoleTopOff.png",
+        "cell": [
+          2,
+          6
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "cannonConsoleBottomOff",
+        "file": "cannonConsoleBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "ship_camera",
+    "sbname": "Ship Camera",
+    "category": "Control",
+    "best_bid": 26,
+    "corneroids_name": "Camera block",
+    "confidence": 55.575,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "shipCameraWalls",
+        "file": "shipCameraWalls.png",
+        "cell": [
+          12,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "shipCameraTop",
+        "file": "shipCameraTop.png",
+        "cell": [
+          12,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "shipCameraBottom",
+        "file": "shipCameraBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "shipCameraWallsOff",
+        "file": "shipCameraWallsOff.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "shipCameraTopOff",
+        "file": "shipCameraTopOff.png",
+        "cell": [
+          12,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "shipCameraBottomOff",
+        "file": "shipCameraBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "ship_console",
+    "sbname": "Ship Console",
+    "category": "Control",
+    "best_bid": 23,
+    "corneroids_name": "Standard console block",
+    "confidence": 28.575,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "shipConsoleWalls",
+        "file": "shipConsoleWalls.png",
+        "cell": [
+          5,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "shipConsoleTop",
+        "file": "shipConsoleTop.png",
+        "cell": [
+          1,
+          6
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "shipConsoleBottom",
+        "file": "shipConsoleBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "shipConsoleWallsOff",
+        "file": "shipConsoleWallsOff.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "shipConsoleTopOff",
+        "file": "shipConsoleTopOff.png",
+        "cell": [
+          0,
+          6
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "shipConsoleBottomOff",
+        "file": "shipConsoleBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "thruster_ion",
+    "sbname": "Standard Ion Thruster",
+    "category": "Thrusters",
+    "best_bid": 41,
+    "corneroids_name": "Standard ion thruster",
+    "confidence": 27.0,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "thrusterIonWalls",
+        "file": "thrusterIonWalls.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 0.9156288296568628,
+        "rot": 180,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "thrusterIonTop",
+        "file": "thrusterIonTop.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "thrusterIonBottom",
+        "file": "thrusterIonBottom.png",
+        "cell": [
+          4,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "thrusterIonWallsOff",
+        "file": "thrusterIonWallsOff.png",
+        "cell": [
+          15,
+          1
+        ],
+        "score": 0.9404258578431373,
+        "rot": 180,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "thrusterIonTopOff",
+        "file": "thrusterIonTopOff.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "thrusterIonBottomOff",
+        "file": "thrusterIonBottomOff.png",
+        "cell": [
+          4,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "thruster_powerful",
+    "sbname": "Powerful Hydrogen Thruster",
+    "category": "Thrusters",
+    "best_bid": 22,
+    "corneroids_name": "Weak hydrogen thruster",
+    "confidence": 24.075,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "thrusterPowerfulWalls",
+        "file": "thrusterPowerfulWalls.png",
+        "cell": [
+          4,
+          4
+        ],
+        "score": 0.9588733149509804,
+        "rot": 0,
+        "size": [
+          64,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "thrusterPowerfulTop",
+        "file": "thrusterPowerfulTop.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "thrusterPowerfulBottom",
+        "file": "thrusterPowerfulBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "thrusterPowerfulWallsOff",
+        "file": "thrusterPowerfulWallsOff.png",
+        "cell": [
+          4,
+          4
+        ],
+        "score": 0.9781020220588236,
+        "rot": 0,
+        "size": [
+          64,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "thrusterPowerfulTopOff",
+        "file": "thrusterPowerfulTopOff.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "thrusterPowerfulBottomOff",
+        "file": "thrusterPowerfulBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "thruster_standard",
+    "sbname": "Standard Hydrogen Thruster",
+    "category": "Thrusters",
+    "best_bid": 22,
+    "corneroids_name": "Weak hydrogen thruster",
+    "confidence": 24.075,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "thrusterStandardWalls",
+        "file": "thrusterStandardWalls.png",
+        "cell": [
+          5,
+          2
+        ],
+        "score": 0.9125564874387255,
+        "rot": 180,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "thrusterStandardTop",
+        "file": "thrusterStandardTop.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "thrusterStandardBottom",
+        "file": "thrusterStandardBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "thrusterStandardWallsOff",
+        "file": "thrusterStandardWallsOff.png",
+        "cell": [
+          8,
+          7
+        ],
+        "score": 0.9360954733455882,
+        "rot": 270,
+        "size": [
+          32,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "thrusterStandardTopOff",
+        "file": "thrusterStandardTopOff.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "thrusterStandardBottomOff",
+        "file": "thrusterStandardBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "thruster_weak",
+    "sbname": "Weak Hydrogen Thruster",
+    "category": "Thrusters",
+    "best_bid": 22,
+    "corneroids_name": "Weak hydrogen thruster",
+    "confidence": 37.575,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "thrusterWeakWalls",
+        "file": "thrusterWeakWalls.png",
+        "cell": [
+          2,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "thrusterWeakTop",
+        "file": "thrusterWeakTop.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "thrusterWeakBottom",
+        "file": "thrusterWeakBottom.png",
+        "cell": [
+          0,
+          3
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.All",
+        "tex_name": "thrusterWeakWallsOff",
+        "file": "thrusterWeakWallsOff.png",
+        "cell": [
+          1,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Up",
+        "tex_name": "thrusterWeakTopOff",
+        "file": "thrusterWeakTopOff.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Inactive.Down",
+        "tex_name": "thrusterWeakBottomOff",
+        "file": "thrusterWeakBottomOff.png",
+        "cell": [
+          0,
+          2
+        ],
+        "score": 1.0,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "sign_panel_wide",
+    "sbname": "Info Panel",
+    "category": "Signs",
+    "best_bid": 28,
+    "corneroids_name": "Iron blast door",
+    "confidence": 6.41653262867647,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "signPanelEdge",
+        "file": "signPanelEdge.png",
+        "cell": [
+          14,
+          0
+        ],
+        "score": 0.9505974264705882,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "signPanelWide",
+        "file": "signPanelWide.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.9606502757352942,
+        "rot": 180,
+        "size": [
+          64,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "signPanelEdge",
+        "file": "signPanelEdge.png",
+        "cell": [
+          14,
+          0
+        ],
+        "score": 0.9505974264705882,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "sign_steel",
+    "sbname": "Steel Sign",
+    "category": "Signs",
+    "best_bid": 8,
+    "corneroids_name": "Light aluminium block",
+    "confidence": 17.540521599264707,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "signSteelEdge",
+        "file": "signSteelEdge.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9744734221813726,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "signSteel",
+        "file": "signSteel.png",
+        "cell": [
+          13,
+          3
+        ],
+        "score": 0.8913928462009804,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "signSteelEdge",
+        "file": "signSteelEdge.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9744734221813726,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "sign_steel_wide",
+    "sbname": "Wide Steel Sign",
+    "category": "Signs",
+    "best_bid": 8,
+    "corneroids_name": "Light aluminium block",
+    "confidence": 17.540521599264707,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "signSteelEdge",
+        "file": "signSteelEdge.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9744734221813726,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Up",
+        "tex_name": "signSteelWide",
+        "file": "signSteelWide.png",
+        "cell": [
+          13,
+          3
+        ],
+        "score": 0.8874971277573529,
+        "rot": 270,
+        "size": [
+          64,
+          32
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Down",
+        "tex_name": "signSteelEdge",
+        "file": "signSteelEdge.png",
+        "cell": [
+          0,
+          1
+        ],
+        "score": 0.9744734221813726,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "big_window",
+    "sbname": "Big Window",
+    "category": "Windows",
+    "best_bid": 22,
+    "corneroids_name": "Weak hydrogen thruster",
+    "confidence": 8.333808450137868,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "big_window",
+        "file": "big_window.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.7407829733455882,
+        "rot": 0,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Forward",
+        "tex_name": "big_window",
+        "file": "big_window.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.7407829733455882,
+        "rot": 0,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      },
+      {
+        "face": "Active.Back",
+        "tex_name": "big_window",
+        "file": "big_window.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.7407829733455882,
+        "rot": 0,
+        "size": [
+          64,
+          64
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "reinforced_window",
+    "sbname": "Reinforced Window",
+    "category": "Windows",
+    "best_bid": 22,
+    "corneroids_name": "Weak hydrogen thruster",
+    "confidence": 3.526727653952206,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "window2",
+        "file": "window2.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.7837172564338235,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  },
+  {
+    "sbid": "window",
+    "sbname": "Window",
+    "category": "Windows",
+    "best_bid": 22,
+    "corneroids_name": "Weak hydrogen thruster",
+    "confidence": 3.3316104664522057,
+    "textures": [
+      {
+        "face": "Active.All",
+        "tex_name": "window",
+        "file": "window.png",
+        "cell": [
+          0,
+          4
+        ],
+        "score": 0.7403578814338235,
+        "rot": 0,
+        "size": [
+          32,
+          32
+        ],
+        "normalized": false
+      }
+    ]
+  }
+]

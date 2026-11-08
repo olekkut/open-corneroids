@@ -17,19 +17,52 @@ public static class SpaceboxStructureBridge
 
     private static readonly Dictionary<string, int> KnownBlockNameToId = new(StringComparer.OrdinalIgnoreCase)
     {
+        // Air / Void
         { "air", WorldSnapshot.AirBlockId },
         { "default:air", WorldSnapshot.AirBlockId },
         { "void", WorldSnapshot.AirBlockId },
         { "default:void", WorldSnapshot.AirBlockId },
+        { "barrier", WorldSnapshot.AirBlockId },
+        { "default:barrier", WorldSnapshot.AirBlockId },
         { "", WorldSnapshot.AirBlockId },
 
-        // Stone / Rock
+        // Asteroids & Rocks
         { "stone", 0 },
         { "default:stone", 0 },
         { "rock", 0 },
         { "default:rock", 0 },
+        { "light_rock", 0 },
+        { "default:light_rock", 0 },
+        { "moritz", 0 },
+        { "default:moritz", 0 },
+        { "medium_rock", 1 },
+        { "default:medium_rock", 1 },
+        { "heavy_rock", 2 },
+        { "default:heavy_rock", 2 },
+        { "ice_rock", 32 },
+        { "default:ice_rock", 32 },
+        { "dense_ice_rock", 32 },
+        { "default:dense_ice_rock", 32 },
+        { "cobaltite_rock", 33 },
+        { "default:cobaltite_rock", 33 },
 
-        // Aluminium
+        // Minerals & Ores
+        { "uranium_ore", 3 },
+        { "default:uranium_ore", 3 },
+        { "iron_ore", 4 },
+        { "default:iron_ore", 4 },
+        { "aluminium_ore", 5 },
+        { "default:aluminium_ore", 5 },
+        { "titanium_ore", 16 },
+        { "default:titanium_ore", 16 },
+        { "thulium_ore", 17 },
+        { "default:thulium_ore", 17 },
+        { "obscurium_ore", 18 },
+        { "default:obscurium_ore", 18 },
+        { "ponium_ore", 18 },
+        { "default:ponium_ore", 18 },
+
+        // Aluminium Hulls
         { "light_aluminium", 8 },
         { "default:light_aluminium", 8 },
         { "aluminium_block_light", 8 },
@@ -45,51 +78,107 @@ public static class SpaceboxStructureBridge
         { "aluminium_block_heavy", 10 },
         { "default:aluminium_block_heavy", 10 },
 
-        // Steel hulls
+        // Iron & Steel Hulls
+        { "light_iron", 7 },
+        { "default:light_iron", 7 },
+        { "iron_block_light", 7 },
+        { "default:iron_block_light", 7 },
+        { "medium_iron", 11 },
+        { "default:medium_iron", 11 },
+        { "iron_block_medium", 11 },
+        { "default:iron_block_medium", 11 },
         { "steel_hull", 11 },
         { "default:steel_hull", 11 },
         { "steel_block_light", 11 },
         { "default:steel_block_light", 11 },
+        { "steel_block_medium", 11 },
+        { "default:steel_block_medium", 11 },
         { "light_steel", 11 },
         { "default:light_steel", 11 },
-        { "medium_steel", 12 },
-        { "default:medium_steel", 12 },
-        { "steel_block_medium", 12 },
-        { "default:steel_block_medium", 12 },
-        { "heavy_steel", 13 },
-        { "default:heavy_steel", 13 },
-        { "steel_block_heavy", 13 },
-        { "default:steel_block_heavy", 13 },
+        { "medium_steel", 11 },
+        { "default:medium_steel", 11 },
         { "hull", 11 },
         { "default:hull", 11 },
-        { "cable_block", 8 },
-        { "default:cable_block", 8 },
+        { "heavy_iron", 12 },
+        { "default:heavy_iron", 12 },
+        { "iron_block_heavy", 12 },
+        { "default:iron_block_heavy", 12 },
+        { "heavy_steel", 12 },
+        { "default:heavy_steel", 12 },
+        { "steel_block_heavy", 12 },
+        { "default:steel_block_heavy", 12 },
 
-        // Glass & Lights
-        { "glass", 15 },
-        { "default:glass", 15 },
-        { "big_window", 15 },
-        { "default:big_window", 15 },
-        { "light", 16 },
-        { "default:light", 16 },
-        { "lamp", 16 },
-        { "default:lamp", 16 },
+        // Titanium Hulls
+        { "light_titanium", 13 },
+        { "default:light_titanium", 13 },
+        { "titanium_block_light", 13 },
+        { "default:titanium_block_light", 13 },
+        { "medium_titanium", 14 },
+        { "default:medium_titanium", 14 },
+        { "titanium_block_medium", 14 },
+        { "default:titanium_block_medium", 14 },
+        { "heavy_titanium", 15 },
+        { "default:heavy_titanium", 15 },
+        { "titanium_block_heavy", 15 },
+        { "default:titanium_block_heavy", 15 },
 
-        // Stations & crafting
-        { "crafting_table", 18 },
-        { "default:crafting_table", 18 },
-        { "crusher", 19 },
-        { "default:crusher", 19 },
-        { "dna_reconstructor", 21 },
-        { "default:dna_reconstructor", 21 },
-
-        // Power & Reactor
-        { "reactor", 20 },
-        { "default:reactor", 20 },
+        // Power & Electrical
+        { "cable_block", 19 },
+        { "default:cable_block", 19 },
+        { "wire", 19 },
+        { "default:wire", 19 },
+        { "wire_block", 19 },
+        { "default:wire_block", 19 },
+        { "wire_angle", 19 },
+        { "default:wire_angle", 19 },
+        { "wire_hub", 19 },
+        { "default:wire_hub", 19 },
+        { "wire_top", 19 },
+        { "default:wire_top", 19 },
+        { "item_pipe", 19 },
+        { "default:item_pipe", 19 },
+        { "item_pipe_straight", 19 },
+        { "default:item_pipe_straight", 19 },
+        { "item_pipe_merger", 19 },
+        { "default:item_pipe_merger", 19 },
+        { "cobalt_power_block", 20 },
+        { "default:cobalt_power_block", 20 },
         { "power_block", 20 },
         { "default:power_block", 20 },
+        { "standard_cobalt_power_block", 20 },
+        { "default:standard_cobalt_power_block", 20 },
+        { "powerful_cobalt_power_block", 21 },
+        { "default:powerful_cobalt_power_block", 21 },
+        { "standard_nuclear_power_block", 39 },
+        { "default:standard_nuclear_power_block", 39 },
+        { "nuclear_power_block", 40 },
+        { "default:nuclear_power_block", 40 },
+        { "powerful_nuclear_power_block", 40 },
+        { "default:powerful_nuclear_power_block", 40 },
+        { "reactor", 20 },
+        { "default:reactor", 20 },
 
-        // Cockpit & Consoles
+        // Thrusters & Propulsion
+        { "thruster_weak", 22 },
+        { "default:thruster_weak", 22 },
+        { "weak_thruster", 22 },
+        { "default:weak_thruster", 22 },
+        { "thruster_standard", 37 },
+        { "default:thruster_standard", 37 },
+        { "thruster", 28 },
+        { "default:thruster", 28 },
+        { "engine", 28 },
+        { "default:engine", 28 },
+        { "thruster_powerful", 38 },
+        { "default:thruster_powerful", 38 },
+        { "powerful_thruster", 38 },
+        { "default:powerful_thruster", 38 },
+        { "thruster_ion", 41 },
+        { "default:thruster_ion", 41 },
+        { "ion_thruster", 41 },
+        { "default:ion_thruster", 41 },
+
+        // Cockpit, Consoles & Cameras
         { "cockpit", 23 },
         { "default:cockpit", 23 },
         { "control_console", 23 },
@@ -100,54 +189,224 @@ public static class SpaceboxStructureBridge
         { "default:ship_console", 23 },
         { "command_chair", 23 },
         { "default:command_chair", 23 },
-        { "ship_camera", 23 },
-        { "default:ship_camera", 23 },
+        { "cannon_console", 27 },
+        { "default:cannon_console", 27 },
+        { "gun_console", 27 },
+        { "default:gun_console", 27 },
+        { "ship_camera", 26 },
+        { "default:ship_camera", 26 },
+        { "camera", 26 },
+        { "default:camera", 26 },
+        { "radar", 26 },
+        { "default:radar", 26 },
 
-        // Doors & Cargo
-        { "door", 25 },
-        { "default:door", 25 },
-        { "cargo", 26 },
-        { "default:cargo", 26 },
-        { "container", 26 },
-        { "default:container", 26 },
-        { "basic_aluminium_crate", 26 },
-        { "default:basic_aluminium_crate", 26 },
-
-        // Thrusters & Engines
-        { "thruster", 28 },
-        { "default:thruster", 28 },
-        { "thruster_weak", 28 },
-        { "default:thruster_weak", 28 },
-        { "engine", 28 },
-        { "default:engine", 28 },
-
-        // Weapons
+        // Cannons & Weapons
+        { "cannon_antipersonnel", 24 },
+        { "default:cannon_antipersonnel", 24 },
+        { "antipersonnel_cannon", 24 },
+        { "default:antipersonnel_cannon", 24 },
+        { "cannon_light_assault", 42 },
+        { "default:cannon_light_assault", 42 },
+        { "light_assault_cannon", 42 },
+        { "default:light_assault_cannon", 42 },
         { "laser_cannon", 30 },
         { "default:laser_cannon", 30 },
         { "cannon", 30 },
         { "default:cannon", 30 },
         { "weapon", 30 },
         { "default:weapon", 30 },
+        { "cannon_anticorvette", 43 },
+        { "default:cannon_anticorvette", 43 },
+        { "anticorvette_cannon", 43 },
+        { "default:anticorvette_cannon", 43 },
+        { "cannon_antifrigate", 44 },
+        { "default:cannon_antifrigate", 44 },
+        { "antifrigate_cannon", 44 },
+        { "default:antifrigate_cannon", 44 },
+        { "cannon_heavy_assault", 45 },
+        { "default:cannon_heavy_assault", 45 },
+        { "heavy_assault_cannon", 45 },
+        { "default:heavy_assault_cannon", 45 },
+
+        // Doors
+        { "door", 25 },
+        { "default:door", 25 },
+        { "iron_door", 28 },
+        { "default:iron_door", 28 },
+        { "iron_blast_door", 28 },
+        { "default:iron_blast_door", 28 },
+        { "aluminium_door", 29 },
+        { "default:aluminium_door", 29 },
+        { "aluminium_blast_door", 29 },
+        { "default:aluminium_blast_door", 29 },
+        { "titanium_door", 31 },
+        { "default:titanium_door", 31 },
+        { "titanium_blast_door", 31 },
+        { "default:titanium_blast_door", 31 },
+
+        // Windows & Glass
+        { "glass", 15 },
+        { "default:glass", 15 },
+        { "window", 47 },
+        { "default:window", 47 },
+        { "reinforced_window", 47 },
+        { "default:reinforced_window", 47 },
+        { "small_window", 47 },
+        { "default:small_window", 47 },
+        { "big_window", 48 },
+        { "default:big_window", 48 },
+        { "large_window", 48 },
+        { "default:large_window", 48 },
+
+        // Lights & Torches
+        { "light", 16 },
+        { "default:light", 16 },
+        { "lamp", 16 },
+        { "default:lamp", 16 },
+        { "torch", 25 },
+        { "default:torch", 25 },
+        { "cobalt_wall_torch", 25 },
+        { "default:cobalt_wall_torch", 25 },
+        { "light_blue", 25 },
+        { "default:light_blue", 25 },
+        { "light_cyan", 25 },
+        { "default:light_cyan", 25 },
+        { "light_green", 25 },
+        { "default:light_green", 25 },
+        { "light_orange", 25 },
+        { "default:light_orange", 25 },
+        { "light_pink", 25 },
+        { "default:light_pink", 25 },
+        { "light_red", 25 },
+        { "default:light_red", 25 },
+        { "light_white", 25 },
+        { "default:light_white", 25 },
+        { "light_yellow", 25 },
+        { "default:light_yellow", 25 },
+
+        // Machines & Stations
+        { "crafting_table", 34 },
+        { "default:crafting_table", 34 },
+        { "basic_machine", 34 },
+        { "default:basic_machine", 34 },
+        { "analyzer", 34 },
+        { "default:analyzer", 34 },
+        { "disassembler", 34 },
+        { "default:disassembler", 34 },
+        { "dna_reconstructor", 34 },
+        { "default:dna_reconstructor", 34 },
+        { "crusher", 35 },
+        { "default:crusher", 35 },
+        { "enhanced_crusher", 35 },
+        { "default:enhanced_crusher", 35 },
+        { "mineral_extractor", 35 },
+        { "default:mineral_extractor", 35 },
+        { "extractor", 35 },
+        { "default:extractor", 35 },
+        { "furnace", 36 },
+        { "default:furnace", 36 },
+        { "enhanced_furnace", 36 },
+        { "default:enhanced_furnace", 36 },
+        { "ore_furnace", 36 },
+        { "default:ore_furnace", 36 },
+
+        // Crates & Storage
+        { "cargo", 46 },
+        { "default:cargo", 46 },
+        { "container", 46 },
+        { "default:container", 46 },
+        { "storage", 46 },
+        { "default:storage", 46 },
+        { "basic_aluminium_crate", 46 },
+        { "default:basic_aluminium_crate", 46 },
+        { "basic_iron_crate", 46 },
+        { "default:basic_iron_crate", 46 },
+        { "basic_titanium_crate", 46 },
+        { "default:basic_titanium_crate", 46 },
+        { "safe", 46 },
+        { "default:safe", 46 },
+
+        // Devices & Decor
+        { "claim_beacon", 20 },
+        { "default:claim_beacon", 20 },
+        { "gravity_generator", 20 },
+        { "default:gravity_generator", 20 },
+        { "oxygen_generator", 20 },
+        { "default:oxygen_generator", 20 },
+        { "cobalt_bomb", 21 },
+        { "default:cobalt_bomb", 21 },
+        { "uranium_bomb", 21 },
+        { "default:uranium_bomb", 21 },
+        { "picture_frame_iron_1x1", 47 },
+        { "default:picture_frame_iron_1x1", 47 },
+        { "picture_frame_iron_2x1", 47 },
+        { "default:picture_frame_iron_2x1", 47 },
+        { "picture_frame_iron_2x2", 47 },
+        { "default:picture_frame_iron_2x2", 47 },
+        { "picture_frame_plastic_1x1", 47 },
+        { "default:picture_frame_plastic_1x1", 47 },
+        { "picture_frame_plastic_2x1", 47 },
+        { "default:picture_frame_plastic_2x1", 47 },
+        { "picture_frame_plastic_2x2", 47 },
+        { "default:picture_frame_plastic_2x2", 47 },
+        { "sign_panel_wide", 47 },
+        { "default:sign_panel_wide", 47 },
+        { "sign_steel", 47 },
+        { "default:sign_steel", 47 },
+        { "sign_steel_wide", 47 },
+        { "default:sign_steel_wide", 47 },
     };
 
     private static readonly Dictionary<int, string> KnownIdToBlockName = new()
     {
         { WorldSnapshot.AirBlockId, "default:air" },
-        { 0, "default:stone" },
-        { 8, "default:light_aluminium" },
-        { 9, "default:medium_aluminium" },
-        { 10, "default:heavy_aluminium" },
+        { 0, "default:light_rock" },
+        { 1, "default:medium_rock" },
+        { 2, "default:heavy_rock" },
+        { 3, "default:uranium_ore" },
+        { 4, "default:iron_ore" },
+        { 5, "default:aluminium_ore" },
+        { 7, "default:iron_block_light" },
+        { 8, "default:aluminium_block_light" },
+        { 9, "default:aluminium_block_medium" },
+        { 10, "default:aluminium_block_heavy" },
         { 11, "default:steel_hull" },
-        { 12, "default:medium_steel" },
-        { 13, "default:heavy_steel" },
-        { 15, "default:glass" },
-        { 16, "default:light" },
-        { 20, "default:reactor" },
-        { 23, "default:cockpit" },
-        { 25, "default:door" },
-        { 26, "default:cargo" },
-        { 28, "default:thruster" },
-        { 30, "default:laser_cannon" },
+        { 12, "default:iron_block_heavy" },
+        { 13, "default:titanium_block_light" },
+        { 14, "default:titanium_block_medium" },
+        { 15, "default:titanium_block_heavy" },
+        { 16, "default:titanium_ore" },
+        { 17, "default:thulium_ore" },
+        { 18, "default:obscurium_ore" },
+        { 19, "default:cable_block" },
+        { 20, "default:cobalt_power_block" },
+        { 21, "default:powerful_cobalt_power_block" },
+        { 22, "default:thruster_weak" },
+        { 23, "default:ship_console" },
+        { 24, "default:cannon_antipersonnel" },
+        { 25, "default:light_blue" },
+        { 26, "default:ship_camera" },
+        { 27, "default:cannon_console" },
+        { 28, "default:iron_door" },
+        { 29, "default:aluminium_door" },
+        { 31, "default:titanium_door" },
+        { 32, "default:ice_rock" },
+        { 33, "default:cobaltite_rock" },
+        { 34, "default:crafting_table" },
+        { 35, "default:crusher" },
+        { 36, "default:furnace" },
+        { 37, "default:thruster_standard" },
+        { 38, "default:thruster_powerful" },
+        { 39, "default:standard_nuclear_power_block" },
+        { 40, "default:nuclear_power_block" },
+        { 41, "default:thruster_ion" },
+        { 42, "default:cannon_light_assault" },
+        { 43, "default:cannon_anticorvette" },
+        { 44, "default:cannon_antifrigate" },
+        { 45, "default:cannon_heavy_assault" },
+        { 46, "default:basic_aluminium_crate" },
+        { 47, "default:window" },
+        { 48, "default:big_window" },
     };
 
     /// <summary>
@@ -853,25 +1112,56 @@ public static class SpaceboxStructureBridge
         if (localName.Contains("door", StringComparison.OrdinalIgnoreCase))
             return 25;
         if (localName.Contains("cargo", StringComparison.OrdinalIgnoreCase) ||
-            localName.Contains("container", StringComparison.OrdinalIgnoreCase))
+            localName.Contains("crate", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("container", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("storage", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("safe", StringComparison.OrdinalIgnoreCase))
             return 26;
         if (localName.Contains("cockpit", StringComparison.OrdinalIgnoreCase) ||
             localName.Contains("console", StringComparison.OrdinalIgnoreCase))
             return 23;
+        if (localName.Contains("camera", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("radar", StringComparison.OrdinalIgnoreCase))
+            return 26;
         if (localName.Contains("thruster", StringComparison.OrdinalIgnoreCase) ||
             localName.Contains("engine", StringComparison.OrdinalIgnoreCase))
             return 28;
         if (localName.Contains("cannon", StringComparison.OrdinalIgnoreCase) ||
-            localName.Contains("weapon", StringComparison.OrdinalIgnoreCase))
+            localName.Contains("weapon", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("laser", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("gun", StringComparison.OrdinalIgnoreCase))
             return 30;
-        if (localName.Contains("glass", StringComparison.OrdinalIgnoreCase))
+        if (localName.Contains("window", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("glass", StringComparison.OrdinalIgnoreCase))
             return 15;
         if (localName.Contains("light", StringComparison.OrdinalIgnoreCase) ||
-            localName.Contains("lamp", StringComparison.OrdinalIgnoreCase))
+            localName.Contains("lamp", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("torch", StringComparison.OrdinalIgnoreCase))
             return 16;
+        if (localName.Contains("cable", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("wire", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("pipe", StringComparison.OrdinalIgnoreCase))
+            return 19;
         if (localName.Contains("reactor", StringComparison.OrdinalIgnoreCase) ||
-            localName.Contains("power", StringComparison.OrdinalIgnoreCase))
+            localName.Contains("power", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("generator", StringComparison.OrdinalIgnoreCase))
             return 20;
+        if (localName.Contains("craft", StringComparison.OrdinalIgnoreCase))
+            return 34;
+        if (localName.Contains("crush", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("extract", StringComparison.OrdinalIgnoreCase))
+            return 35;
+        if (localName.Contains("furnace", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("smelt", StringComparison.OrdinalIgnoreCase))
+            return 36;
+        if (localName.Equals("ice", StringComparison.OrdinalIgnoreCase) ||
+            localName.StartsWith("ice_", StringComparison.OrdinalIgnoreCase) ||
+            localName.EndsWith("_ice", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("_ice_", StringComparison.OrdinalIgnoreCase))
+            return 32;
+        if (localName.Contains("rock", StringComparison.OrdinalIgnoreCase) ||
+            localName.Contains("stone", StringComparison.OrdinalIgnoreCase))
+            return 0;
 
         // Default fallback: solid steel hull (11)
         return 11;

@@ -475,16 +475,21 @@ public partial class Hud : CanvasLayer
             if (speed < 0.02f) return;
 
             var dir = _viewVelocity / speed;
-            const float radius = 0.10f;
+            const float radius = 0.11f;
 
             var upRef = MathF.Abs(dir.Y) < 0.95f ? Vector3.Up : Vector3.Right;
             var u = dir.Cross(upRef).Normalized();
             var v = u.Cross(dir).Normalized();
 
+            // Sized and scaled by speed matching the original Corneroids SpeedOMeter:
+            // yScale = Math.Min(speed, 10f) * 0.25f, keeping the base radius constant while the length stretches.
+            float yScale = Math.Min(speed, 10f) * 0.25f;
+            float coneLength = Math.Max(0.04f, radius * 3.8f * yScale);
+
             // Viewed from slightly above, as in the original's mini-viewport, sized to stay inside the gap between Health and Power.
             var center3D = new Vector3(0, -0.72f, -0.1f);
-            var apex = center3D + dir * 0.78f;
-            var baseCenter = center3D - dir * 0.48f;
+            var apex = center3D + dir * (coneLength * 0.55f);
+            var baseCenter = center3D - dir * (coneLength * 0.45f);
 
             Span<Vector3> ring = stackalloc Vector3[Segments];
             for (int i = 0; i < Segments; i++)
