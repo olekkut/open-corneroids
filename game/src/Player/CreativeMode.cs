@@ -12,7 +12,7 @@ public sealed class CreativeMode : PlayMode
 {
     public override string Controls =>
         "WASD move · Space/Ctrl up/down · Z/X roll · Shift boost · LMB mine · RMB place · wheel/1-8 select · R/middle turn block\n" +
-        "E door/console · F edit · T light · L level · K fixed cam · N noclip · Esc mouse, again menu";
+        "E door/console · F edit · T light · L level · K fixed cam · N noclip · Esc game menu · F1 welcome";
 
     readonly ushort[] _blocks;
     int _selected;

@@ -176,7 +176,8 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         if (!_inputLocked) Input.MouseMode = Input.MouseModeEnum.Captured;
     }
     /// <summary>Radians per pixel: the original's 0.01 times its default sensitivity 0.5.</summary>
-    const float BaseMouseSensitivity = 0.005f;
+    /// <summary>Radians per pixel at sensitivity 1, as in the original (its default 0.5 makes 0.005).</summary>
+    const float BaseMouseSensitivity = 0.01f;
     const float Reach = 8f;
 
     /// <summary>Exposed so a save system can persist velocity and noclip.</summary>
@@ -336,7 +337,6 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
     }
     bool _inputLocked;
 
-    public event Action? ExitRequested;
     /// <summary>F5. Raised even while a window is open: saving changes nothing the window shows.</summary>
     public event Action? SaveRequested;
 
@@ -411,7 +411,16 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         Input.MouseMode = Input.MouseModeEnum.Captured;
     }
 
-    bool WindowOpen => _windows?.IsOpen == true || _consoleOverlay?.IsOpen == true;
+    bool WindowOpen => _windows?.IsOpen == true || _consoleOverlay?.IsOpen == true || MenusOpen?.Invoke() == true;
+
+    /// <summary>Whether a menu (the Game menu, Options, the welcome window) is up; set by the world.</summary>
+    public Func<bool>? MenusOpen { get; set; }
+
+    /// <summary>Esc: the "Game menu", as in the original.</summary>
+    public event Action? MenuRequested;
+
+    /// <summary>F1: the welcome window, as in the original.</summary>
+    public event Action? HelpRequested;
 
     /// <summary>Switches the active <see cref="PlayMode"/> (e.g. between creative and survival via the debug console).</summary>
     public void SetMode(PlayMode mode)
@@ -475,7 +484,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
             if (fnKey.IsAction(GameInput.Help) && !WindowOpen)
             {
                 StopActions();
-                _windows?.OpenHelpWindow();
+                HelpRequested?.Invoke();
                 GetViewport().SetInputAsHandled();
                 return;
             }
@@ -483,7 +492,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         if (_dead)
         {
             // Dead: only the Respawn button (or Esc for the menu) does anything.
-            if (@event is InputEventKey { Pressed: true, Echo: false, PhysicalKeycode: Key.Escape }) ExitRequested?.Invoke();
+            if (@event is InputEventKey { Pressed: true, Echo: false, PhysicalKeycode: Key.Escape }) MenuRequested?.Invoke();
             GetViewport().SetInputAsHandled();
             return;
         }
@@ -553,8 +562,8 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
             case InputEventKey { Pressed: true, Echo: false } key:
                 if (key.PhysicalKeycode == Key.Escape)
                 {
-                    if (captured) Input.MouseMode = Input.MouseModeEnum.Visible;
-                    else ExitRequested?.Invoke();
+                    StopActions();
+                    MenuRequested?.Invoke();
                 }
                 else if (key.IsAction(GameInput.Noclip))
                     ToggleNoclip();
@@ -1111,8 +1120,40 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
             _flashlight = new SpotLight3D { SpotRange = 24, SpotAngle = 28, LightEnergy = 2.2f, ShadowEnabled = false, Visible = false };
             AddChild(_flashlight);
         }
-        _flashlight.Visible = !_flashlight.Visible;
-        _hud.Flash(_flashlight.Visible ? "Flashlight on" : "Flashlight off");
+        _flashlightOn = !_flashlightOn;
+        ShowFlashlight();
+        _hud.Flash(_flashlightOn ? (Settings.Visuals.LightingOn ? "Flashlight on" : "Flashlight on (Lighting is off in Graphics options)") : "Flashlight off");
+    }
+
+    bool _flashlightOn;
+
+    /// <summary>The flashlight shines while switched on and dynamic lighting is on (<c>cl_lighting</c>).</summary>
+    void ShowFlashlight()
+    {
+        if (_flashlight is not null) _flashlight.Visible = _flashlightOn && Settings.Visuals.LightingOn;
+    }
+
+    // ---- view bobbing (as in the original: the view shakes above 4 m/s, up to 0.02 rad at 8 m/s) ----
+
+    Vector2 _bob;
+
+    /// <summary>Takes last frame's shake out of the view, so look and aim work on the steady view.</summary>
+    void UndoBob()
+    {
+        if (_bob == Vector2.Zero) return;
+        RotateObjectLocal(Vector3.Right, -_bob.Y);
+        RotateObjectLocal(Vector3.Up, -_bob.X);
+        _bob = Vector2.Zero;
+    }
+
+    void ApplyBob(float speed)
+    {
+        if (!Rules.Bool(Simulation.Settings.Cvars.ViewBobbing) || _inputLocked) return;
+        float amount = 0.02f * Math.Clamp((speed - 4) / 4, 0, 1);
+        if (amount <= 0) return;
+        _bob = new Vector2((float)(Random.Shared.NextDouble() * 2 - 1), (float)(Random.Shared.NextDouble() * 2 - 1)) * amount;
+        RotateObjectLocal(Vector3.Up, _bob.X);
+        RotateObjectLocal(Vector3.Right, _bob.Y);
     }
 
     /// <summary>Pitch and yaw (no roll) that look along <paramref name="forward"/>, as mouse look keeps them.</summary>
@@ -1343,6 +1384,8 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         AdvanceHolds((float)Math.Min(delta, ShipPhysics.MaxFrame));
         ValidateBindTool();
         _touchCooldown = Math.Max(0, _touchCooldown - delta);
+        UndoBob();
+        ShowFlashlight();
         if (UpdateDeath(delta)) return;
 
         // The ship went away, its console was broken, or its power network fell below zero: the pilot is thrown out.
@@ -1445,6 +1488,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
                        (turnable ? $"   orientation {_mode.Orientation.Describe()}" : "") +
                        (_hasTarget && _target.Grid.BlockOf(_target) is var looked && looked != BlockPalette.Air
                            ? $"   looking at {_grids.Palette.Item(looked).Name}{ShipNote(_target.Grid)}" : ""));
+        ApplyBob(Motor.Velocity.Length());
     }
 
     string BuildCenterPrompt()
@@ -1454,6 +1498,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
             return "Choose a camera block you wish to bind to the console!";
         if (_bindTool is { Kind: BindToolKind.Triggers })
             return "Choose blocks you wish to control!\n\nPress F again to assign keys!";
+        if (!Rules.Bool(Simulation.Settings.Cvars.ShowHints)) return "";
         if (!_hasTarget || (PinnedAim is null && _aimDistance > 4.5f)) return "";
 
         var block = _target.Grid.BlockOf(_target);

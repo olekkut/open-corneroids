@@ -494,11 +494,11 @@ public abstract partial class BlockGrid : Node3D
 
         var item = _palette.Item(block);
         bool cutout = _palette.IsCutout(block);
-        var node = new MeshInstance3D
+        var node = Settings.Visuals.Chunk(new MeshInstance3D
         {
             Name = $"Object_{_nextObjectId}",
             Mesh = BuildObjectMesh(block, shape, origin, o, active: true),
-        };
+        });
         var door = item.Get<DoorComponent>();
         var obj = new WorldObject(_nextObjectId++, block, shape, origin, o, door, !cutout, node)
         {
@@ -508,13 +508,13 @@ public abstract partial class BlockGrid : Node3D
         if (item.Get<LightComponent>() is { } light && _objectLights < MaxLights)
         {
             var center = shape.ModelBox(origin, o).Center.ToGodot();
-            node.AddChild(new OmniLight3D
+            node.AddChild(Settings.Visuals.Light(new OmniLight3D
             {
                 Position = center,
                 LightColor = Color.Color8(light.Light.Color.R, light.Light.Color.G, light.Light.Color.B),
                 OmniRange = Math.Max(2f, light.Light.Radius * 1.5f),
                 LightEnergy = 2f,
-            });
+            }));
             _objectLights++;
         }
         _objects[obj.Id] = obj;
@@ -842,7 +842,7 @@ public abstract partial class BlockGrid : Node3D
         }
         if (_chunkNodes[slot] is null)
         {
-            _chunkNodes[slot] = new MeshInstance3D { Name = $"Chunk_{chunk.X}_{chunk.Y}_{chunk.Z}" };
+            _chunkNodes[slot] = Settings.Visuals.Chunk(new MeshInstance3D { Name = $"Chunk_{chunk.X}_{chunk.Y}_{chunk.Z}" });
             AddChild(_chunkNodes[slot]);
         }
         _chunkNodes[slot]!.Mesh = mesh;
@@ -853,13 +853,13 @@ public abstract partial class BlockGrid : Node3D
         if (_lights.Remove(p, out var old)) old.QueueFree();
         if (block == BlockPalette.Air || _lights.Count >= MaxLights) return;
         if (_palette.Item(block).Get<LightComponent>() is not { } light) return;
-        var omni = new OmniLight3D
+        var omni = Settings.Visuals.Light(new OmniLight3D
         {
             Position = new Vector3(p.X + 0.5f, p.Y + 0.5f, p.Z + 0.5f),
             LightColor = Color.Color8(light.Light.Color.R, light.Light.Color.G, light.Light.Color.B),
             OmniRange = Math.Max(2f, light.Light.Radius * 1.5f),
             LightEnergy = 2f,
-        };
+        });
         _lights[p] = omni;
         AddChild(omni);
     }

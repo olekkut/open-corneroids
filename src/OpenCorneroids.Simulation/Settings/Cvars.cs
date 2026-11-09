@@ -176,11 +176,46 @@ public static class Cvars
     public static readonly Cvar FixedCamera = new("cl_fixed_camera", CvarKind.Bool, 0, U,
         "Keep the view level with the deck while aboard a ship (K).");
 
-    public static readonly Cvar Fov = new("cl_fov", CvarKind.Float, 75, U,
-        "Field of view, degrees.", 30, 130);
+    public static readonly Cvar Fov = new("cl_fov", CvarKind.Float, 90, U,
+        "Field of view, degrees (Graphics: Field of view).", 45, 135);
 
-    public static readonly Cvar Sensitivity = new("cl_sensitivity", CvarKind.Float, 1, U,
-        "Mouse look sensitivity multiplier.", 0.05, 20);
+    public static readonly Cvar Sensitivity = new("cl_sensitivity", CvarKind.Float, 0.5, U,
+        "Mouse sensitivity: the view turns 0.01 × this radians per pixel (Controls: Mouse sensitivity).", 0, 3);
+
+    public static readonly Cvar DrawTargets = new("cl_draw_targets", CvarKind.Bool, 1, U,
+        "Distance and mass markers on asteroids and ships (Gameplay: Draw target squares).");
+
+    public static readonly Cvar ViewBobbing = new("cl_view_bobbing", CvarKind.Bool, 1, U,
+        "The view shakes above 4 m/s, up to 0.02 rad at 8 m/s (Gameplay: View bobbing).");
+
+    public static readonly Cvar ShowHints = new("cl_show_hints", CvarKind.Bool, 1, U,
+        "On-screen hints for what you hold and the block you look at (Gameplay: Show hints).");
+
+    public static readonly Cvar Gamma = new("cl_gamma", CvarKind.Int, 50, U,
+        "Brightness, 0 to 50 (Gameplay: Gamma).", 0, 50);
+
+    public static readonly Cvar Fullscreen = new("cl_fullscreen", CvarKind.Bool, 1, U,
+        "Full screen rather than a window (Graphics: Fullscreen). Ours on by default; the original starts windowed.");
+
+    public static readonly Cvar ResolutionWidth = new("cl_resolution_width", CvarKind.Int, 0, U,
+        "Window width in pixels; 0 = the desktop's (Graphics: Resolution).", 0, 16384);
+
+    public static readonly Cvar ResolutionHeight = new("cl_resolution_height", CvarKind.Int, 0, U,
+        "Window height in pixels; 0 = the desktop's (Graphics: Resolution).", 0, 16384);
+
+    public static readonly Cvar VSync = new("cl_vsync", CvarKind.Bool, 1, U, "Wait for the screen's refresh (Graphics: V-Sync).");
+
+    public static readonly Cvar Lighting = new("cl_lighting", CvarKind.Bool, 1, U,
+        "Dynamic lights: the flashlight and light blocks (Graphics: Lighting). Ours on by default; the original's is off.");
+
+    public static readonly Cvar Ssao = new("cl_ssao", CvarKind.Int, 2, U,
+        "Ambient occlusion: 0 off, 1 low, 2 high (Graphics: SSAO).", 0, 2);
+
+    public static readonly Cvar ViewDistance = new("cl_view_distance", CvarKind.Int, 100, U,
+        "50 short, 100 medium, 150 far (Graphics: View distance). Ours: sets how far the world is drawn, 8 × this metres.", 50, 150);
+
+    public static readonly Cvar Welcome = new("cl_welcome", CvarKind.Bool, 1, U,
+        "Show the welcome window whenever a world loads, as the original does (F1 reopens it).");
 
     public static readonly Cvar MarkerMinBlocks = new("cl_marker_min_blocks", CvarKind.Int, 64, U,
         "Ours: asteroids smaller than this many blocks get no distance and mass marker.", 1, 1_000_000);
@@ -199,5 +234,7 @@ public static class Cvars
         RespawnMin, RespawnMax, DeathDropItems,
         Creatures, CreatureSpawnInterval, ParasitesPerSector, ParasiteEatTime, CreatureDamageScale, Scavengers,
         FlightAssist, FixedCamera, Fov, Sensitivity, MarkerMinBlocks,
+        DrawTargets, ViewBobbing, ShowHints, Gamma,
+        Fullscreen, ResolutionWidth, ResolutionHeight, VSync, Lighting, Ssao, ViewDistance, Welcome,
     ];
 }

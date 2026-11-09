@@ -140,6 +140,14 @@ Watched through its narration and stills taken from it (stored outside the repos
   drop nothing. Models and textures are the original's `.xnb` files. The scavenger flyer is coded but never spawns in
   the original; ours behind `sv_scavengers`.
 
+- **Menus and options:** the main menu ("Singleplayer", "Multiplayer", "Options", "Exit game" over a forward flight
+  through stars and dust), "Choose world" and "Create new world", "Options" with Gameplay (Draw target squares, View
+  bobbing, Fixed camera when aboard, Show hints, Gamma 0–50 applied on Back), Graphics (Resolution, Fullscreen, V-Sync,
+  Lighting, SSAO Off/Low/High, View distance Short/Medium/Far, Field of view 45°–135° default 90°, applied after "Save
+  changes?") and Controls (Mouse sensitivity 0–3 default 0.5; key bindings with "Press any key", a duplicate key moves);
+  the in-game "Game menu" (Options, Save and exit, Back to game); the welcome window on every load and on F1; the death
+  popup "Oh noes!". The original has no audio; its Network and Sounds buttons did nothing and are left out.
+
 Still to match the original: consumables details, the hand-weapon spread formula, ship collision damage to blocks, and
 classic menu/UI polish.
 
@@ -149,6 +157,11 @@ Tunable, and marked so in code.
 
 - **Flight assistant (opt-in, `H`):** solves throttles 0..1 across powered thrusters (with a 30× force multiplier) to
   reach requested linear and angular velocities with optional inertial dampeners (`G`).
+- **Menus, ours:** settings save as they change (the original saves on exit); Lighting is
+  on by default (the original's is off) and Fullscreen too; View distance sets how far blocks are drawn (8 × the
+  original's band); gamma 0–50 maps to brightness 0.6–1; the Gameplay page adds Flight assistant and Welcome window on
+  load; Controls adds our own actions and a Defaults button; Create new world adds seed, texture packs and creative and
+  drops the original's unused Author field; Multiplayer is greyed out.
 - **Creatures, ours:** they are not saved; `sv_creature_damage_scale` scales their damage to the player; the console's
   `creatures`, `spawn` and `tp aim` are ours.
 - **Death extras:** `sv_death_drop_items` drops the inventory where the player died (off; the original keeps it), and a

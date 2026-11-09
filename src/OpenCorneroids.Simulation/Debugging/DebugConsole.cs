@@ -47,6 +47,12 @@ public interface IDebugConsoleHost
     /// <summary>Moves the player to <paramref name="stopShort"/> metres before the block they aim at (up to 256 m away).</summary>
     bool TeleportToAim(float stopShort, out string message);
 
+    /// <summary><c>bind &lt;key&gt; &lt;action&gt;</c>: binds a key as the Controls window does; null, or what was wrong.</summary>
+    string? Bind(string arguments);
+
+    /// <summary>The Controls window's rows as "action = key" lines.</summary>
+    IReadOnlyList<string> Bindings { get; }
+
     /// <summary>Creatures alive in the world.</summary>
     int CreatureCount { get; }
 
@@ -116,6 +122,7 @@ public sealed class DebugConsole
         new("preset", "preset [name]", "List presets or apply one ('preset original' restores the original game)."),
         new("exec", "exec <file[.cfg]>", "Run the commands in a config file from the game's config folder."),
         new("writeconfig", "writeconfig", "Save your preferences (cl_ settings) to config.cfg now.", "host_writeconfig"),
+        new("bind", "bind [<key> <action>]", "List the key bindings, or bind a key to an action, e.g. bind Q interact (saved in config.cfg)."),
         new("mode", "mode [creative|survival|toggle]", "Switch between Creative and Survival mode (or toggle).", "gamemode", "gm", "creative", "survival"),
         new("speed", "speed [0.1..50|reset]", "Show or set the astronaut speed multiplier, sv_player_speed_scale (cheat).", "flyspeed", "movespeed"),
         new("tp", "tp <x> <y> <z> | tp spawn | tp center | tp aim [m] | tp ship [name|#]", "Teleport to coordinates (supports ~ relative offsets), spawn, center, just short of the aimed block, or a ship (cheat).", "teleport"),
@@ -133,7 +140,7 @@ public sealed class DebugConsole
         new("spawn", "spawn <parasite|egg|needle|scavenger>", "Spawn a creature on the aimed asteroid, or ahead for flyers (cheat).", "summon"),
         new("health", "health <amount>", "Set suit health in survival (cheat).", "hp"),
         new("power", "power <amount>", "Set suit power in survival (cheat)."),
-        new("fov", "fov [30..130|reset]", "Show or set the field of view, cl_fov (default 75)."),
+        new("fov", "fov [45..135|reset]", "Show or set the field of view, cl_fov (default 90)."),
         new("assist", "assist [on|off]", "Toggle or set the automatic flight assistant, cl_flight_assist."),
         new("fixedcam", "fixedcam [on|off]", "Toggle or set the level camera aboard ships, cl_fixed_camera."),
         new("ships", "ships", "List active ships in the world with block count, mass, position and speed."),
@@ -335,6 +342,13 @@ public sealed class DebugConsole
 
             case "reset":
                 return RunReset(args, host.Cvars);
+
+            case "bind":
+            {
+                if (args.Count == 0) return (["Key bindings:", .. host.Bindings.Select(b => "  " + b)], false, false);
+                var error = host.Bind(string.Join(' ', args.Select(a => a.Contains(' ') ? $"\"{a}\"" : a)));
+                return error is null ? ([ $"Bound {args[0]} to {string.Join(' ', args.Skip(1))}."], false, false) : ([ $"bind: {error}"], true, false);
+            }
 
             case "writeconfig" or "host_writeconfig":
             {
@@ -954,7 +968,7 @@ public sealed class DebugConsole
         }
 
         if (!float.TryParse(args[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float fov) || !float.IsFinite(fov))
-            return ([ $"Invalid FOV '{args[0]}'. Usage: fov <30..130|reset>"], true, false);
+            return ([ $"Invalid FOV '{args[0]}'. Usage: fov <45..135|reset>"], true, false);
 
         double clamped = Math.Clamp(fov, setting.Min, setting.Max);
         host.Cvars.Set(setting, clamped);

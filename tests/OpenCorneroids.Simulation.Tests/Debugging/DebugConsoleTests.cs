@@ -41,6 +41,8 @@ public class DebugConsoleTests
 
         public int CreatureCount { get; set; } = 3;
         public bool TeleportToAim(float stopShort, out string message) { message = ""; return false; }
+        public string? Bind(string arguments) => arguments.StartsWith("Q ") ? null : "no";
+        public IReadOnlyList<string> Bindings => ["interact E"];
         public int ClearCreatures() { int n = CreatureCount; CreatureCount = 0; return n; }
         public Simulation.Creatures.CreatureKind? Spawned { get; private set; }
         public string SpawnCreature(Simulation.Creatures.CreatureKind kind) { Spawned = kind; return $"Spawned {kind}."; }
@@ -260,6 +262,18 @@ public class DebugConsoleTests
         Assert.False(console.Execute("spawn egg", host).IsError);
         Assert.Equal(Simulation.Creatures.CreatureKind.SwarmEgg, host.Spawned);
         Assert.True(console.Execute("spawn dragon", host).IsError);
+    }
+
+    [Fact]
+    public void Bind_lists_and_sets_keys_through_the_host()
+    {
+        var console = new DebugConsole();
+        var host = new FakeConsoleHost();
+        var list = console.Execute("bind", host);
+        Assert.False(list.IsError);
+        Assert.Contains(list.Lines, l => l.Contains("interact E"));
+        Assert.False(console.Execute("bind Q interact", host).IsError);
+        Assert.True(console.Execute("bind Escape interact", host).IsError);
     }
 
     [Fact]

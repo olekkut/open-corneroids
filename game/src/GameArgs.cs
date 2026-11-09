@@ -31,6 +31,9 @@ public sealed class GameArgs
     /// <summary>A window to open once the world has loaded ("inventory", "crafting", "console", "power", "help", or "debug"), so screenshots can show it.</summary>
     public string? Open { get; private set; }
 
+    /// <summary>A main-menu page to open at start ("choose", "create", "options", "gameplay", "graphics", "controls"), for screenshots.</summary>
+    public string? Menu { get; private set; }
+
     /// <summary>Debug console commands executed once the world has loaded (<c>--console="mode creative;speed 3;tp 64 80 100"</c>).</summary>
     public List<string> ConsoleCommands { get; } = new();
 
@@ -143,6 +146,7 @@ public sealed class GameArgs
                 case "--showcase": parsed.Showcase = parsed.Creative = true; break;
                 case "--creative": parsed.Creative = true; break;
                 case "--open": parsed.Open = value.ToLowerInvariant(); break;
+                case "--menu": parsed.Menu = value.ToLowerInvariant(); break;
                 case "--console":
                     if (!string.IsNullOrWhiteSpace(value)) parsed.ConsoleCommands.Add(value);
                     break;

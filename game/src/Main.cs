@@ -78,7 +78,8 @@ public partial class Main : Node
         }
         else
         {
-            ShowMenu(null);
+            var menu = ShowMenu(null);
+            if (_args.Menu is { } page) menu.OpenPage(page);
         }
 
         if (_args.NewWorld is not null || _args.QuitAfterSave)
@@ -301,7 +302,7 @@ public partial class Main : Node
         return world;
     }
 
-    /// <summary>Esc twice: save, then the menu. If saving fails the world stays until the player decides.</summary>
+    /// <summary>Save and exit (the Game menu): save, then the menu. If saving fails the world stays until the player decides.</summary>
     async void LeaveWorld(WorldView world)
     {
         if (_leavingWorld) return;

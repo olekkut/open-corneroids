@@ -248,7 +248,13 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             _drops = drops;
         }
         camera.Setup(Grids, hud, mode, windows, consoleOverlay);
-        camera.ExitRequested += () => ExitRequested?.Invoke();
+        // The Game menu, Options and the welcome window sit above the HUD and the in-world windows.
+        _menus = new CanvasLayer { Name = "Menus", Layer = 6 };
+        AddChild(_menus);
+        camera.MenusOpen = () => MenusOpen;
+        camera.MenuRequested += OpenGameMenu;
+        camera.HelpRequested += ShowWelcome;
+        _welcomePending = Cvars.Bool(Simulation.Settings.Cvars.Welcome);
         camera.SaveRequested += () => Save();
         camera.MakeCurrent();
         camera.AddChild(SpaceDust.Create());
@@ -270,9 +276,12 @@ public partial class WorldView : Node3D, IDebugConsoleHost
 
     static CvarStore Cvars => GameSettings.Cvars;
 
+    Godot.Environment? _environment;
+
     void OnSettingChanged(Cvar cvar, double value)
     {
         if (cvar == Simulation.Settings.Cvars.Fov && IsInstanceValid(Player)) Player.Fov = (float)value;
+        if (IsInsideTree()) Settings.Visuals.Changed(GetTree(), cvar, _environment);
     }
 
     public override void _ExitTree()
@@ -296,10 +305,47 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         DebugConsole.RunCommand($"exec {GameSettings.AutoexecFile}");
     }
 
+    CanvasLayer _menus = null!;
+    bool _welcomePending;
+
+    bool MenusOpen => _menus.GetChildren().Any(c => !c.IsQueuedForDeletion());
+
+    /// <summary>Esc: the "Game menu" (Options, Save and exit, Back to game), as in the original.</summary>
+    void OpenGameMenu()
+    {
+        if (MenusOpen) return;
+        Input.MouseMode = Input.MouseModeEnum.Visible;
+        InGameMenus.Pause(_menus, () => ExitRequested?.Invoke()).Closed += Recapture;
+    }
+
+    /// <summary>The welcome window, as the original shows on every load and on F1.</summary>
+    public void ShowWelcome()
+    {
+        if (MenusOpen) return;
+        Input.MouseMode = Input.MouseModeEnum.Visible;
+        InGameMenus.Welcome(_menus, Itemset, Icons, () =>
+        {
+            Input.MouseMode = Input.MouseModeEnum.Visible;
+            _windows.OpenHelpWindow();
+        }).Closed += Recapture;
+    }
+
+    /// <summary>Takes the mouse back for looking once the last menu closed (and no window or dialog wants it).</summary>
+    void Recapture() => Callable.From(() =>
+    {
+        if (!IsInstanceValid(this) || MenusOpen || _windows.IsOpen || DebugConsole.IsOpen || Player.InputLocked || Player.IsDead) return;
+        Input.MouseMode = Input.MouseModeEnum.Captured;
+    }).CallDeferred();
+
     public override void _Process(double delta)
     {
         if (Player is null) return;
         RunAutoexec();
+        if (_welcomePending)
+        {
+            _welcomePending = false;
+            if (!Player.InputLocked) ShowWelcome();
+        }
         _shipPhysics.Advance(delta, Grids, Player.PilotShip, Player.PilotControls((float)delta));
     }
 
@@ -455,6 +501,16 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             case "debug" or "debug-console":
                 DebugConsole.Open();
                 break;
+            case "welcome":
+                ShowWelcome();
+                break;
+            case "menu" or "game-menu":
+                OpenGameMenu();
+                break;
+            case "options":
+                OpenGameMenu();
+                OptionsMenu.Open(_menus);
+                break;
             default:
                 GD.PushWarning($"--open: unknown window '{which}', expected inventory, crafting, console, power, help or debug");
                 break;
@@ -491,6 +547,11 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         message = FormattableString.Invariant($"Teleported {distance - stopShort:0.#} m along the aim, {stopShort:0.#} m short of the block.");
         return true;
     }
+
+    string? IDebugConsoleHost.Bind(string arguments) => GameSettings.Bind(arguments);
+
+    IReadOnlyList<string> IDebugConsoleHost.Bindings =>
+        [.. GameInput.Bindings.Select(b => $"{b.Name,-22} {GameInput.KeyName(GameInput.KeyOf(b))}   ({b.Label})")];
 
     int IDebugConsoleHost.CreatureCount => Creatures.Count;
 
@@ -1441,6 +1502,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             GlowIntensity = 0.6f,
             TonemapMode = Godot.Environment.ToneMapper.Filmic,
         };
+        Settings.Visuals.Apply(environment);
+        _environment = environment;
         AddChild(new WorldEnvironment { Environment = environment });
         AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-35, -40, 0), LightEnergy = 1.1f, LightColor = new Color(1f, 0.96f, 0.9f) });
         AddChild(Stars(900, seed: 7));

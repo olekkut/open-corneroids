@@ -20,6 +20,12 @@ public static class GameSettings
 
     public static CvarStore Cvars { get; } = new();
 
+    static readonly Cvar[] DisplayCvars =
+    [
+        Simulation.Settings.Cvars.Fullscreen, Simulation.Settings.Cvars.ResolutionWidth,
+        Simulation.Settings.Cvars.ResolutionHeight, Simulation.Settings.Cvars.VSync,
+    ];
+
     static bool _loading;
     static bool _hooked;
 
@@ -35,7 +41,16 @@ public static class GameSettings
             _loading = true;
             try
             {
-                foreach (var problem in Cvars.ApplyConfig(File.ReadAllText(path), CvarFlags.User))
+                var settings = new List<string>();
+                foreach (var line in File.ReadAllLines(path))
+                {
+                    if (line.TrimStart().StartsWith("bind ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (Bind(line.Trim()[5..]) is { } bindProblem) GD.PushWarning($"{ConfigFile}: {bindProblem}");
+                    }
+                    else settings.Add(line);
+                }
+                foreach (var problem in Cvars.ApplyConfig(string.Join('\n', settings), CvarFlags.User))
                     GD.PushWarning($"{ConfigFile}: {problem}");
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -47,11 +62,15 @@ public static class GameSettings
                 _loading = false;
             }
         }
+        // The project's own window settings stand until the player changes the display (keeps test runs windowed).
+        if (DisplayCvars.Any(c => !Cvars.IsDefault(c))) ApplyDisplay();
         if (_hooked) return;
         _hooked = true;
         Cvars.Changed += (cvar, _) =>
         {
-            if (!_loading && cvar.Flags.HasFlag(CvarFlags.User) && WriteUserConfig() is { } error) GD.PushWarning(error);
+            if (_loading) return;
+            if (cvar.Flags.HasFlag(CvarFlags.User) && WriteUserConfig() is { } error) GD.PushWarning(error);
+            if (DisplayCvars.Contains(cvar)) ApplyDisplay();
         };
     }
 
@@ -62,14 +81,59 @@ public static class GameSettings
         try
         {
             Directory.CreateDirectory(Folder);
-            File.WriteAllText(path, Cvars.WriteConfig(CvarFlags.User,
+            var text = Cvars.WriteConfig(CvarFlags.User,
                 "Open Corneroids preferences, written by the game. Settings left out are at their defaults.\n" +
-                "Put your own commands in autoexec.cfg instead: this file is rewritten whenever a preference changes."));
+                "Put your own commands in autoexec.cfg instead: this file is rewritten whenever a preference changes.");
+            foreach (var line in GameInput.BindLines()) text += line + "\n";
+            File.WriteAllText(path, text);
             return null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return $"Could not write {path}: {e.Message}";
+        }
+    }
+
+    /// <summary>
+    /// <c>bind "key" "action"</c> (quotes optional): binds the key to a Controls row by its action or label; <c>bind
+    /// "key"</c> alone is refused. Returns null, or what was wrong. Saves the preferences when not loading them.
+    /// </summary>
+    public static string? Bind(string arguments)
+    {
+        // Words, or "quoted words".
+        var parts = System.Text.RegularExpressions.Regex.Matches(arguments, "\"([^\"]*)\"|(\\S+)")
+            .Select(m => m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value)
+            .Where(p => p.Length > 0).ToList();
+        if (parts.Count != 2) return "usage: bind <key> <action>";
+        var key = GameInput.ParseKey(parts[0]);
+        if (key == Key.None && !parts[0].Equals("None", StringComparison.OrdinalIgnoreCase)) return $"'{parts[0]}' is not a key name";
+        if (key != Key.None && !GameInput.Rebindable(key)) return $"{parts[0]} can't be bound (number keys, Escape and function keys are fixed)";
+        if (GameInput.FindBinding(parts[1]) is not { } binding) return $"'{parts[1]}' is not an action ({string.Join(", ", GameInput.Bindings.Select(b => b.Name))})";
+        GameInput.Rebind(binding, key);
+        if (!_loading && WriteUserConfig() is { } error) return error;
+        return null;
+    }
+
+    /// <summary>
+    /// Applies the display preferences: full screen or a window of <c>cl_resolution_width</c> × <c>cl_resolution_height</c>
+    /// (the desktop's when 0), and V-Sync. Called at start and when one of them changes.
+    /// </summary>
+    public static void ApplyDisplay()
+    {
+        if (DisplayServer.GetName() == "headless") return;
+        DisplayServer.WindowSetVsyncMode(Cvars.Bool(Simulation.Settings.Cvars.VSync) ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled);
+        int w = Cvars.Int(Simulation.Settings.Cvars.ResolutionWidth), h = Cvars.Int(Simulation.Settings.Cvars.ResolutionHeight);
+        if (Cvars.Bool(Simulation.Settings.Cvars.Fullscreen))
+        {
+            DisplayServer.WindowSetMode(DisplayServer.WindowMode.Fullscreen);
+        }
+        else
+        {
+            if (DisplayServer.WindowGetMode() != DisplayServer.WindowMode.Windowed) DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
+            var screen = DisplayServer.ScreenGetSize();
+            var size = new Vector2I(w > 0 ? Math.Min(w, screen.X) : screen.X * 3 / 4, h > 0 ? Math.Min(h, screen.Y) : screen.Y * 3 / 4);
+            DisplayServer.WindowSetSize(size);
+            DisplayServer.WindowSetPosition(DisplayServer.ScreenGetPosition() + (screen - size) / 2);
         }
     }
 

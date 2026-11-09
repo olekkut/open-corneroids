@@ -42,6 +42,14 @@ public class CvarStoreTests
         Assert.False(store.Bool(Cvars.RecoilPush));
         Assert.False(store.Bool(Cvars.ProjectileInheritVelocity));
         Assert.Equal(512, store.Int(Cvars.ProjectileLimit));
+        // The original's options: field of view 90 (45–135), mouse sensitivity 0.5 (0–3), gamma 50 (0–50),
+        // target squares, view bobbing and hints on, SSAO high, medium view distance, V-Sync on.
+        Assert.Equal((90.0, 45.0, 135.0), (store.Get(Cvars.Fov), Cvars.Fov.Min, Cvars.Fov.Max));
+        Assert.Equal((0.5, 0.0, 3.0), (store.Get(Cvars.Sensitivity), Cvars.Sensitivity.Min, Cvars.Sensitivity.Max));
+        Assert.Equal(50, store.Int(Cvars.Gamma));
+        Assert.True(store.Bool(Cvars.DrawTargets) && store.Bool(Cvars.ViewBobbing) && store.Bool(Cvars.ShowHints) && store.Bool(Cvars.VSync));
+        Assert.Equal(2, store.Int(Cvars.Ssao));
+        Assert.Equal(100, store.Int(Cvars.ViewDistance));
     }
 
     [Theory]
@@ -109,10 +117,10 @@ public class CvarStoreTests
         var store = new CvarStore();
         var seen = new List<(string, double)>();
         store.Changed += (c, v) => seen.Add((c.Name, v));
-        store.Set(Cvars.Fov, 75);   // already the default
-        store.Set(Cvars.Fov, 90);
+        store.Set(Cvars.Fov, 90);   // already the default
+        store.Set(Cvars.Fov, 100);
         store.Reset(Cvars.Fov);
-        Assert.Equal([("cl_fov", 90), ("cl_fov", 75)], seen);
+        Assert.Equal([("cl_fov", 100), ("cl_fov", 90)], seen);
     }
 
     [Fact]
@@ -127,7 +135,7 @@ public class CvarStoreTests
         Assert.Equal(100, store.Get(Cvars.Fov));
 
         store.ResetAll();
-        Assert.Equal(75, store.Get(Cvars.Fov));
+        Assert.Equal(90, store.Get(Cvars.Fov));
     }
 
     [Fact]
@@ -175,29 +183,29 @@ public class CvarStoreTests
     public void Config_text_lists_only_changed_settings_in_scope()
     {
         var store = new CvarStore();
-        store.Set(Cvars.Fov, 90);
+        store.Set(Cvars.Fov, 100);
         store.Set(Cvars.Ricochet, true);
         var text = store.WriteConfig(CvarFlags.User, "Open Corneroids preferences");
-        Assert.Equal("// Open Corneroids preferences\ncl_fov \"90\"\n", text);
+        Assert.Equal("// Open Corneroids preferences\ncl_fov \"100\"\n", text);
     }
 
     [Fact]
     public void A_written_config_reads_back_and_bad_lines_are_reported()
     {
         var store = new CvarStore();
-        store.Set(Cvars.Fov, 90);
+        store.Set(Cvars.Fov, 100);
         store.Set(Cvars.FlightAssist, true);
         var text = store.WriteConfig(CvarFlags.User, "header");
 
         var other = new CvarStore();
         Assert.Empty(other.ApplyConfig(text, CvarFlags.User));
-        Assert.Equal(90, other.Get(Cvars.Fov));
+        Assert.Equal(100, other.Get(Cvars.Fov));
         Assert.True(other.Bool(Cvars.FlightAssist));
 
         var problems = other.ApplyConfig("cl_fov 500\nsv_ricochet 1\nnoclip\n\n// fine\r\ncl_sensitivity 2 // faster\r\n", CvarFlags.User);
         Assert.Equal(3, problems.Count);
         Assert.StartsWith("line 1", problems[0]);
-        Assert.Equal(90, other.Get(Cvars.Fov));
+        Assert.Equal(100, other.Get(Cvars.Fov));
         Assert.False(other.Bool(Cvars.Ricochet));
         Assert.Equal(2, other.Get(Cvars.Sensitivity));
     }

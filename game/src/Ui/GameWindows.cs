@@ -207,7 +207,7 @@ public partial class GameWindows : CanvasLayer
             "press F on the console again to assign group keys or set a camera). F on power blocks shows network balance."));
         text.AddChild(HelpSection("Piloting & Shortcuts",
             "Seated: bound colour-group keys fire thrusters & cannons · H toggles automatic Flight Assistant (G dampeners)\n" +
-            "V switches seat / chase view · ` Debug Console · F1 Help · F3 Debug telemetry · F5 Quicksave · F6 Hide HUD"));
+            "V switches seat / chase view · ` Console · Esc Game menu · F1 Welcome · F3 Debug telemetry · F5 Quicksave · F6 Hide HUD"));
 
         var buttons = new HBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         vbox.AddChild(buttons);

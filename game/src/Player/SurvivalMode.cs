@@ -17,7 +17,7 @@ public sealed class SurvivalMode : PlayMode
 {
     public override string Controls =>
         "WASD move · Space/Ctrl up/down · Z/X roll · Shift boost · LMB use what you hold · RMB empty hand · 1-8/wheel select\n" +
-        "R/middle turn block · E use · F edit · C inventory · T light · L level · K fixed cam · N noclip · Esc mouse, again menu";
+        "R/middle turn block · E use · F edit · C inventory · T light · L level · K fixed cam · N noclip · Esc game menu · F1 welcome";
 
     readonly Inventory _inventory;
     readonly ItemsetDef _itemset;

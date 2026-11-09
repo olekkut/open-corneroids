@@ -66,7 +66,8 @@ Arguments after `--`:
 | `--hold=<action>[+<action>...]:<seconds>` | Hold these input actions down for that many seconds of game time, as if the keys were pressed (the screenshot lock ignores only the real keyboard). Repeat the argument for a sequence. Actions: `move_forward`, `move_back`, `move_left`, `move_right`, `move_boost` (walking and piloting), `move_up`, `move_down` (walking only), `ship_up`, `ship_down`, `ship_pitch_up`, `ship_pitch_down`, `ship_yaw_left`, `ship_yaw_right` (piloting only), `ship_roll_left`, `ship_roll_right` (rolling the ship or the astronaut), and `primary` (the left mouse button: drill, shoot, or fire the ship's guns). Toggles (dampeners, flight assist, view) are not held: use `--flight-assist`, `--dampeners`, `--pilot=`. Game time counts each frame up to 0.25 s, as the ship physics does, so a loading hitch does not use up a hold |
 | `--frames=<n>` | Take the `--screenshot` at frame n (default 240), or with `--quit-after-save` run that many frames before saving and quitting (so held controls and flying ships are in the save). The screenshot run's frame rate is uncapped, so the moment n frames is depends on the machine: prefer `--seconds` |
 | `--seconds=<s>` | As `--frames`, but after s seconds of game time (the clock `--hold` counts in), the same moment on any machine. Wins over `--frames`. The log says the frame and time it fired at |
-| `--open=inventory` / `=crafting` / `=console` / `=power` / `=help` / `=debug` | Open that window once the first world (new or loaded) is up. `crafting` shows the first crafting-table station; `console` opens the "Control block" window of the first console; `power` opens the "Power network" popup of the first powered block; `help` opens the `F1` controls & mechanics window; `debug` opens the `` ` `` debug console |
+| `--open=inventory` / `=crafting` / `=console` / `=power` / `=help` / `=debug` / `=welcome` / `=menu` / `=options` | Open that window once the first world (new or loaded) is up. `crafting` shows the first crafting-table station; `console` opens the "Control block" window of the first console; `power` opens the "Power network" popup of the first powered block; `help` opens the controls & mechanics window; `debug` opens the `` ` `` console; `welcome` the welcome window; `menu` the Game menu; `options` its Options |
+| `--menu=choose` / `=create` / `=options` / `=gameplay` / `=graphics` / `=controls` | With no world started: open that main-menu page at once, for screenshots |
 | `--console=<cmd>[;<cmd>...]` | Run one or more console commands after the first world is up (e.g. `--console="sv_ricochet 1;sv_cheats 1;speed 3;tp 64 80 100"`) |
 | `--bind-console` / `=wide` / `=close` | Equip the first console's binding tool and frame either the whole ship (`wide`, default) or a close deck view within 3 m of a thruster (`close`); for screenshots |
 | `--debug-hud` | Show the `F3` top-left technical readout (FPS, coordinates, ship telemetry) from startup |
@@ -118,7 +119,8 @@ Controls (survival) follow the original's defaults:
   thrown stack back; the next throw destroys it and saves don't keep it). `` ` `` opens the in-game **Console** (for
   changing any game setting, see [Settings](#settings-console-variables) below, switching between `creative` and
   `survival` modes, spawning ships, and, with `sv_cheats 1`, cheats such as `speed`, `tp`, `give`, `noclip` and `god`;
-  `Up`/`Down` browse history and `Tab` completes commands and setting names). F1 opens the Help & Controls window, F3 toggles the top-left technical readout (FPS,
+  `Up`/`Down` browse history and `Tab` completes commands and setting names). F1 opens the welcome window (its
+  Controls button opens the full key list), Esc the Game menu, F3 toggles the top-left technical readout (FPS,
   coordinates, flight telemetry), F6 hides or shows the HUD, and F5 saves the world. Esc closes a window, frees the
   mouse, and again returns to the menu. Movement stops while a window is open.
 - **Ships:** come within about a metre of a ship's blocks and you are aboard (indicated by the magnetic-boot icon to the
@@ -187,6 +189,28 @@ Two control schemes are available while seated (`H` toggles between them on flig
 
 Standing up puts the player at the nearest free spot beside the console moving with the ship's velocity as drift.
 Console colour-group keys, bound targets and bound cameras are saved with both the static world and every ship.
+
+## Menus and options
+
+The menus are the original's: a grey **Open Corneroids** window over a flight through stars and dust, with
+**Singleplayer**, Multiplayer (not in this version yet), **Options** and **Exit game**.
+
+- **Singleplayer** opens **Choose world**: your worlds, the selected one's itemset, save date and mode, **Play!**,
+  **Create new** and **Remove selected** (it asks first). Damaged saves are listed in red, so you can see the damage and
+  remove the file. **Create new world** asks for a name and an itemset; ours adds the seed, texture packs and creative.
+- **Options** has the original's three pages, each setting a console setting (so `cl_fov 100` in the console and the
+  slider are the same thing), saved in `config.cfg`:
+  - **Gameplay:** Draw target squares (the asteroid and ship markers), View bobbing, Fixed camera when aboard, Show
+    hints, Gamma (applied when you press Back), plus ours: Flight assistant and Welcome window on load.
+  - **Graphics:** Resolution, Fullscreen, V-Sync, Lighting (dynamic lights; ours on by default), SSAO (Off/Low/High),
+    View distance (Short/Medium/Far) and Field of view (45° to 135°, 90° by default). Ok asks "Save changes?" first.
+  - **Controls:** Mouse sensitivity (0 to 3) and the key bindings: click a row and press a key (Esc cancels); a key
+    used by another row moves to the new one. Number keys, Escape and the function keys can't be bound. Defaults puts
+    every key back. The console's `bind` lists the bindings, and `bind <key> <action>` sets one.
+- **In a world**, Esc opens the **Game menu**: Options, Save and exit, Back to game. The **welcome window** shows when a
+  world loads (turn it off in Gameplay) and on F1.
+
+The original has no sound or music, and neither does this remake yet.
 
 ## Health, damage and death
 
@@ -267,7 +291,9 @@ Some of the things that can be changed:
   `sv_impact_damage`, `sv_damage_seat_eject`, `sv_respawn_min`, `sv_respawn_max`, `sv_death_drop_items` (ours, off).
 - **Creatures:** `sv_creatures`, `sv_creature_spawn_interval`, `sv_parasites_per_sector`, `sv_parasite_eat_time`,
   `sv_creature_damage_scale` (ours), `sv_scavengers` (ours, off).
-- **Preferences:** `cl_flight_assist` (`H`), `cl_fixed_camera` (`K`), `cl_fov`, `cl_sensitivity`, `cl_marker_min_blocks`.
+- **Preferences:** `cl_flight_assist` (`H`), `cl_fixed_camera` (`K`), `cl_fov`, `cl_sensitivity`, `cl_marker_min_blocks`,
+  and the Options windows' `cl_draw_targets`, `cl_view_bobbing`, `cl_show_hints`, `cl_gamma`, `cl_fullscreen`,
+  `cl_resolution_width`, `cl_resolution_height`, `cl_vsync`, `cl_lighting`, `cl_ssao`, `cl_view_distance`, `cl_welcome`.
 
 **Cheats.** `noclip` (and the `N` key), `god`, `give`, `kit`, `heal`, `health`, `power`, `tp` and `speed` only work after
 `sv_cheats 1`. Setting `sv_cheats 0` again ends noclip and god mode and resets the cheat settings. A world remembers that

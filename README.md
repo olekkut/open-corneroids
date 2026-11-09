@@ -76,6 +76,9 @@ dropped in next to them.
   original's.
 - **Saves.** Worlds save their blocks, ships in flight, console bindings, your suit and inventory, and remember which
   itemset they need.
+- **The original's menus.** The grey main menu over a flight through the stars, "Choose world" and "Create new
+  world", and Options with the original's Gameplay, Graphics and Controls pages (key rebinding included), all saved to
+  `config.cfg`; in game, Esc opens the Game menu and F1 the welcome window.
 - **Yours to tune.** The original game's rules are the default, and the console changes almost any of them, the way
   Source engine games do: `sv_ricochet 1`, `sv_ship_max_speed 40`, `sv_mine_time_max 0.4`, `cl_fov 90`. World rules
   are saved with each world, preferences in `config.cfg`; `preset original` puts everything back, `exec` runs your own
@@ -109,7 +112,8 @@ Each download is the game with its data included, so there is nothing to install
 | Inventory | `C` |
 | Flashlight / fixed camera aboard | `T` / `K` |
 | Console | `` ` `` (any setting by name, `find`, `differences`, `preset`, `exec`, `mode`, `kill`, `respawn`, `creatures`, `spawnship`, `importship`, `exportship`, `help`; with `sv_cheats 1` also `speed`, `tp`, `give`, `noclip`, `god`, `heal`) |
-| Help / debug readout / hide HUD / save | `F1` / `F3` / `F6` / `F5` |
+| Game menu (Options, Save and exit) | `Esc` |
+| Welcome window / debug readout / hide HUD / save | `F1` / `F3` / `F6` / `F5` |
 
 Flying a ship: by default, bound console group keys fire their thrusters and cannons while held (`V` seat/camera or
 chase view, `E` to stand up, gun consoles aim bound cannons with the mouse). Press `H` to toggle the optional flight
@@ -165,7 +169,8 @@ flowchart LR
 - [x] Console settings: the original's rules by default, nearly every one tunable, saved per world
 - [x] Damage to the player, armor, death and respawn
 - [x] Creatures: mineral parasites, swarm eggs and needles (scavengers optional)
-- [ ] Options menu, sound
+- [x] The original's menus and Options (Gameplay, Graphics, Controls with key rebinding), welcome window, Game menu
+- [ ] Sound (the original has none; ours to add)
 - [ ] Multiplayer
 
 ## Credits

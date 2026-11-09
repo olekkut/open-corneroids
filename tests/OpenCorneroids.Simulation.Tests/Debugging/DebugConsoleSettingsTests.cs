@@ -31,6 +31,8 @@ public class DebugConsoleSettingsTests
         public bool Respawn() => false;
         public int CreatureCount => 0;
         public bool TeleportToAim(float stopShort, out string message) { message = ""; return false; }
+        public string? Bind(string arguments) => arguments.StartsWith("Q ") ? null : "no";
+        public IReadOnlyList<string> Bindings => ["interact E"];
         public int ClearCreatures() => 0;
         public string SpawnCreature(Simulation.Creatures.CreatureKind kind) => "";
         public CvarStore Cvars { get; } = new();
@@ -91,7 +93,7 @@ public class DebugConsoleSettingsTests
     public void Help_on_a_setting_describes_it()
     {
         var help = Run("help cl_fov");
-        Assert.StartsWith("cl_fov = 75", help.Lines[0]);
+        Assert.StartsWith("cl_fov = 90", help.Lines[0]);
         Assert.Contains("Field of view", help.Lines[1]);
     }
 
@@ -134,7 +136,7 @@ public class DebugConsoleSettingsTests
         Assert.Equal(100, host.Cvars.Get(Cvars.Fov));
 
         Run("reset prefs");
-        Assert.Equal(75, host.Cvars.Get(Cvars.Fov));
+        Assert.Equal(90, host.Cvars.Get(Cvars.Fov));
 
         Run("sv_ricochet 1; cl_fov 100; reset all");
         Assert.Empty(host.Cvars.Differences());
@@ -149,12 +151,12 @@ public class DebugConsoleSettingsTests
         Assert.True(host.Cvars.Bool(Cvars.FlightAssist));
         Assert.True(host.Cvars.Bool(Cvars.FixedCamera));
 
-        Run("sv_ricochet 1; cl_fov 90");
+        Run("sv_ricochet 1; cl_fov 100");
         var original = Run("preset original");
         Assert.False(original.IsError);
         Assert.False(host.Cvars.Bool(Cvars.Ricochet));
         Assert.False(host.Cvars.Bool(Cvars.FlightAssist));
-        Assert.Equal(90, host.Cvars.Get(Cvars.Fov));   // a viewing preference, not part of the game's rules
+        Assert.Equal(100, host.Cvars.Get(Cvars.Fov));   // a viewing preference, not part of the game's rules
 
         Assert.True(Run("preset nonsense").IsError);
     }
@@ -236,9 +238,9 @@ public class DebugConsoleSettingsTests
         Run("assist on; fixedcam on; fov 200");
         Assert.True(host.Cvars.Bool(Cvars.FlightAssist));
         Assert.True(host.Cvars.Bool(Cvars.FixedCamera));
-        Assert.Equal(130, host.Cvars.Get(Cvars.Fov));   // the shortcut clamps
+        Assert.Equal(135, host.Cvars.Get(Cvars.Fov));   // the shortcut clamps
         Run("fov reset");
-        Assert.Equal(75, host.Cvars.Get(Cvars.Fov));
+        Assert.Equal(90, host.Cvars.Get(Cvars.Fov));
     }
 
     [Fact]

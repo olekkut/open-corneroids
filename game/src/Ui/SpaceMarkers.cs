@@ -62,6 +62,8 @@ public partial class SpaceMarkers : Control
     public override void _Draw()
     {
         if (GetViewport().GetCamera3D() is not { } camera) return;
+        // The original's "Draw target squares" option.
+        if (!Settings.GameSettings.Cvars.Bool(Simulation.Settings.Cvars.DrawTargets)) return;
         var eye = camera.GlobalPosition;
         // With stretch mode canvas_items the viewport's visible rect is already the 2D (canvas) size, so the
         // projection lands in canvas coordinates as it is.

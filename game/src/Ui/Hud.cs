@@ -416,7 +416,8 @@ public partial class Hud : CanvasLayer
         var center = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         center.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         screen.AddChild(center);
-        var window = ClassicWindow.Create("", bevel: 5, padLeft: 28, padTop: 22, padRight: 28, padBottom: 20);
+        // The original's caption.
+        var window = ClassicWindow.Create("Oh noes!", bevel: 5, padLeft: 28, padTop: 36, padRight: 28, padBottom: 20);
         center.AddChild(window);
         var column = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
         column.AddThemeConstantOverride("separation", 16);
