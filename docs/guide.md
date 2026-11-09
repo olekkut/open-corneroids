@@ -188,6 +188,50 @@ Two control schemes are available while seated (`H` toggles between them on flig
 Standing up puts the player at the nearest free spot beside the console moving with the ship's velocity as drift.
 Console colour-group keys, bound targets and bound cameras are saved with both the static world and every ship.
 
+## Health, damage and death
+
+As in the original:
+
+- **Health** is 100 plus what worn armor adds (and timed consumables while they last), and comes back at half a point a
+  second.
+- **Armor** (the worn pieces and timed consumables added up, at most 60) takes off ln(armor + 1) / 6 of each hit: about
+  30% at 5, 40% at 10, 51% at 20 and 69% at 60.
+- **What hurts:** creatures (see below), shots (ship cannons, scavenger bolts) and hitting a surface hard: 7 damage for every m/s above
+  8 m/s straight into it, so boosting into rock at full speed hurts badly. Your own hand weapon never hits you.
+- **Any hit** flashes red markers around the crosshair, pointing where it came from, and throws you out of a console
+  seat.
+- **At 0 health you die:** your hand is emptied (nothing is lost from the inventory), consumable effects end, and a
+  "You have died" window waits over a heartbeat until you press **Respawn**. You come back 64 to 95 m from where you
+  died, facing it, with 100 health and full suit power. The console has `kill` and `respawn` too.
+- **Shots** lose the damage they deal: a block soaks up its remaining hit points, a player their remaining health, and a
+  shot with damage left flies on through, so a strong shot can break several blocks in a row. Shot-up blocks drop
+  nothing.
+
+Every number here is a setting (see below), e.g. `sv_player_damage 0` for a world where nobody gets hurt, or
+`sv_death_drop_items 1` to drop everything you carry where you die.
+
+## Creatures
+
+As in the original, creatures live on asteroids in single player. Every second, while you are near one, a mineral
+parasite or a swarm egg may appear on an asteroid or mineral surface 16 m or more from you (at most one parasite per
+16³ sector of an asteroid's blocks), and creatures more than 32 m away go.
+
+- **Mineral parasite:** eats the asteroid block under it, one every 20 seconds (nothing drops), then crawls to the next
+  asteroid or mineral block. Come within 4 m, or shoot it from within 16 m, and it charges at you; its bite does 10.
+  20 health.
+- **Swarm egg:** hatches when you come within 5 m or shoot it, oozing green goo and letting out three needles, one a
+  second, then vanishes. 5 health.
+- **Needle:** homes in on you at 7 m/s and stings for 5, trailing purple; gone after 4 seconds or on hitting rock.
+- **Scavenger flyer:** the original has it but never lets one appear; `sv_scavengers 1` lets it, away from asteroids. It
+  circles about 16 m off and fires yellow-green bolts (5 damage) when you are on foot, or at anyone who shoots it.
+
+A creature's touch hurts once every 0.7 seconds and knocks you back at 5 m/s. Shots hit creatures within 1.5 times their
+size and fly on with any damage left. Creatures heal a point every two seconds, drop nothing and are not saved. The
+console counts them with `creatures` (and removes them with `creatures clear`); with `sv_cheats 1`, `spawn parasite`,
+`spawn egg`, `spawn needle` or `spawn scavenger` puts one where you aim, and `tp aim` takes you close to what you aim at.
+
+The creatures are drawn with the original's own models and textures, read from the bundled `.xnb` files.
+
 ## Settings (console variables)
 
 The game plays like the original out of the box, but nearly every rule can be changed from the console (`` ` ``), the
@@ -217,7 +261,12 @@ Some of the things that can be changed:
 - **Building and ships:** `sv_attach_distance`, `sv_bind_distance`, `sv_ship_max_speed`, `sv_ship_max_spin`,
   `sv_ship_coast_decel`, `sv_assist_force`.
 - **Weapons:** `sv_ricochet` (off, as in the original), `sv_recoil_push` (off: recoil only kicks the weapon on screen),
-  `sv_projectile_inherit_velocity` (off: shots fly at their own speed), `sv_projectile_limit` (512).
+  `sv_projectile_inherit_velocity` (off: shots fly at their own speed), `sv_projectile_limit` (512),
+  `sv_projectile_pass_through` (on), `sv_projectile_hit_radius`.
+- **Health and death:** `sv_player_damage`, `sv_health_regen`, `sv_armor_cap`, `sv_armor_scale`, `sv_impact_speed`,
+  `sv_impact_damage`, `sv_damage_seat_eject`, `sv_respawn_min`, `sv_respawn_max`, `sv_death_drop_items` (ours, off).
+- **Creatures:** `sv_creatures`, `sv_creature_spawn_interval`, `sv_parasites_per_sector`, `sv_parasite_eat_time`,
+  `sv_creature_damage_scale` (ours), `sv_scavengers` (ours, off).
 - **Preferences:** `cl_flight_assist` (`H`), `cl_fixed_camera` (`K`), `cl_fov`, `cl_sensitivity`, `cl_marker_min_blocks`.
 
 **Cheats.** `noclip` (and the `N` key), `god`, `give`, `kit`, `heal`, `health`, `power`, `tp` and `speed` only work after

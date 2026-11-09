@@ -7,7 +7,7 @@ namespace OpenCorneroids.Simulation.Tests.E2E;
 
 /// <summary>
 /// Authoritative synthetic fixtures and reference calculators for Corneroids 2012 .wrl SQLite databases.
-/// Built strictly from disassembled IL specifications and SQLite 3 schema.
+/// Built from the SQLite 3 schema of the map files and the layouts the reader expects.
 /// </summary>
 public static class WrlFixtures
 {

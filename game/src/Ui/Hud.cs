@@ -100,6 +100,13 @@ public partial class Hud : CanvasLayer
         _crosshair.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         root.AddChild(_crosshair);
 
+        // Red damage markers around the crosshair, and the death window with its heartbeat.
+        _damage = new DamageView { MouseFilter = Control.MouseFilterEnum.Ignore };
+        _damage.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        root.AddChild(_damage);
+        _death = BuildDeathScreen();
+        AddChild(_death);
+
         // Contextual prompt below the crosshair ("F to edit / E to use", or console binding instructions).
         _centerPrompt = Text("", 16);
         _centerPrompt.HorizontalAlignment = HorizontalAlignment.Center;
@@ -332,6 +339,7 @@ public partial class Hud : CanvasLayer
 
     public override void _Process(double delta)
     {
+        BeatHeart(delta);
         if (_messageTime > 0 && (_messageTime -= delta) <= 0) _message.Text = "";
         if (_selectedNameTime > 0)
         {
@@ -366,6 +374,120 @@ public partial class Hud : CanvasLayer
     }
 
     static StyleBoxFlat Flat(Color color) => new() { BgColor = color };
+
+    // ---- damage and death ----
+
+    DamageView _damage = null!;
+    Control _death = null!;
+    ColorRect _heartbeat = null!;
+    Action? _onRespawn;
+    double _deadFor;
+
+    /// <summary>
+    /// Red markers around the crosshair for 0.4 seconds, as in the original, pointing toward where the hurt came from:
+    /// <paramref name="screenAngle"/> in radians clockwise from straight up on screen, or null for all round.
+    /// </summary>
+    public void ShowDamage(float? screenAngle) => _damage.Show(screenAngle);
+
+    /// <summary>The death window, as in the original: "You have died" and a Respawn button, over a heartbeat pulse.</summary>
+    public void ShowDeath(Action onRespawn)
+    {
+        _onRespawn = onRespawn;
+        _deadFor = 0;
+        _death.Visible = true;
+    }
+
+    public void HideDeath()
+    {
+        _onRespawn = null;
+        _death.Visible = false;
+    }
+
+    public bool DeathShown => _death.Visible;
+
+    Control BuildDeathScreen()
+    {
+        var screen = new Control { Visible = false, MouseFilter = Control.MouseFilterEnum.Stop };
+        screen.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _heartbeat = new ColorRect { Color = new Color(0.6f, 0, 0, 0), MouseFilter = Control.MouseFilterEnum.Ignore };
+        _heartbeat.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        screen.AddChild(_heartbeat);
+
+        var center = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        center.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        screen.AddChild(center);
+        var window = ClassicWindow.Create("", bevel: 5, padLeft: 28, padTop: 22, padRight: 28, padBottom: 20);
+        center.AddChild(window);
+        var column = new VBoxContainer { Alignment = BoxContainer.AlignmentMode.Center };
+        column.AddThemeConstantOverride("separation", 16);
+        window.AddChild(column);
+        var text = ClassicUi.Label("You have died", 22, Colors.Black);
+        text.HorizontalAlignment = HorizontalAlignment.Center;
+        column.AddChild(text);
+        var respawn = ClassicUi.Button("Respawn", new Vector2(160, 38), 17);
+        respawn.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        respawn.Pressed += () => _onRespawn?.Invoke();
+        column.AddChild(respawn);
+        return screen;
+    }
+
+    void BeatHeart(double delta)
+    {
+        if (!_death.Visible) return;
+        // A heartbeat once a second: a quick double throb of red, then rest.
+        _deadFor += delta;
+        double beat = _deadFor % 1.0;
+        float pulse = (float)(Math.Exp(-Math.Pow((beat - 0.08) / 0.05, 2)) + 0.7 * Math.Exp(-Math.Pow((beat - 0.28) / 0.06, 2)));
+        _heartbeat.Color = new Color(0.55f, 0, 0, 0.22f + 0.3f * pulse);
+    }
+
+    /// <summary>Red wedges around the crosshair while the player is being hurt.</summary>
+    sealed partial class DamageView : Control
+    {
+        /// <summary>How long the markers show, as in the original.</summary>
+        const double ShowSeconds = 0.4;
+        double _left;
+        float? _angle;
+
+        public void Show(float? angle)
+        {
+            _angle = angle;
+            _left = ShowSeconds;
+            QueueRedraw();
+        }
+
+        public override void _Process(double delta)
+        {
+            if (_left <= 0) return;
+            _left -= delta;
+            QueueRedraw();
+        }
+
+        public override void _Draw()
+        {
+            if (_left <= 0) return;
+            var c = (Size * 0.5f).Floor();
+            float alpha = (float)Math.Clamp(_left / ShowSeconds, 0, 1);
+            var red = new Color(0.95f, 0.08f, 0.05f, 0.9f * alpha);
+            var shadow = new Color(0, 0, 0, 0.5f * alpha);
+            if (_angle is { } a) Wedge(c, a, red, shadow);
+            else for (int i = 0; i < 4; i++) Wedge(c, i * MathF.PI / 2, red, shadow);
+        }
+
+        void Wedge(Vector2 c, float angle, Color color, Color shadow)
+        {
+            // An arrowhead 34 px out from the centre, pointing outward toward the source.
+            var dir = new Vector2(MathF.Sin(angle), -MathF.Cos(angle));
+            var side = new Vector2(-dir.Y, dir.X);
+            var tip = c + dir * 48;
+            Vector2[] points = [tip, c + dir * 34 + side * 12, c + dir * 38, c + dir * 34 - side * 12];
+            var outline = new Vector2[points.Length + 1];
+            points.CopyTo(outline, 0);
+            outline[^1] = points[0];
+            DrawColoredPolygon(points, color);
+            DrawPolyline(outline, shadow, 1.5f, antialiased: true);
+        }
+    }
 
     /// <summary>Draws the classic 4-tick crosshair, the <c>[k]</c> block-binding reticle, or the camera-binding reticle.</summary>
     sealed partial class CrosshairView : Control
@@ -481,8 +603,8 @@ public partial class Hud : CanvasLayer
             var u = dir.Cross(upRef).Normalized();
             var v = u.Cross(dir).Normalized();
 
-            // Sized and scaled by speed matching the original Corneroids SpeedOMeter:
-            // yScale = Math.Min(speed, 10f) * 0.25f, keeping the base radius constant while the length stretches.
+            // Scaled by speed as in the original: the length stretches with speed up to 10 units/s
+            // (yScale = min(speed, 10) * 0.25) while the base radius stays the same.
             float yScale = Math.Min(speed, 10f) * 0.25f;
             float coneLength = Math.Max(0.04f, radius * 3.8f * yScale);
 

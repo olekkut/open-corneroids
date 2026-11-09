@@ -4,12 +4,17 @@ namespace OpenCorneroids.Simulation.Items;
 
 /// <summary>A timed consumable still in effect.</summary>
 /// <param name="ItemId">The consumable that gave it; using the same one again restarts it instead of stacking.</param>
-public sealed record SuitBuff(int ItemId, double SecondsLeft, int Armor, int Power);
+public sealed record SuitBuff(int ItemId, double SecondsLeft, int Armor, int Power)
+{
+    /// <summary>Added to maximum health while it lasts (not to current health), as in the original.</summary>
+    public int Health { get; init; }
+}
 
 /// <summary>
-/// The astronaut's suit: health, suit power, the seven equipment slots and timed buffs. The original shows Health and
-/// Power bars (100 / 100) and a character window with Health, Armor and Power recharge (5 with nothing worn); the rest
-/// of the numbers and every rule here are ours and tunable (see docs/design/gameplay-observations.md §3).
+/// The astronaut's suit: health, suit power, the seven equipment slots and timed buffs, as in the original: 100 health
+/// regenerating half a point a second, 100 power recharging 5 a second plus what is worn, worn and timed bonuses to
+/// maximum health, armor and recharge, death at 0 health and a respawn with 100 of each (see
+/// <see cref="Combat.Damage"/> for how damage is cut by armor).
 /// </summary>
 /// <remarks>
 /// Equipment slots are indexed by <see cref="WearableSlot"/>. Every public call that changes anything visible raises
@@ -45,7 +50,13 @@ public sealed class Suit
     public IReadOnlyList<ItemStack?> Equipment => equipment;
     public IReadOnlyList<SuitBuff> Buffs => buffs;
 
-    public int MaxHealth => BaseMaxHealth + Worn().Sum(w => w.HealthRating);
+    /// <summary>Health regained per second while alive (<c>sv_health_regen</c>; 0.5 as in the original).</summary>
+    public double HealthRegenPerSecond { get; set; } = Combat.Damage.HealthRegenPerSecond;
+
+    /// <summary>Health ran out: no regeneration and no further damage until <see cref="Respawn"/>.</summary>
+    public bool IsDead { get; private set; }
+
+    public int MaxHealth => BaseMaxHealth + Worn().Sum(w => w.HealthRating) + buffs.Sum(b => Math.Max(0, b.Health));
     public int MaxPower => BaseMaxPower;
     public int Armor => Worn().Sum(w => w.ArmorRating) + buffs.Sum(b => b.Armor);
     public int PowerRecharge => BasePowerRecharge + Worn().Sum(w => w.PowerRechargeRate) + buffs.Sum(b => b.Power);
@@ -116,7 +127,10 @@ public sealed class Suit
         else
         {
             buffs.RemoveAll(b => b.ItemId == item.ItemId);
-            buffs.Add(new SuitBuff(item.ItemId, Math.Max(0, effect.DurationMs) / 1000.0, effect.Armor, effect.Power));
+            buffs.Add(new SuitBuff(item.ItemId, Math.Max(0, effect.DurationMs) / 1000.0, Math.Max(0, effect.Armor), effect.Power)
+            {
+                Health = Math.Max(0, effect.Health),
+            });
         }
         inventory.TryTakeFromSlot(inventorySlot, 1);
         Changed?.Invoke();
@@ -132,11 +146,17 @@ public sealed class Suit
         return true;
     }
 
-    /// <summary>Sets suit health (clamped to <c>0..MaxHealth</c>) and notifies listeners.</summary>
+    /// <summary>Sets suit health (clamped to <c>0..MaxHealth</c>) and notifies listeners. 0 kills.</summary>
     public void SetHealth(double value)
     {
         if (!double.IsFinite(value)) return;
         Health = Math.Clamp(value, 0, MaxHealth);
+        if (Health <= 0)
+        {
+            Die();
+            return;
+        }
+        IsDead = false;
         Changed?.Invoke();
     }
 
@@ -153,13 +173,53 @@ public sealed class Suit
     {
         Health = MaxHealth;
         Power = MaxPower;
+        IsDead = false;
         Changed?.Invoke();
     }
 
-    /// <summary>Recharges power and runs buffs down by <paramref name="seconds"/> of game time.</summary>
+    /// <summary>
+    /// Takes <paramref name="amount"/> health (already reduced by armor; see <see cref="Combat.Damage.AfterArmor"/>).
+    /// Returns what was taken: nothing while dead or in god mode. Reaching 0 makes the suit <see cref="IsDead"/>.
+    /// </summary>
+    public double Hurt(double amount)
+    {
+        if (IsDead || GodMode || !(amount > 0) || !double.IsFinite(amount)) return 0;
+        double taken = Math.Min(Health, amount);
+        Health -= taken;
+        if (Health <= 0)
+        {
+            Health = 0;
+            Die();
+            return taken;
+        }
+        Changed?.Invoke();
+        return taken;
+    }
+
+    /// <summary>Death, as in the original: health 0 and every running consumable effect cleared.</summary>
+    public void Die()
+    {
+        Health = 0;
+        IsDead = true;
+        buffs.Clear();
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Back to life, as in the original: health to the base 100 (worn bonuses are not filled) and suit power to 100.
+    /// </summary>
+    public void Respawn()
+    {
+        IsDead = false;
+        Health = Math.Min(BaseMaxHealth, MaxHealth);
+        Power = MaxPower;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Recharges power, regenerates health and runs buffs down by <paramref name="seconds"/> of game time.</summary>
     public void Tick(double seconds)
     {
-        if (seconds <= 0) return;
+        if (seconds <= 0 || IsDead) return;
         bool changed = false;
         for (int i = buffs.Count - 1; i >= 0; i--)
         {
@@ -174,7 +234,10 @@ public sealed class Suit
         if (changed) ClampHealth();
         var before = (int)Power;
         Power = Math.Min(MaxPower, Power + PowerRecharge * seconds);
-        if (changed || (int)Power != before) Changed?.Invoke();
+        var healthBefore = (int)Health;
+        if (HealthRegenPerSecond > 0 && double.IsFinite(HealthRegenPerSecond) && Health < MaxHealth)
+            Health = Math.Min(MaxHealth, Health + HealthRegenPerSecond * seconds);
+        if (changed || (int)Power != before || (int)Health != healthBefore) Changed?.Invoke();
     }
 
     /// <summary>
@@ -199,6 +262,9 @@ public sealed class Suit
             if (b.SecondsLeft > 0 && double.IsFinite(b.SecondsLeft)) buffs.Add(b);
         Health = Math.Clamp(double.IsFinite(state.Health) ? state.Health : MaxHealth, 0, MaxHealth);
         Power = Math.Clamp(double.IsFinite(state.Power) ? state.Power : MaxPower, 0, MaxPower);
+        // Ours: a world saved by a dead player loads with them respawned where they lie.
+        IsDead = false;
+        if (Health <= 0) Health = Math.Min(BaseMaxHealth, MaxHealth);
         Changed?.Invoke();
         return rejected;
     }

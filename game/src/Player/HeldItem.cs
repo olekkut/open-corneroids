@@ -42,20 +42,28 @@ public partial class HeldItem : Node3D
         if (mode is SurvivalMode survival) survival.Fired += OnFired;
     }
 
-    void OnFired() => _kick = 1;
+    /// <summary>
+    /// Recoil as in the original: each shot moves the weapon back by its <c>pushback</c> (0..1 units) and it slides
+    /// forward again at 0.75 units a second (a 0.05 pistol kick is 5 cm, gone in under a tenth of a second).
+    /// </summary>
+    void OnFired(float pushback) => _kick = Math.Clamp(pushback, 0, 1);
+
+    const float KickRecovery = 0.75f;
+    /// <summary>Metres the model moves back per unit of pushback: one, as the original's units are metres here.</summary>
+    const float KickScale = 1f;
 
     public override void _Process(double delta)
     {
-        // A pilot's hands are on the controls: nothing is held in the seat.
-        var item = GetParent() is FlyCamera { PilotShip: not null } ? null : _mode.HeldItem;
+        // A pilot's hands are on the controls, and the dead hold nothing.
+        var item = GetParent() is FlyCamera { PilotShip: not null } or FlyCamera { IsDead: true } ? null : _mode.HeldItem;
         int id = item?.ItemId ?? -1;
         if (id != _shownItem)
         {
             _shownItem = id;
             _model.Mesh = item is null ? null : MeshOf(item);
         }
-        _kick = Math.Max(0, _kick - (float)delta * 8);
-        _model.Position = Rest + new Vector3(0, 0.02f, 0.09f) * _kick;
+        _kick = Math.Max(0, _kick - (float)delta * KickRecovery);
+        _model.Position = Rest + new Vector3(0, 0.2f, 1f) * (_kick * KickScale);
     }
 
     ArrayMesh? MeshOf(ItemDef item)

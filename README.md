@@ -59,7 +59,8 @@ dropped in next to them.
   and fingerprinted so saves know which itemset they belong to.
 - **Survival.** Drill blocks with a drill strong enough for them, pick up what floats free, smelt and craft at the
   crafting table, ore furnace and mineral extractor, and keep your suit's health and power up with armor, power
-  sources and consumables.
+  sources and consumables. Shots and hard crashes hurt, armor softens them, and dying sends you back 64 to 95 m away
+  with your inventory intact.
 - **Building.** Place single blocks and multi-block parts (thrusters, cannons, power blocks, doors) in any of 24
   orientations, with 8-corner footprint brackets, an outward facing/exhaust arrow, and empty-space placement that
   attaches to the nearest structure within 16 m (shown by a red attachment beam) or starts a new floating ship beyond it.
@@ -67,8 +68,10 @@ dropped in next to them.
   and power balance), and bind thrusters, cannons and cameras to colour-coded console groups (`F` on a console, then `F`
   again to assign keys). Fly with the original's console bindings by default, or press `H` for the optional automatic
   flight assistant; ships collide with rock and each other, and you ride along when you stand inside one.
-- **Weapons.** Hand weapons and ship cannons fire the itemset's projectiles, which break blocks once they've done
-  enough damage; gun consoles aim bound cannons where you look.
+- **Weapons.** Hand weapons and ship cannons fire the itemset's projectiles, which spend their damage on what they
+  hit and fly on through what they break; gun consoles aim bound cannons where you look.
+- **Creatures.** Mineral parasites eat the asteroids and charge you, swarm eggs hatch homing needles, and (if you turn
+  them on) scavengers fly in shooting, all drawn with the original's models and textures.
 - **Free flight.** Full six-degree movement in zero g: no fixed up, roll on Z and X, controls modelled on the
   original's.
 - **Saves.** Worlds save their blocks, ships in flight, console bindings, your suit and inventory, and remember which
@@ -78,7 +81,7 @@ dropped in next to them.
   are saved with each world, preferences in `config.cfg`; `preset original` puts everything back, `exec` runs your own
   `.cfg` presets, and cheats such as `noclip`, `god` and `give` need `sv_cheats 1`. See the
   [guide](docs/guide.md#settings-console-variables).
-- **Tested.** The content loader and the game rules live in plain C# libraries with 1,370+ automated tests; Godot only
+- **Tested.** The content loader and the game rules live in plain C# libraries with 1,400+ automated tests; Godot only
   draws and takes input.
 - **Backward compatibility & modding.** Loads original 2012 Corneroids `.wrl` SQLite 3 maps seamlessly alongside native
   `.ocworld` saves, discovers and loads mod packages directly from `.zip` archives in BYOA folders without manual
@@ -105,7 +108,7 @@ Each download is the game with its data included, so there is nothing to install
 | Use a block / edit it | `E` (consoles, crafting stations, doors) / `F` (console binding & key setup, power network info) |
 | Inventory | `C` |
 | Flashlight / fixed camera aboard | `T` / `K` |
-| Console | `` ` `` (any setting by name, `find`, `differences`, `preset`, `exec`, `mode`, `spawnship`, `importship`, `exportship`, `help`; with `sv_cheats 1` also `speed`, `tp`, `give`, `noclip`, `god`, `heal`) |
+| Console | `` ` `` (any setting by name, `find`, `differences`, `preset`, `exec`, `mode`, `kill`, `respawn`, `creatures`, `spawnship`, `importship`, `exportship`, `help`; with `sv_cheats 1` also `speed`, `tp`, `give`, `noclip`, `god`, `heal`) |
 | Help / debug readout / hide HUD / save | `F1` / `F3` / `F6` / `F5` |
 
 Flying a ship: by default, bound console group keys fire their thrusters and cannons while held (`V` seat/camera or
@@ -136,13 +139,13 @@ flowchart LR
     content --> sim["OpenCorneroids.Simulation<br/>mining, crafting, suit, ships,<br/>weapons, saves"]
     content --> game["game/ (Godot 4)<br/>rendering, input, UI"]
     sim --> game
-    tests["tests/<br/>1,370+ xUnit tests"] -.-> content
+    tests["tests/<br/>1,400+ xUnit tests"] -.-> content
     tests -.-> sim
 ```
 
 | Folder | What it holds |
 |---|---|
-| `src/OpenCorneroids.Content` | Finds packs, parses itemsets, resolves texture atlases. No Godot. |
+| `src/OpenCorneroids.Content` | Finds packs, parses itemsets, resolves texture atlases, reads `.xnb` models and textures. No Godot. |
 | `src/OpenCorneroids.Simulation` | Game rules: inventory, crafting, mining, suit, ship physics and power, weapons, settings, console, save format. No Godot. |
 | `game/` | The Godot project: voxel meshing, the player, ships, HUD and windows. |
 | `tests/` | Tests for both libraries, including checks against the bundled real data. |
@@ -160,8 +163,8 @@ flowchart LR
 - [x] Weapons and ship cannons
 - [x] Console button binding and placing blocks in empty space, as the original builds ships
 - [x] Console settings: the original's rules by default, nearly every one tunable, saved per world
-- [ ] Damage to the player, death and respawn
-- [ ] Enemies
+- [x] Damage to the player, armor, death and respawn
+- [x] Creatures: mineral parasites, swarm eggs and needles (scavengers optional)
 - [ ] Options menu, sound
 - [ ] Multiplayer
 

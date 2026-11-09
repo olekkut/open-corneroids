@@ -41,6 +41,21 @@ public interface IDebugConsoleHost
 
     bool Noclip { get; set; }
 
+    /// <summary>Respawns a dead player as the death window's button does; false when the player is not dead.</summary>
+    bool Respawn();
+
+    /// <summary>Moves the player to <paramref name="stopShort"/> metres before the block they aim at (up to 256 m away).</summary>
+    bool TeleportToAim(float stopShort, out string message);
+
+    /// <summary>Creatures alive in the world.</summary>
+    int CreatureCount { get; }
+
+    /// <summary>Removes every creature; returns how many there were.</summary>
+    int ClearCreatures();
+
+    /// <summary>Spawns a creature where the player aims; returns what happened.</summary>
+    string SpawnCreature(Creatures.CreatureKind kind);
+
     /// <summary>The settings of this session: world rules and player preferences.</summary>
     CvarStore Cvars { get; }
 
@@ -86,6 +101,7 @@ public sealed class DebugConsole
     static readonly HashSet<string> CheatCommands =
     [
         "noclip", "nc", "god", "invincible", "give", "item", "kit", "heal", "health", "hp", "power", "tp", "teleport",
+        "spawn", "summon",
     ];
 
     public static readonly IReadOnlyList<CommandHelp> Catalog =
@@ -102,7 +118,7 @@ public sealed class DebugConsole
         new("writeconfig", "writeconfig", "Save your preferences (cl_ settings) to config.cfg now.", "host_writeconfig"),
         new("mode", "mode [creative|survival|toggle]", "Switch between Creative and Survival mode (or toggle).", "gamemode", "gm", "creative", "survival"),
         new("speed", "speed [0.1..50|reset]", "Show or set the astronaut speed multiplier, sv_player_speed_scale (cheat).", "flyspeed", "movespeed"),
-        new("tp", "tp <x> <y> <z> | tp spawn | tp center | tp ship [name|#]", "Teleport to coordinates (supports ~ relative offsets), spawn, center, or a ship (cheat).", "teleport"),
+        new("tp", "tp <x> <y> <z> | tp spawn | tp center | tp aim [m] | tp ship [name|#]", "Teleport to coordinates (supports ~ relative offsets), spawn, center, just short of the aimed block, or a ship (cheat).", "teleport"),
         new("pos", "pos", "Show current position, velocity, mode, speed, noclip, and ship count.", "where", "coords", "status"),
         new("noclip", "noclip [on|off]", "Toggle or set flying through solid blocks (cheat).", "nc"),
         new("god", "god [on|off]", "Toggle or set unlimited suit health and power in survival (cheat).", "invincible"),
@@ -111,6 +127,10 @@ public sealed class DebugConsole
         new("kit", "kit", "Add the itemset's starting kit to the inventory (cheat)."),
         new("clearinv", "clearinv", "Remove all items from the survival inventory.", "clearinventory"),
         new("heal", "heal", "Restore suit health and power to full (cheat)."),
+        new("kill", "kill", "Die at once (survival), as Source's kill does; respawn from the death window.", "suicide"),
+        new("respawn", "respawn", "Respawn after dying, as the death window's button does."),
+        new("creatures", "creatures [clear]", "Count the creatures in the world, or remove them all."),
+        new("spawn", "spawn <parasite|egg|needle|scavenger>", "Spawn a creature on the aimed asteroid, or ahead for flyers (cheat).", "summon"),
         new("health", "health <amount>", "Set suit health in survival (cheat).", "hp"),
         new("power", "power <amount>", "Set suit power in survival (cheat)."),
         new("fov", "fov [30..130|reset]", "Show or set the field of view, cl_fov (default 75)."),
@@ -363,6 +383,36 @@ public sealed class DebugConsole
 
             case "heal":
                 return RunHeal(host);
+
+            case "kill" or "suicide":
+                if (host.Suit is not { } victim)
+                    return (["Only a survival player can die (switch with 'mode survival')."], true, false);
+                if (victim.IsDead) return (["Already dead."], false, false);
+                victim.Die();
+                return (["You died."], false, false);
+
+            case "respawn":
+                return host.Respawn() ? (["Respawned."], false, false) : (["You are not dead."], true, false);
+
+            case "creatures":
+                if (args.Count > 0 && args[0].Equals("clear", StringComparison.OrdinalIgnoreCase))
+                    return ([ $"Removed {host.ClearCreatures()} creature(s)."], false, false);
+                return ([ $"{host.CreatureCount} creature(s) in the world."], false, false);
+
+            case "spawn" or "summon":
+            {
+                Creatures.CreatureKind? kind = args.Count == 0 ? null : args[0].ToLowerInvariant() switch
+                {
+                    "parasite" or "mineralparasite" or "mineral" => Creatures.CreatureKind.MineralParasite,
+                    "egg" or "swarmegg" => Creatures.CreatureKind.SwarmEgg,
+                    "needle" => Creatures.CreatureKind.Needle,
+                    "scavenger" or "flyer" => Creatures.CreatureKind.Scavenger,
+                    _ => null,
+                };
+                return kind is { } k
+                    ? ([host.SpawnCreature(k)], false, false)
+                    : (["Usage: spawn <parasite|egg|needle|scavenger>"], true, false);
+            }
 
             case "health" or "hp":
                 return RunSetSuitStat("Health", args, host, (suit, val) => suit.SetHealth(val), suit => (suit.Health, suit.MaxHealth));
@@ -663,6 +713,14 @@ public sealed class DebugConsole
             host.Teleport(center);
             return ([FormattableString.Invariant($"Teleported near world center ({center.X:0.#}, {center.Y:0.#}, {center.Z:0.#}).")], false, false);
         }
+        if (first == "aim")
+        {
+            float back = 4;
+            if (args.Count > 1 && (!float.TryParse(args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out back) || !float.IsFinite(back) || back < 0))
+                return (["Usage: tp aim [metres short, default 4]"], true, false);
+            bool ok = host.TeleportToAim(back, out var msg);
+            return ([msg], !ok, false);
+        }
         if (first == "ship")
         {
             string? selector = args.Count > 1 ? string.Join(' ', args.Skip(1)) : null;
@@ -853,6 +911,7 @@ public sealed class DebugConsole
     {
         if (host.Suit is not { } suit)
             return (["Suit health/power only exist in Survival mode (switch with 'mode survival')."], true, false);
+        if (suit.IsDead) return (["Dead: use the Respawn button first."], true, false);
         suit.RestoreFull();
         return ([ $"Restored Health ({suit.MaxHealth}/{suit.MaxHealth}) and Power ({suit.MaxPower}/{suit.MaxPower})."], false, false);
     }

@@ -38,6 +38,19 @@ public class DebugConsoleTests
 
         public bool Noclip { get; set; }
         public CvarStore Cvars { get; } = new();
+
+        public int CreatureCount { get; set; } = 3;
+        public bool TeleportToAim(float stopShort, out string message) { message = ""; return false; }
+        public int ClearCreatures() { int n = CreatureCount; CreatureCount = 0; return n; }
+        public Simulation.Creatures.CreatureKind? Spawned { get; private set; }
+        public string SpawnCreature(Simulation.Creatures.CreatureKind kind) { Spawned = kind; return $"Spawned {kind}."; }
+
+        public bool Respawn()
+        {
+            if (Suit is not { IsDead: true } suit) return false;
+            suit.Respawn();
+            return true;
+        }
         public Dictionary<string, string> ConfigFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
         public int ConfigWrites { get; private set; }
 
@@ -219,6 +232,37 @@ public class DebugConsoleTests
     }
 
     [Fact]
+    public void Kill_and_respawn_need_no_cheats()
+    {
+        var console = new DebugConsole();
+        var host = new FakeConsoleHost();
+
+        Assert.True(console.Execute("respawn", host).IsError);
+        Assert.False(console.Execute("kill", host).IsError);
+        Assert.True(host.Suit!.IsDead);
+        Assert.True(console.Execute("heal", host).IsError);   // a cheat, and the dead need the Respawn button anyway
+
+        Assert.False(console.Execute("respawn", host).IsError);
+        Assert.False(host.Suit.IsDead);
+        Assert.Equal(100, host.Suit.Health);
+    }
+
+    [Fact]
+    public void Creature_commands_count_clear_and_spawn_behind_cheats()
+    {
+        var console = new DebugConsole();
+        var host = new FakeConsoleHost();
+        Assert.Contains("3 creature", console.Execute("creatures", host).Lines[0]);
+        Assert.Contains("Removed 3", console.Execute("creatures clear", host).Lines[0]);
+
+        Assert.True(console.Execute("spawn egg", host).IsError);   // a cheat
+        console.Execute("sv_cheats 1", host);
+        Assert.False(console.Execute("spawn egg", host).IsError);
+        Assert.Equal(Simulation.Creatures.CreatureKind.SwarmEgg, host.Spawned);
+        Assert.True(console.Execute("spawn dragon", host).IsError);
+    }
+
+    [Fact]
     public void History_and_autocomplete_navigate_commands()
     {
         var console = new DebugConsole();
@@ -233,7 +277,8 @@ public class DebugConsoleTests
         Assert.Equal("draft", console.HistoryDown("draft"));
 
         Assert.Equal("noclip ", console.Autocomplete("noc"));
-        Assert.Equal("spawnship ", console.Autocomplete("spawn"));
+        Assert.Equal("spawn ", console.Autocomplete("spawn"));
+        Assert.Equal("spawnship ", console.Autocomplete("spawns"));
         Assert.Equal("importship ", console.Autocomplete("imports"));
         Assert.Equal("exportship ", console.Autocomplete("exports"));
     }

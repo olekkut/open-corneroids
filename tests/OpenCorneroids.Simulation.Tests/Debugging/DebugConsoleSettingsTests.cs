@@ -28,6 +28,11 @@ public class DebugConsoleSettingsTests
         public Vector3 SpawnPosition => Vector3.Zero;
         public void Teleport(Vector3 position) { }
         public bool Noclip { get; set; }
+        public bool Respawn() => false;
+        public int CreatureCount => 0;
+        public bool TeleportToAim(float stopShort, out string message) { message = ""; return false; }
+        public int ClearCreatures() => 0;
+        public string SpawnCreature(Simulation.Creatures.CreatureKind kind) => "";
         public CvarStore Cvars { get; } = new();
         public Dictionary<string, string> Files { get; } = new(StringComparer.OrdinalIgnoreCase);
         public int Writes;

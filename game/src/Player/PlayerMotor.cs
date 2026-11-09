@@ -59,8 +59,13 @@ public sealed class PlayerMotor
     /// being what the next one starts from. In a ship's space the body is the axis-aligned box that bounds it there
     /// (<see cref="LocalBody"/>).
     /// </remarks>
+    /// <summary>The velocity that blocks stopped in the last <see cref="Step"/>: its length is the speed the player hit
+    /// a surface with (only the part straight into it), its direction points into the surface. Zero without a hit.</summary>
+    public Vector3 Impact { get; private set; }
+
     public Vector3 Step(Vector3 eye, AstronautMotion.Input input, float delta, GridSet grids, ShipGrid? riding = null)
     {
+        Impact = Vector3.Zero;
         float dt = Mathf.Clamp(delta, 0f, MaxStep);
         // The sv_player_* rules, and the sv_player_speed_scale cheat on top.
         var cvars = Settings.GameSettings.Cvars;
@@ -88,6 +93,7 @@ public sealed class PlayerMotor
                 if (ships[i] != riding) body = PushOut(ships[i], body, ref velocity, ref drift, grids);
 
             var start = body;
+            var beforeHits = velocity;
             var result = VoxelCollider.Move(body, HalfExtents, ToNumerics(velocity) * dt, worldSolid);
             body = result.Position;
             if (result.HitX) velocity.X = drift.X = 0;
@@ -96,6 +102,8 @@ public sealed class PlayerMotor
 
             for (int i = 0; i < ships.Count; i++)
                 body = MoveAgainst(ships[i], start, body, ref velocity, ref drift);
+            // What the walls took away is the speed straight into them.
+            Impact = beforeHits - velocity;
         }
 
         Velocity = velocity;
@@ -152,7 +160,7 @@ public sealed class PlayerMotor
 
     /// <summary>Whether a body centred at world <paramref name="bodyCenter"/> overlaps the static world or any ship but
     /// <paramref name="pusher"/>.</summary>
-    static bool BlockedElsewhere(ShipGrid pusher, Vector3 bodyCenter, GridSet grids)
+    static bool BlockedElsewhere(ShipGrid? pusher, Vector3 bodyCenter, GridSet grids)
     {
         if (VoxelCollider.Overlaps(ToNumerics(bodyCenter), HalfExtents, grids.World.SolidQuery)) return true;
         var ships = grids.Ships;
@@ -239,6 +247,11 @@ public sealed class PlayerMotor
         var (center, half) = LocalBody(grid, eye - new Vector3(0, EyeHeight, 0));
         return VoxelCollider.Overlaps(center, half, (x, y, z) => contains(new Vector3I(x, y, z)));
     }
+
+    /// <summary>Whether a player with the eye at world <paramref name="eye"/> would be inside a block of the world or
+    /// any ship: a respawn point has to be free.</summary>
+    public static bool Blocked(Vector3 eye, GridSet grids) =>
+        BlockedElsewhere(null, eye - new Vector3(0, EyeHeight, 0), grids);
 
     /// <summary>Whether a block at grid-local <paramref name="cell"/> of <paramref name="grid"/> would be in the body.</summary>
     public static bool BodyOccupies(BlockGrid grid, Vector3 eye, Vector3I cell) => BodyOverlaps(grid, eye, p => p == cell);

@@ -69,6 +69,9 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     /// <summary>Where <see cref="DemoShip"/> put its console, for <c>--launch</c>.</summary>
     Vector3I? _demoConsole;
 
+    /// <summary>Mineral parasites, swarm eggs, needles and scavengers.</summary>
+    public CreatureSystem Creatures { get; private set; } = null!;
+
     /// <summary>In-game drop-down developer/debug console (<c>`</c>).</summary>
     public DebugConsoleOverlay DebugConsole { get; private set; } = null!;
 
@@ -215,7 +218,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         AddChild(camera);
         if (saved is null)
         {
-            camera.LookAt(target, Vector3.Up);
+            // From the position, which works before the world is in the scene (loading builds it off-screen).
+            camera.LookAtFromPosition(eye, target, Vector3.Up);
         }
         else
         {
@@ -226,6 +230,11 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         var shots = new Projectiles { Name = "Projectiles" };
         AddChild(shots);
         shots.Setup(Grids, itemset);
+        shots.Player = camera;
+        var creatures = new CreatureSystem { Name = "Creatures" };
+        AddChild(creatures);
+        creatures.Setup(Grids, loaded.View, camera, shots);
+        Creatures = creatures;
         shots.BlockDestroyed += name => hud.Log($"Shot apart: {name}");
         mode.Shots = shots;
         _shots = shots;
@@ -252,9 +261,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         camera.Fov = Cvars.Float(Simulation.Settings.Cvars.Fov);
         Cvars.Changed += OnSettingChanged;
 
-        // The player's own commands for every world, e.g. their favourite rules.
-        if (GameSettings.TryReadConfig(GameSettings.AutoexecFile, out _, out _))
-            consoleOverlay.RunCommand($"exec {GameSettings.AutoexecFile}");
+        // The player's own commands for every world (e.g. their favourite rules), on the first frame in the scene.
+        _autoexecPending = GameSettings.TryReadConfig(GameSettings.AutoexecFile, out _, out _);
 
         if (onProgress != null) await onProgress("Ready to launch!", 1.0, completed: "Player & HUD ready");
         return true;
@@ -277,9 +285,21 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     /// Ships move before the player does each frame (this node is processed before its children), so the camera
     /// follows a piloted ship where it is now and a standing player is pushed out of a ship that just moved into them.
     /// </summary>
+    bool _autoexecPending;
+
+    /// <summary>Runs <c>autoexec.cfg</c> now if it has not run yet in this world, so commands given later (such as
+    /// <c>--console</c>) come after it, as in Source.</summary>
+    public void RunAutoexec()
+    {
+        if (!_autoexecPending) return;
+        _autoexecPending = false;
+        DebugConsole.RunCommand($"exec {GameSettings.AutoexecFile}");
+    }
+
     public override void _Process(double delta)
     {
         if (Player is null) return;
+        RunAutoexec();
         _shipPhysics.Advance(delta, Grids, Player.PilotShip, Player.PilotControls((float)delta));
     }
 
@@ -456,6 +476,37 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     }
 
     CvarStore IDebugConsoleHost.Cvars => Cvars;
+
+    bool IDebugConsoleHost.TeleportToAim(float stopShort, out string message)
+    {
+        var eye = Player.GlobalPosition;
+        var forward = -Player.GlobalTransform.Basis.Z;
+        if (!Grids.Raycast(eye, forward, 256, out _, out var distance))
+        {
+            message = "Nothing aimed at within 256 m.";
+            return false;
+        }
+        var spot = eye + forward * Math.Max(0, distance - stopShort);
+        Player.TeleportTo(spot);
+        message = FormattableString.Invariant($"Teleported {distance - stopShort:0.#} m along the aim, {stopShort:0.#} m short of the block.");
+        return true;
+    }
+
+    int IDebugConsoleHost.CreatureCount => Creatures.Count;
+
+    int IDebugConsoleHost.ClearCreatures() => Creatures.Clear();
+
+    string IDebugConsoleHost.SpawnCreature(Simulation.Creatures.CreatureKind kind) =>
+        Creatures.SpawnNear(kind, Player.GlobalPosition, -Player.GlobalTransform.Basis.Z);
+
+    bool IDebugConsoleHost.Respawn()
+    {
+        // The kill may have happened this very frame: let the camera notice it first.
+        if (Suit is not { IsDead: true }) return false;
+        Player.NoticeDeath();
+        Player.Respawn();
+        return true;
+    }
 
     bool IDebugConsoleHost.TryReadConfig(string name, out string text, out string error) =>
         GameSettings.TryReadConfig(name, out text, out error);

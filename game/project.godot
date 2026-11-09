@@ -6,7 +6,7 @@ config_version=5
 [application]
 
 config/name="Open Corneroids"
-config/description="Clean-room Corneroids reimplementation. Bring your own assets."
+config/description="A remake of Corneroids, the 2012 voxel space sandbox."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/use_custom_user_dir=true

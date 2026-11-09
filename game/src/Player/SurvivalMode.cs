@@ -80,6 +80,37 @@ public sealed class SurvivalMode : PlayMode
 
     double _boostWarned = double.NegativeInfinity;
 
+    public override bool Vulnerable => !_suit.IsDead && Cvars.Bool(Simulation.Settings.Cvars.PlayerDamage);
+
+    public override double HealthLeft => _suit.Health;
+
+    public override bool IsDead => _suit.IsDead;
+
+    /// <summary>Armor first (<c>sv_armor_cap</c>, <c>sv_armor_scale</c>), as in the original, then the suit.</summary>
+    public override double TakeDamage(double damage)
+    {
+        if (!Vulnerable) return 0;
+        int after = Damage.AfterArmor(damage, _suit.Armor, Cvars.Int(Simulation.Settings.Cvars.ArmorCap),
+            Cvars.Get(Simulation.Settings.Cvars.ArmorScale));
+        return _suit.Hurt(after);
+    }
+
+    public override void OnDeath(Vector3 at)
+    {
+        base.OnDeath(at);
+        if (!_suit.IsDead) _suit.Die();
+        if (!Cvars.Bool(Simulation.Settings.Cvars.DeathDropItems)) return;
+        // Ours (sv_death_drop_items): everything carried floats where the player died; the endless slots stay.
+        for (int i = 0; i < _inventory.Slots.Count; i++)
+        {
+            if (_inventory.Slots[i] is not { } stack) continue;
+            _inventory.SetSlot(i, null);
+            if (Drops is { } drops) drops.Drop(stack.ItemId, stack.Quantity, at);
+        }
+    }
+
+    public override void OnRespawn() => _suit.Respawn();
+
     /// <summary>Releasing the left button: a block in hand is placed (against an aimed face, or in empty space to attach
     /// within 16 units / start a new ship), or a consumable is used, as in the original.</summary>
     public override void PrimaryReleased(Vector3 eye, Aim? aim)
@@ -156,8 +187,8 @@ public sealed class SurvivalMode : PlayMode
     public override ItemDef? HeldItem =>
         InHand is { } stack && _itemset.ItemsById.TryGetValue(stack.ItemId, out var item) && item.Block is null ? item : null;
 
-    /// <summary>Raised when the held weapon fires, for the first-person kick.</summary>
-    public event Action? Fired;
+    /// <summary>Raised when the held weapon fires, with its <c>pushback</c>, for the first-person kick.</summary>
+    public event Action<float>? Fired;
 
     /// <summary>
     /// Drilling as in the original: with a drill in hand and the button held on a block within
@@ -168,7 +199,9 @@ public sealed class SurvivalMode : PlayMode
     /// </summary>
     public override void Update(double delta, BlockTarget? target, bool drilling)
     {
+        _suit.HealthRegenPerSecond = Cvars.Get(Simulation.Settings.Cvars.HealthRegen);
         _suit.Tick(delta);
+        if (_suit.IsDead) return;
         // A weapon in hand: the primary button shoots instead of drilling.
         if (HeldItem is { } held && held.Get<WeaponComponent>() is { } weapon)
         {
@@ -256,11 +289,11 @@ public sealed class SurvivalMode : PlayMode
         trigger.TryFire(now, weapon.ReloadMs);
         var (eye, forward, velocity) = View;
         var direction = Weapons.Spread(forward.ToNumerics(), weapon.Spread, Random.Shared.NextDouble(), Random.Shared.NextDouble()).ToGodot();
-        Shots.Fire(projectile, eye + forward * 0.4f, direction, velocity);
+        Shots.Fire(projectile, eye + forward * 0.4f, direction, velocity, fromPlayer: true);
         if (Cvars.Bool(Simulation.Settings.Cvars.RecoilPush))
             Push?.Invoke(Weapons.Recoil(direction.ToNumerics(), weapon.Pushback, projectile,
                 Cvars.Float(Simulation.Settings.Cvars.RecoilScale)).ToGodot());
-        Fired?.Invoke();
+        Fired?.Invoke(weapon.Pushback);
     }
 
     public override void Place(Vector3 eye, Aim aim)

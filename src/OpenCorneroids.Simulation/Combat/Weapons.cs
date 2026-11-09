@@ -113,6 +113,25 @@ public sealed class BlockDamage<TKey> where TKey : notnull
         return false;
     }
 
+    /// <summary>
+    /// A shot with <paramref name="damage"/> left meets the block, as in the original: the block has hit points starting
+    /// at its <paramref name="health"/> (at least 1); the shot takes off the smaller of the block's remaining hit points
+    /// and its own damage, and loses that much. Returns how much the shot lost and whether the block broke (then it is
+    /// forgotten). A shot with damage left after breaking a block flies on through.
+    /// </summary>
+    public (double Absorbed, bool Broken) Absorb(TKey block, double damage, double health)
+    {
+        double left = Math.Max(1, health) - taken.GetValueOrDefault(block);
+        double absorbed = Math.Clamp(damage, 0, Math.Max(0, left));
+        if (absorbed >= left)
+        {
+            taken.Remove(block);
+            return (absorbed, true);
+        }
+        taken[block] = taken.GetValueOrDefault(block) + absorbed;
+        return (absorbed, false);
+    }
+
     /// <summary>Forgets every block <paramref name="gone"/> says is no longer there.</summary>
     public void ForgetWhere(Func<TKey, bool> gone)
     {

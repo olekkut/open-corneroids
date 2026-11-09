@@ -133,6 +133,25 @@ public abstract class PlayMode
     /// <summary>Whether boosting may go on for <paramref name="delta"/> more seconds; survival pays suit power for it.</summary>
     public virtual bool TryBoost(double delta) => true;
 
+    /// <summary>Whether the player can be hurt at all now (survival, alive, damage on); creative never is.</summary>
+    public virtual bool Vulnerable => false;
+
+    /// <summary>Health the player has to soak up a shot with: a shot loses at most this much on them.</summary>
+    public virtual double HealthLeft => 0;
+
+    /// <summary>Takes <paramref name="damage"/> (before armor); returns the health actually lost.</summary>
+    public virtual double TakeDamage(double damage) => 0;
+
+    /// <summary>Health ran out; the camera then runs the death.</summary>
+    public virtual bool IsDead => false;
+
+    /// <summary>The player died at <paramref name="at"/>: the hand is emptied (and, with <c>sv_death_drop_items</c>, the
+    /// inventory dropped there).</summary>
+    public virtual void OnDeath(Vector3 at) => Deselect();
+
+    /// <summary>The player respawned: survival restores health and power.</summary>
+    public virtual void OnRespawn() { }
+
     /// <summary>Places the selected block against the aimed solid cell, starting in the empty cell in front of the
     /// aimed face, in the aimed grid.</summary>
     public abstract void Place(Vector3 eye, Aim aim);

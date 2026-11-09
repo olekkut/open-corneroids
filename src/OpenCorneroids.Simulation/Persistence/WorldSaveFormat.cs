@@ -933,7 +933,10 @@ public static class WorldSaveFormat
             Health = s.Health,
             Power = s.Power,
             Equipment = [.. s.Equipment.Select(stack => stack is null ? null : new StackDto { ItemId = stack.ItemId, Quantity = stack.Quantity })],
-            Buffs = [.. s.Buffs.Select(b => new BuffDto { ItemId = b.ItemId, SecondsLeft = b.SecondsLeft, Armor = b.Armor, Power = b.Power })],
+            Buffs = [.. s.Buffs.Select(b => new BuffDto
+            {
+                ItemId = b.ItemId, SecondsLeft = b.SecondsLeft, Armor = b.Armor, Power = b.Power, Health = b.Health == 0 ? null : b.Health,
+            })],
         };
 
         public SuitState ToState() => new(
@@ -945,7 +948,7 @@ public static class WorldSaveFormat
             [.. (Buffs ?? []).Select((b, i) => b is null ? throw Damaged($"metadata field 'suit.buffs[{i}]' is null") : new SuitBuff(
                 b.ItemId ?? throw MetadataDto.Missing($"suit.buffs[{i}].itemId"),
                 b.SecondsLeft ?? throw MetadataDto.Missing($"suit.buffs[{i}].secondsLeft"),
-                b.Armor ?? 0, b.Power ?? 0))]);
+                b.Armor ?? 0, b.Power ?? 0) { Health = b.Health ?? 0 })]);
     }
 
     sealed class BuffDto
@@ -954,6 +957,9 @@ public static class WorldSaveFormat
         public double? SecondsLeft { get; set; }
         public int? Armor { get; set; }
         public int? Power { get; set; }
+        // Added later: a timed consumable's bonus to maximum health. Left out when 0, so older files read the same.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? Health { get; set; }
     }
 
     sealed class StackDto

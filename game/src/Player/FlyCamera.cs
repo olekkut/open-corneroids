@@ -17,8 +17,164 @@ namespace OpenCorneroids.Game.Player;
 /// Aiming, mining and placing work on every grid (the world and the ships) through <see cref="GridSet"/>, as well as in
 /// empty space (attaching within 16 units with a red indicator line, or starting a new floating ship).
 /// </summary>
-public partial class FlyCamera : Camera3D
+public partial class FlyCamera : Camera3D, Projectiles.ITarget
 {
+    // ---- damage, death and respawn (as in the original; every number is a setting) ----
+
+    bool _dead;
+    Vector3 _deathAt;
+    static Simulation.Settings.CvarStore Rules => Settings.GameSettings.Cvars;
+
+    /// <summary>Health ran out and the death window is up.</summary>
+    public bool IsDead => _dead;
+
+    /// <summary>Creatures may go after the player: alive and in survival.</summary>
+    public bool Targetable => !_dead && _mode is SurvivalMode;
+
+    /// <summary>The body's centre, world space: the camera on foot, the console while seated.</summary>
+    public Vector3 BodyCenter => ((Projectiles.ITarget)this).Center;
+
+    /// <summary>Riding a ship or asteroid (the boot icon).</summary>
+    public bool Aboard => _riding is { } r && IsInstanceValid(r);
+
+    /// <summary>Seconds before a creature's touch can hurt again, as in the original (0.7 s after each).</summary>
+    double _touchCooldown;
+    const double TouchCooldown = 0.7;
+    const float TouchKnockback = 5, TouchJolt = 0.2f;
+
+    /// <summary>
+    /// A creature at <paramref name="source"/> overlaps the body: the player moves <paramref name="push"/> along
+    /// <paramref name="away"/>, and when it hurts (<paramref name="damage"/> &gt; 0) and the last touch was over 0.7 s ago,
+    /// as in the original, takes the damage, flies off at 5 u/s and the view jolts by 0.2 rad.
+    /// </summary>
+    public void Touched(Vector3 away, float push, double damage, Vector3 source)
+    {
+        if (_dead) return;
+        if (_seat is null) GlobalPosition += away * push;
+        if (damage <= 0 || _touchCooldown > 0 || !_mode.Vulnerable) return;
+        _touchCooldown = TouchCooldown;
+        TakeDamage(damage, source);
+        if (_dead || _seat is not null) return;
+        Motor.Velocity += away * TouchKnockback;
+        RotateObjectLocal(Vector3.Up, TouchJolt);
+        RotateObjectLocal(Vector3.Right, TouchJolt);
+        Orthonormalize();
+    }
+
+    /// <summary>The body: where the camera is on foot; at the console while seated, wherever the view is.</summary>
+    Vector3 Projectiles.ITarget.Center => _seat is { } seat && IsInstanceValid(seat.Ship)
+        ? seat.Ship.ToGlobal((Vector3)seat.Cell + new Vector3(0.5f, 0.5f, 0.5f))
+        : GlobalPosition;
+
+    bool Projectiles.ITarget.Hittable => !_dead && !Motor.Noclip && _mode.Vulnerable;
+
+    /// <summary>A shot soaks up at most the health the player has left, as in the original; armor then cuts what is
+    /// taken.</summary>
+    double Projectiles.ITarget.Absorb(double damage, Vector3 direction)
+    {
+        double absorbed = Math.Min(Math.Max(0, damage), _mode.HealthLeft);
+        if (absorbed > 0) TakeDamage(absorbed, GlobalPosition - direction);
+        return absorbed;
+    }
+
+    /// <summary>
+    /// Hurts the player by <paramref name="damage"/> (before armor) coming from <paramref name="source"/> (world space,
+    /// null when it has no direction). As in the original any hit shows the red markers and throws the player out of a
+    /// console seat (<c>sv_damage_seat_eject</c>).
+    /// </summary>
+    public void TakeDamage(double damage, Vector3? source)
+    {
+        if (_dead || !(damage > 0) || !_mode.Vulnerable) return;
+        _mode.TakeDamage(damage);
+        _hud.ShowDamage(ScreenAngle(source));
+        if (_seat is not null && Rules.Bool(Simulation.Settings.Cvars.DamageSeatEject)) StandUp("Hit!", warning: true);
+    }
+
+    /// <summary>Which way <paramref name="source"/> lies on screen, clockwise from up; null (markers all round) when
+    /// it has no direction or lies within about 20 degrees of straight ahead or behind.</summary>
+    float? ScreenAngle(Vector3? source)
+    {
+        if (source is not { } s) return null;
+        var local = GlobalBasis.Inverse() * (s - GlobalPosition);
+        if (new Vector2(local.X, local.Y).LengthSquared() < 0.12f * local.LengthSquared()) return null;
+        return MathF.Atan2(local.X, local.Y);
+    }
+
+    /// <summary>Hitting a surface hard hurts: <c>sv_impact_damage</c> per m/s straight into it above
+    /// <c>sv_impact_speed</c> (7 per m/s above 8, as in the original).</summary>
+    void HurtByImpact()
+    {
+        float speed = Motor.Impact.Length();
+        if (speed <= 0) return;
+        int damage = Simulation.Combat.Damage.Impact(speed, Rules.Float(Simulation.Settings.Cvars.ImpactSpeed),
+            Rules.Float(Simulation.Settings.Cvars.ImpactDamage));
+        if (damage > 0) TakeDamage(damage, GlobalPosition + Motor.Impact.Normalized());
+    }
+
+    /// <summary>
+    /// Notices death (shot, crash, or the console's kill) and a revival from the console; true while dead, when the
+    /// player neither moves nor acts.
+    /// </summary>
+    /// <summary>Runs the death at once if health already ran out, without waiting for the next frame.</summary>
+    public void NoticeDeath() => UpdateDeath(0);
+
+    bool UpdateDeath(double delta)
+    {
+        if (!_dead && _mode.IsDead) Die();
+        else if (_dead && !_mode.IsDead)
+        {
+            // Brought back without the Respawn button (heal, god, a switch to creative): stay where the body is.
+            _dead = false;
+            _hud.HideDeath();
+            if (!_inputLocked && !WindowOpen) Input.MouseMode = Input.MouseModeEnum.Captured;
+        }
+        return _dead;
+    }
+
+    /// <summary>
+    /// Death, as in the original: out of any seat, the hand emptied (the item stays in the inventory), consumable
+    /// effects cleared, and the "You have died" window with its Respawn button.
+    /// </summary>
+    void Die()
+    {
+        _deathAt = GlobalPosition;
+        if (_seat is not null) StandUp();
+        StopActions();
+        _bindTool = null;
+        _windows?.Close();
+        _mode.OnDeath(_deathAt);
+        Motor.Velocity = Motor.Drift = Vector3.Zero;
+        _dead = true;
+        _hud.SetCenterPrompt("");
+        _hud.ShowProgress(null);
+        _hud.ShowDeath(Respawn);
+        if (!_inputLocked) Input.MouseMode = Input.MouseModeEnum.Visible;
+    }
+
+    /// <summary>
+    /// Respawn, as in the original: <c>sv_respawn_min</c>..<c>sv_respawn_max</c> (64 to 95) metres from the death
+    /// point, in a direction up every axis, never inside a block, facing back toward where the player died; health
+    /// to 100 and suit power full.
+    /// </summary>
+    public void Respawn()
+    {
+        if (!_dead) return;
+        float min = Rules.Float(Simulation.Settings.Cvars.RespawnMin), max = Rules.Float(Simulation.Settings.Cvars.RespawnMax);
+        var spot = _deathAt;
+        for (int attempt = 0; attempt < 64; attempt++)
+        {
+            var candidate = Simulation.Combat.Damage.RespawnPoint(_deathAt.ToNumerics(),
+                Random.Shared.NextDouble(), Random.Shared.NextDouble(), Random.Shared.NextDouble(), Random.Shared.NextDouble(), min, max).ToGodot();
+            spot = candidate;
+            if (!PlayerMotor.Blocked(candidate, _grids)) break;
+        }
+        _dead = false;
+        _hud.HideDeath();
+        TeleportTo(spot);
+        if ((_deathAt - spot).LengthSquared() > 1e-4f) LookAt(_deathAt, Vector3.Up);
+        _mode.OnRespawn();
+        if (!_inputLocked) Input.MouseMode = Input.MouseModeEnum.Captured;
+    }
     /// <summary>Radians per pixel: the original's 0.01 times its default sensitivity 0.5.</summary>
     const float BaseMouseSensitivity = 0.005f;
     const float Reach = 8f;
@@ -323,6 +479,13 @@ public partial class FlyCamera : Camera3D
                 GetViewport().SetInputAsHandled();
                 return;
             }
+        }
+        if (_dead)
+        {
+            // Dead: only the Respawn button (or Esc for the menu) does anything.
+            if (@event is InputEventKey { Pressed: true, Echo: false, PhysicalKeycode: Key.Escape }) ExitRequested?.Invoke();
+            GetViewport().SetInputAsHandled();
+            return;
         }
         if (WindowOpen)
         {
@@ -1179,6 +1342,8 @@ public partial class FlyCamera : Camera3D
     {
         AdvanceHolds((float)Math.Min(delta, ShipPhysics.MaxFrame));
         ValidateBindTool();
+        _touchCooldown = Math.Max(0, _touchCooldown - delta);
+        if (UpdateDeath(delta)) return;
 
         // The ship went away, its console was broken, or its power network fell below zero: the pilot is thrown out.
         if (_seat is { } seat)
@@ -1229,6 +1394,8 @@ public partial class FlyCamera : Camera3D
         UpdateBoarding();
         GlobalPosition = Motor.Step(GlobalPosition, motion, (float)delta, _grids, _riding);
         RememberRide();
+        HurtByImpact();
+        if (UpdateDeath(delta)) return;
 
         _doorEye = GlobalPosition;
         _grids.World.StepDoors((float)delta, _doorBlocked, _doorRefused);

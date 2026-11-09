@@ -108,7 +108,65 @@ public static class Cvars
         "Ours: shots keep the shooter's own velocity. In the original they do not.");
 
     public static readonly Cvar ProjectileLimit = new("sv_projectile_limit", CvarKind.Int, 512, W,
-        "Most shots in flight at once; past it the oldest disappear.", 1, 10000);
+        "Most shots in flight at once; past it no new shot is fired.", 1, 10000);
+
+    public static readonly Cvar ProjectilePassThrough = new("sv_projectile_pass_through", CvarKind.Bool, 1, W,
+        "A shot loses the damage it does and flies on through what it breaks while it has damage left. 0 = ours from before: it stops at the first block it hits.");
+
+    public static readonly Cvar ProjectileHitRadius = new("sv_projectile_hit_radius", CvarKind.Float, 0.735, W,
+        "A shot hits a player when it passes this close to their centre, m.", 0, 10);
+
+    // ---- health, damage, death (as in the original) ----
+
+    public static readonly Cvar PlayerDamage = new("sv_player_damage", CvarKind.Bool, 1, W,
+        "Players take damage from shots and hard impacts. 0 = ours: nobody gets hurt.");
+
+    public static readonly Cvar HealthRegen = new("sv_health_regen", CvarKind.Float, 0.5, W,
+        "Health regained per second (one point every two seconds).", 0, 1000);
+
+    public static readonly Cvar ArmorCap = new("sv_armor_cap", CvarKind.Int, 60, W,
+        "Armor rating above this counts as this.", 0, 100_000);
+
+    public static readonly Cvar ArmorScale = new("sv_armor_scale", CvarKind.Float, 6, W,
+        "Armor takes off ln(armor + 1) / this of the damage; smaller makes armor stronger.", 0.1, 1000);
+
+    public static readonly Cvar ImpactSpeed = new("sv_impact_speed", CvarKind.Float, 8, W,
+        "Speed into a surface, m/s, from which hitting it hurts.", 0, 1000);
+
+    public static readonly Cvar ImpactDamage = new("sv_impact_damage", CvarKind.Float, 7, W,
+        "Damage per m/s of speed into a surface above sv_impact_speed (0 = impacts never hurt).", 0, 1000);
+
+    public static readonly Cvar DamageSeatEject = new("sv_damage_seat_eject", CvarKind.Bool, 1, W,
+        "Taking damage throws the player out of a console seat.");
+
+    public static readonly Cvar RespawnMin = new("sv_respawn_min", CvarKind.Float, 64, W,
+        "Nearest a respawn point is to where the player died, m.", 0, 10_000);
+
+    public static readonly Cvar RespawnMax = new("sv_respawn_max", CvarKind.Float, 95, W,
+        "Furthest a respawn point is from where the player died, m.", 0, 10_000);
+
+    public static readonly Cvar DeathDropItems = new("sv_death_drop_items", CvarKind.Bool, 0, W,
+        "Ours: dying drops the whole inventory as floating items where the player died. The original keeps it.");
+
+    // ---- creatures (as in the original) ----
+
+    public static readonly Cvar Creatures = new("sv_creatures", CvarKind.Bool, 1, W,
+        "Creatures (mineral parasites, swarm eggs and their needles) appear on asteroids near the player.");
+
+    public static readonly Cvar CreatureSpawnInterval = new("sv_creature_spawn_interval", CvarKind.Float, 1, W,
+        "Seconds between creature spawn attempts.", 0.1, 3600);
+
+    public static readonly Cvar ParasitesPerSector = new("sv_parasites_per_sector", CvarKind.Float, 1, W,
+        "Parasites an asteroid may hold per 16³ sector of its blocks.", 0, 100);
+
+    public static readonly Cvar ParasiteEatTime = new("sv_parasite_eat_time", CvarKind.Float, 20, W,
+        "Seconds a mineral parasite takes to eat a block.", 0.1, 3600);
+
+    public static readonly Cvar CreatureDamageScale = new("sv_creature_damage_scale", CvarKind.Float, 1, W,
+        "Ours: multiplies what creatures' touches and bolts do to the player.", 0, 100);
+
+    public static readonly Cvar Scavengers = new("sv_scavengers", CvarKind.Bool, 0, W,
+        "Ours: scavenger flyers appear away from asteroids. The original has them but never lets one appear.");
 
     // ---- player preferences ----
 
@@ -136,6 +194,10 @@ public static class Cvars
         AttachDistance, BindDistance,
         ShipMaxSpeed, ShipMaxSpin, ShipCoastDecel, ShipCoastSpinDecel, AssistForce,
         Ricochet, RicochetBounces, RecoilPush, RecoilScale, ProjectileInheritVelocity, ProjectileLimit,
+        ProjectilePassThrough, ProjectileHitRadius,
+        PlayerDamage, HealthRegen, ArmorCap, ArmorScale, ImpactSpeed, ImpactDamage, DamageSeatEject,
+        RespawnMin, RespawnMax, DeathDropItems,
+        Creatures, CreatureSpawnInterval, ParasitesPerSector, ParasiteEatTime, CreatureDamageScale, Scavengers,
         FlightAssist, FixedCamera, Fov, Sensitivity, MarkerMinBlocks,
     ];
 }

@@ -9,8 +9,10 @@ namespace OpenCorneroids.Game.World;
 
 /// <summary>
 /// Shots in flight, from hand weapons and ship guns. Each frame a shot moves along its velocity; the segment it
-/// covers is cast through every grid (<see cref="GridSet.Raycast"/>), and the first block it meets takes its damage
-/// (or, with <c>sv_ricochet 1</c>, may glance it off, <see cref="Weapons.Ricochet"/>), breaking when the damage reaches the block's health
+/// covers is cast through every grid (<see cref="GridSet.Raycast"/>) and tested against the player (<see cref="Player"/>,
+/// within <c>sv_projectile_hit_radius</c>). What it meets takes from its remaining damage what it can soak up, and with
+/// damage left it flies on, as in the original (with <c>sv_ricochet 1</c> it may glance off a block instead,
+/// <see cref="Weapons.Ricochet"/>); a block breaks when the damage it took reaches its health
 /// (<see cref="BlockDamage{TKey}"/>). Broken blocks drop nothing: shooting is not mining. Shots live for their
 /// projectile's <c>lifetime</c>. Rules are in the Simulation library; this node only moves and draws.
 /// </summary>
@@ -30,7 +32,29 @@ public partial class Projectiles : Node3D
         public Vector3 Velocity;
         public double Age;
         public int Bounces;
+        /// <summary>Damage the shot still carries; what it hits takes from it, as in the original.</summary>
+        public double Remaining;
+        /// <summary>Fired by the player's own hand weapon, so it never hits them.</summary>
+        public bool FromPlayer;
     }
+
+    /// <summary>Something a shot can hit besides blocks: the player.</summary>
+    public interface ITarget
+    {
+        /// <summary>Centre of the body, world space.</summary>
+        Vector3 Center { get; }
+        /// <summary>Whether shots meet the body at all now (alive, in survival, not noclipping).</summary>
+        bool Hittable { get; }
+        /// <summary>A shot carrying <paramref name="damage"/> hits, flying along <paramref name="direction"/>; returns
+        /// how much of its damage the body soaks up.</summary>
+        double Absorb(double damage, Vector3 direction);
+    }
+
+    /// <summary>The player, for shots to hit; set by the world.</summary>
+    public ITarget? Player { get; set; }
+
+    /// <summary>The creatures, for shots to hit (within 1.5 × their radius, as in the original); set by them.</summary>
+    public CreatureSystem? Creatures { get; set; }
 
     GridSet _grids = null!;
     ItemsetDef _itemset = null!;
@@ -56,21 +80,20 @@ public partial class Projectiles : Node3D
 
     /// <summary>Launches one shot from <paramref name="from"/> along <paramref name="direction"/>; <paramref name="carrier"/>
     /// is the shooter's own velocity, which the shot keeps only with <c>sv_projectile_inherit_velocity</c> (the
-    /// original's shots fly at their own speed whatever the shooter does).</summary>
-    public void Fire(ProjectileDef def, Vector3 from, Vector3 direction, Vector3 carrier)
+    /// original's shots fly at their own speed whatever the shooter does). At <c>sv_projectile_limit</c> shots in
+    /// flight no new one is fired, as in the original. <paramref name="fromPlayer"/>: the player's own hand weapon.</summary>
+    public void Fire(ProjectileDef def, Vector3 from, Vector3 direction, Vector3 carrier, bool fromPlayer = false)
     {
-        if (direction == Vector3.Zero) return;
-        int limit = Math.Max(1, MaxShots);
-        while (_shots.Count >= limit)
-        {
-            _shots[0].Mesh.QueueFree();
-            _shots.RemoveAt(0);
-        }
+        if (direction == Vector3.Zero || _shots.Count >= Math.Max(1, MaxShots)) return;
         var (mesh, material) = LookOf(def);
         var instance = new MeshInstance3D { Mesh = mesh, MaterialOverride = material, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(instance);
         if (!Cvars.Bool(Simulation.Settings.Cvars.ProjectileInheritVelocity)) carrier = Vector3.Zero;
-        var shot = new Shot { Def = def, Mesh = instance, Position = from, Velocity = direction.Normalized() * def.Speed + carrier };
+        var shot = new Shot
+        {
+            Def = def, Mesh = instance, Position = from, Velocity = direction.Normalized() * def.Speed + carrier,
+            Remaining = Math.Max(0, def.Damage), FromPlayer = fromPlayer,
+        };
         Place(shot);
         _shots.Add(shot);
     }
@@ -174,19 +197,65 @@ public partial class Projectiles : Node3D
         (gun.Obj is { } o ? gun.Ship.Objects.Contains(o)
                           : gun.Ship.Get(gun.Cell) is var b && b != BlockPalette.Air && gun.Ship.Palette.Item(b).Get<GunComponent>() is not null);
 
-    /// <summary>Moves a shot through one frame; false when it hit something and is spent.</summary>
+    /// <summary>
+    /// Moves a shot through one frame; false when it is spent. Along the way it meets blocks and the player in the order
+    /// it reaches them. Each takes from its remaining damage what it can soak up (a block its hit points left, the player
+    /// their health); with damage left after breaking a block or wounding the player it flies on, as in the original
+    /// (<c>sv_projectile_pass_through</c>).
+    /// </summary>
     bool Step(Shot shot, float dt)
     {
         float travel = shot.Velocity.Length() * dt;
         if (travel <= 0) return true;
-        if (!_grids.Raycast(shot.Position, shot.Velocity, travel, out var aim, out var distance))
-        {
-            shot.Position += shot.Velocity * dt;
-            return true;
-        }
-
         var direction = shot.Velocity.Normalized();
-        var impact = shot.Position + direction * distance;
+        var start = shot.Position;
+        bool passThrough = Cvars.Bool(Simulation.Settings.Cvars.ProjectilePassThrough);
+
+        // Bodies along this frame's path, nearest first: the player (unless it is their own shot) and creatures.
+        var end = start + direction * travel;
+        var bodies = new List<(float At, Simulation.Creatures.Creature? Creature)>();
+        if (!shot.FromPlayer && Player is { Hittable: true } player &&
+            Damage.SegmentHitsSphere(start.ToNumerics(), end.ToNumerics(), player.Center.ToNumerics(),
+                Cvars.Float(Simulation.Settings.Cvars.ProjectileHitRadius)) is { } t)
+            bodies.Add((t * travel, null));
+        if (Creatures is { } creatures)
+            foreach (var (at, creature) in creatures.HitsAlong(start, end)) bodies.Add((at * travel, creature));
+        bodies.Sort((a, b) => a.At.CompareTo(b.At));
+        int next = 0;
+
+        float done = 0;
+        for (int hits = 0; hits < 64 && done < travel; hits++)
+        {
+            var from = start + direction * done;
+            bool block = _grids.Raycast(from, shot.Velocity, travel - done, out var aim, out var distance);
+            float blockAt = block ? done + distance : float.PositiveInfinity;
+
+            if (next < bodies.Count && bodies[next].At <= blockAt)
+            {
+                var (bodyAt, creature) = bodies[next++];
+                double absorbed = creature is null
+                    ? (Player?.Absorb(shot.Remaining, direction) ?? 0)
+                    : Creatures!.Absorb(creature, shot.Remaining, shot.FromPlayer);
+                shot.Remaining -= Math.Max(0, absorbed);
+                if (creature is null) Spark(start + direction * bodyAt, shot.Def);
+                if (shot.Remaining <= 0 || !passThrough) return false;
+                continue;
+            }
+            if (!block) break;
+
+            var outcome = HitBlock(shot, aim, from + direction * distance, direction, passThrough);
+            if (outcome is BlockOutcome.Spent) return false;
+            if (outcome is BlockOutcome.Bounced) return true;
+            done = blockAt + 0.01f;   // through the broken block
+        }
+        shot.Position = start + direction * travel;
+        return true;
+    }
+
+    enum BlockOutcome { Spent, Bounced, Through }
+
+    BlockOutcome HitBlock(Shot shot, Aim aim, Vector3 impact, Vector3 direction, bool passThrough)
+    {
         var normal = aim.Grid.GlobalBasis * (Vector3)(aim.Before - aim.Hit);
         // Ricochets are ours and off by default (sv_ricochet): the original's shots hit whatever they meet.
         if (Cvars.Bool(Simulation.Settings.Cvars.Ricochet) && aim.Before != aim.Hit && normal != Vector3.Zero &&
@@ -197,7 +266,7 @@ public partial class Projectiles : Node3D
             shot.Position = impact + normal.Normalized() * 0.01f;
             shot.Velocity = bounced.ToGodot();
             shot.Bounces++;
-            return true;
+            return BlockOutcome.Bounced;
         }
 
         var target = aim.Grid.TargetAt(aim.Hit);
@@ -205,12 +274,24 @@ public partial class Projectiles : Node3D
         var item = aim.Grid.Palette.Item(block);
         var key = (aim.Grid, target.Object is { } obj ? obj.Origin.ToGodot() : target.Cell, block, target.Object);
         Spark(impact - direction * 0.05f, shot.Def);
-        if (_damage.Hit(key, shot.Def.Damage, item.Block?.Health ?? 0))
+        double health = item.Block?.Health ?? 0;
+        bool broken;
+        if (passThrough)
+        {
+            (double absorbed, broken) = _damage.Absorb(key, shot.Remaining, health);
+            shot.Remaining -= absorbed;
+        }
+        else
+        {
+            broken = _damage.Hit(key, shot.Remaining, health);
+            shot.Remaining = 0;
+        }
+        if (broken)
         {
             _grids.Break(target);
             BlockDestroyed?.Invoke(item.Name);
         }
-        return false;
+        return broken && shot.Remaining > 0 ? BlockOutcome.Through : BlockOutcome.Spent;
     }
 
     static void Place(Shot shot)

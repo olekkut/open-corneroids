@@ -120,12 +120,28 @@ Watched through its narration and stills taken from it (stored outside the repos
   prompts (`"F to edit"`, `"E to use"`), `F1` Help & Controls window, `F3` toggleable debug telemetry, and `` ` ``
   console (ours: every setting by name, `find`, `cvarlist`, `differences`, `reset`, `preset`, `exec`, `mode`, `ships`,
   `spawnship`, `help`; cheats behind `sv_cheats 1`: `speed`, `tp`, `give`, `kit`, `noclip`, `god`, `heal`).
-- **Weapons:** no ricochets, recoil that does not move the shooter, and shots that do not take the shooter's velocity;
-  at most 512 shots in flight. Each of our former behaviours is still there behind a setting (`sv_ricochet`,
-  `sv_recoil_push`, `sv_projectile_inherit_velocity`).
+- **Weapons:** no ricochets, recoil that only moves the held weapon (back by its `pushback`, sliding forward at 0.75
+  units/s), and shots that do not take the shooter's velocity; at most 512 shots in flight (no new shot past it). A
+  shot loses the damage it deals (a block's remaining hit points, a player's remaining health) and flies on with the
+  rest. Each of our former behaviours is still there behind a setting (`sv_ricochet`, `sv_recoil_push`,
+  `sv_projectile_inherit_velocity`, `sv_projectile_pass_through 0`).
+- **Health, damage and death:** health 100 plus worn and timed bonuses, regenerating 0.5/s; armor (capped at 60)
+  takes off ln(armor + 1) / 6; shots hit within 0.735 m of the player's centre; hitting a surface above 8 m/s costs 7
+  per m/s; any hit shows red markers for 0.4 s and throws the player out of a seat; at 0 health the hand empties,
+  consumable effects end and "You have died" / Respawn shows over a heartbeat; respawn 64–95 m away up every axis,
+  facing the death point, with 100 health and power, inventory kept.
 
-Still to match the original: health and armor damage/respawn, pass-through projectile damage, consumables details,
-enemies, and classic menu/UI polish.
+- **Creatures:** single player only; a spawn cycle every second near asteroids puts mineral parasites (up to 4 tries)
+  or swarm eggs (2) on asteroid and mineral surfaces 16 or more units from the player, at most one parasite per 16³
+  sector of blocks, none within 8 of another; creatures beyond 32 go. Parasites eat a block per 20 s (no drop), charge a
+  player within 4 (or one who shoots them from within 16) and bite for 10; eggs hatch three homing needles (sting 5,
+  4 s life) when a player comes within 5 or shoots them; touch damage every 0.7 s with a 5 u/s knockback; shots hit
+  within 1.5 × a creature's radius; creatures regenerate a point per 2 s, shrink away in 0.2 s and burst in red, and
+  drop nothing. Models and textures are the original's `.xnb` files. The scavenger flyer is coded but never spawns in
+  the original; ours behind `sv_scavengers`.
+
+Still to match the original: consumables details, the hand-weapon spread formula, ship collision damage to blocks, and
+classic menu/UI polish.
 
 ## 3. Our additive rules and remaining placeholders
 
@@ -133,8 +149,10 @@ Tunable, and marked so in code.
 
 - **Flight assistant (opt-in, `H`):** solves throttles 0..1 across powered thrusters (with a 30× force multiplier) to
   reach requested linear and angular velocities with optional inertial dampeners (`G`).
-- **Suit health and armor:** health is 100 plus worn `healthRating`; armor is the sum of `armorRating`. Damage, death
-  and respawn come in the next milestone.
+- **Creatures, ours:** they are not saved; `sv_creature_damage_scale` scales their damage to the player; the console's
+  `creatures`, `spawn` and `tp aim` are ours.
+- **Death extras:** `sv_death_drop_items` drops the inventory where the player died (off; the original keeps it), and a
+  world saved by a dead player loads with them alive where they lay. The console's `kill` and `respawn` are ours.
 - **Weapons and projectiles (opt-in):** physical kickback (`sv_recoil_push`, scaled by `sv_recoil_scale`),
   `ricochetAngle` bounces (`sv_ricochet`, up to `sv_ricochet_bounces`) and inherited shooter velocity
   (`sv_projectile_inherit_velocity`), all off by default. Pass-through block damage comes in the combat milestone.

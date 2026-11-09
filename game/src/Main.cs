@@ -214,13 +214,13 @@ public partial class Main : Node
 
         await loading.SetStep("Finalizing world...", 0.98, completedNotice: "Asteroids generated");
 
+        // Into the scene first, as a loaded world is: the hooks move and turn the player, which needs the tree.
+        Swap(world);
         if (_args.Showcase) world.Showcase();
         if (_args.DemoShip) world.DemoShip();
         if (!_hooksApplied && !world.Creative) world.Give(_args.Give);
         if (!_hooksApplied && !world.Creative) world.DropInFront(_args.Drop);
         ApplyHooks(world);
-
-        Swap(world);
         return world;
     }
 
@@ -273,6 +273,7 @@ public partial class Main : Node
         if (_args.Pilot is { } view)
             world.PilotFirstShip(view switch { "chase" => FlyCamera.PilotView.Chase, "fixed" => FlyCamera.PilotView.Fixed, _ => FlyCamera.PilotView.Seat });
         if (_args.Holds.Count > 0) world.Player.Hold(_args.Holds);
+        world.RunAutoexec();
         foreach (var cmd in _args.ConsoleCommands)
             world.DebugConsole.RunCommand(cmd);
         if (_args.Open is { } window) world.OpenWindow(window);

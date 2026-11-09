@@ -125,6 +125,9 @@ public abstract partial class BlockGrid : Node3D
     /// <summary>The world centre of the grid's cube and its bounding-sphere radius, for cheap "can this matter" tests.</summary>
     public (Vector3 Center, float Radius) Bounds => (ToGlobal(Vector3.One * (GridSize * 0.5f)), GridSize * 0.8661f);
 
+    /// <summary>How many 16³ sectors hold any block: what the original counts to cap the parasites on an entity.</summary>
+    public int FilledChunks => _chunkNodes.Count(n => n is not null);
+
     /// <summary>
     /// Finds the closest solid cell (grid block or object model cell) within <paramref name="maxDistance"/> of
     /// <paramref name="localPos"/> (grid-local coordinates). Empty chunks are skipped in one check.

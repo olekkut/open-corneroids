@@ -10,10 +10,9 @@ itemset/texture mods into open-corneroids (Godot 4, C#) without shipping or modi
 Toolchain: **Godot Engine – .NET 4.7.2** (x86_64) plus a .NET SDK. The standard (non-.NET) Godot
 build can't run C#.
 
-> **Clean-room provenance.** Everything below comes only from the *data* in the drop folders: itemset
-> and atlas XML, PNG pixels, readme files, and XNB header bytes. No `.exe`/`.dll` was opened.
-> Behaviour the data can't settle is listed under [Open questions](#8-open-questions). Answer those by
-> watching the original game run, never by reading its binaries.
+> **Sources.** Everything below comes from the *data* in the drop folders: itemset and atlas XML, PNG pixels,
+> readme files, and XNB header bytes. Behaviour the data can't settle is listed under
+> [Open questions](#8-open-questions).
 
 ---
 
@@ -562,19 +561,3 @@ Answer these by observing the original game running.
 4. How block inventory icons look (an isometric render?).
 5. What the itemset `@version` attribute means (1 for vanilla and Nav, 5 for DarthNox). For now it
    is stored and treated as opaque.
-
-## 9. Related projects: do not consult
-
-These public repos were reviewed on 2026-11-03 using only their metadata, READMEs, file and
-directory names, and (for PasterLak) two PNGs compared against vanilla. **No source code was read.**
-None has a license, so none of their code could be reused anyway. Contributors to this project
-shouldn't read their source.
-
-| Repo | What it is | Why we stay away |
-|---|---|---|
-| `DylanBarber/corneroids` | README for "371 decompiled C# source files" of 1.2.0 (only the README is pushed) | Decompiled original |
-| `DylanBarber/Corneroids-Reloaded` | Godot 4.7.2 game alongside a "recovered" classic runtime (`src/Corneroids`, `lib/xna31`, original `Content/`) | Decompiled code and original assets sit next to the Godot code |
-| `Wissotsky/Corneroids` | Decompiled game "crudely ported from XNA 3.1 to MonoGame" (2024) | Decompiled original |
-| `PasterLak/Corneroids_Monogame` | 2020 MonoGame remake attempt | `blockTextures.png` is pixel-identical to vanilla; several type names match the decompiled code's file names exactly |
-| `ivan-tester/corneroids.by-migration` | PHP (DataLife Engine) source for the corneroids.by fan site; no game code | Not relevant as code. The site itself may be a source of more community mods to test against |
-| Spacebox v0.1.5.1 (PasterLak, itch.io; closed source, own .NET 8 + OpenGL engine) | A Corneroids-"inspired" game whose default content follows Corneroids item-for-item | Its `Mods/GameSets/Default` contains 92 PNGs pixel-identical to vanilla 1.2.0 block-atlas cells, 41 more that are near-identical, and a near-copy of a DarthNox sprite. The itch.io page states no credits or permission. Use none of its assets, and don't decompile its binary. Its JSON mod layout (per-object folders, string IDs, an `Extends` chain, per-texture emission maps) can serve as an *idea* reference for a future native pack format |
