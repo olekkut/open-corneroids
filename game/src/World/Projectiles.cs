@@ -16,6 +16,13 @@ namespace OpenCorneroids.Game.World;
 /// (<see cref="BlockDamage{TKey}"/>). Broken blocks drop nothing: shooting is not mining. Shots live for their
 /// projectile's <c>lifetime</c>. Rules are in the Simulation library; this node only moves and draws.
 /// </summary>
+/// <remarks>
+/// Ours, for speed: shots have no node each. Every projectile look is one <see cref="MultiMeshInstance3D"/> whose
+/// instances are written once per frame (<see cref="InstanceBatch"/>), and hit sparks are specks
+/// (<see cref="Specks"/>), so a minigun battle costs a handful of draw calls. All shots of a frame share one reading of
+/// where the grids are (<see cref="GridSet.BeginFrame"/>) and of where the creatures are
+/// (<see cref="CreatureSystem.HitsAlong"/>).
+/// </remarks>
 public partial class Projectiles : Node3D
 {
     static Simulation.Settings.CvarStore Cvars => Settings.GameSettings.Cvars;
@@ -27,7 +34,7 @@ public partial class Projectiles : Node3D
     sealed class Shot
     {
         public required ProjectileDef Def;
-        public required MeshInstance3D Mesh;
+        public required Look Look;
         public Vector3 Position;
         public Vector3 Velocity;
         public double Age;
@@ -62,8 +69,16 @@ public partial class Projectiles : Node3D
     // A grid block is known by its cell and block value, a multi-block by the object itself, so a block put in the place
     // of a shot-up one starts whole.
     readonly BlockDamage<(BlockGrid Grid, Vector3I Cell, ushort Block, WorldObject? Object)> _damage = new();
-    readonly Dictionary<int, (Mesh Mesh, Material Material)> _looks = new();
-    readonly Dictionary<int, Mesh> _sparkMeshes = new();
+    /// <summary>How the shots of one projectile id are drawn: all of them in one batch.</summary>
+    sealed class Look
+    {
+        public required InstanceBatch Batch;
+    }
+
+    readonly Dictionary<int, Look> _looks = new();
+    readonly List<(float At, Simulation.Creatures.Creature? Creature)> _bodies = new();
+    readonly List<(float At, Simulation.Creatures.Creature Creature)> _creatureHits = new();
+    bool _drawQueued;
     /// <summary>A gun on a ship: a multi-block (<see cref="Obj"/>) or a single-cell grid block at <see cref="Cell"/>.</summary>
     readonly record struct Gun(WorldObject? Obj, Vector3I Cell, GunComponent Data, ProjectileDef Def);
 
@@ -76,26 +91,31 @@ public partial class Projectiles : Node3D
 
     public void Setup(GridSet grids, ItemsetDef itemset) => (_grids, _itemset) = (grids, itemset);
 
+    /// <summary>Sparks here, and the creatures' blood and goo: one set of specks, one draw call.</summary>
+    public Specks Specks { get; } = new() { Name = "Specks" };
+
+    public override void _Ready() => AddChild(Specks);
+
     public int InFlight => _shots.Count;
 
     /// <summary>Launches one shot from <paramref name="from"/> along <paramref name="direction"/>; <paramref name="carrier"/>
     /// is the shooter's own velocity, which the shot keeps only with <c>sv_projectile_inherit_velocity</c> (the
     /// original's shots fly at their own speed whatever the shooter does). At <c>sv_projectile_limit</c> shots in
-    /// flight no new one is fired, as in the original. <paramref name="fromPlayer"/>: the player's own hand weapon.</summary>
-    public void Fire(ProjectileDef def, Vector3 from, Vector3 direction, Vector3 carrier, bool fromPlayer = false)
+    /// flight no new one is fired, as in the original. <paramref name="fromPlayer"/>: the player's own hand weapon.
+    /// <paramref name="speedScale"/> multiplies the projectile's speed (a hand weapon's spread changes it, as in the
+    /// original).</summary>
+    public void Fire(ProjectileDef def, Vector3 from, Vector3 direction, Vector3 carrier, bool fromPlayer = false, float speedScale = 1)
     {
         if (direction == Vector3.Zero || _shots.Count >= Math.Max(1, MaxShots)) return;
-        var (mesh, material) = LookOf(def);
-        var instance = new MeshInstance3D { Mesh = mesh, MaterialOverride = material, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
-        AddChild(instance);
         if (!Cvars.Bool(Simulation.Settings.Cvars.ProjectileInheritVelocity)) carrier = Vector3.Zero;
         var shot = new Shot
         {
-            Def = def, Mesh = instance, Position = from, Velocity = direction.Normalized() * def.Speed + carrier,
+            Def = def, Look = LookOf(def), Position = from, Velocity = direction.Normalized() * (def.Speed * speedScale) + carrier,
             Remaining = Math.Max(0, def.Damage), FromPlayer = fromPlayer,
         };
-        Place(shot);
         _shots.Add(shot);
+        // Drawn at the muzzle this frame too, even when fired after the shots were moved.
+        QueueDraw();
     }
 
     /// <summary>
@@ -132,15 +152,16 @@ public partial class Projectiles : Node3D
 
     IReadOnlyList<Gun> GunsOn(ShipGrid ship)
     {
-        // The guns are looked up again only after the ship was edited, not every frame the button is held.
+        // The guns are looked up again only after the ship was edited, not every frame the button is held, and then
+        // from the grid's own set of gun cells rather than a scan of the whole grid.
         if (!_shipGuns.TryGetValue(ship, out var cached) || cached.Revision != ship.Revision)
         {
             var guns = new List<Gun>();
             foreach (var o in ship.Objects)
                 if (ship.Palette.Item(o.Block).Get<GunComponent>() is { } g && _itemset.Projectiles.TryGetValue(g.ProjectileId, out var d))
                     guns.Add(new Gun(o, o.Origin.ToGodot(), g, d));
-            foreach (var (cell, block) in ship.Blocks())
-                if (ship.Palette.Item(block).Get<GunComponent>() is { } g && _itemset.Projectiles.TryGetValue(g.ProjectileId, out var d))
+            foreach (var cell in ship.GunCells)
+                if (ship.Palette.Item(ship.Get(cell)).Get<GunComponent>() is { } g && _itemset.Projectiles.TryGetValue(g.ProjectileId, out var d))
                     guns.Add(new Gun(null, cell, g, d));
             _shipGuns[ship] = cached = (ship.Revision, guns);
         }
@@ -167,19 +188,22 @@ public partial class Projectiles : Node3D
 
     public override void _Process(double delta)
     {
+        using var timing = PerfMonitor.Measure(PerfMonitor.Shots);
         float dt = (float)delta;
-        for (int i = _shots.Count - 1; i >= 0; i--)
+        using (_grids.BeginFrame())
         {
-            var shot = _shots[i];
-            shot.Age += delta;
-            if (shot.Age * 1000 >= shot.Def.LifetimeMs || !Step(shot, dt))
+            // Spent shots are dropped in the same pass, keeping the others in firing order.
+            int kept = 0;
+            for (int i = 0; i < _shots.Count; i++)
             {
-                shot.Mesh.QueueFree();
-                _shots.RemoveAt(i);
-                continue;
+                var shot = _shots[i];
+                shot.Age += delta;
+                if (shot.Age * 1000 >= shot.Def.LifetimeMs || !Step(shot, dt)) continue;
+                _shots[kept++] = shot;
             }
-            Place(shot);
+            _shots.RemoveRange(kept, _shots.Count - kept);
         }
+        QueueDraw();
 
         // Damage on blocks that are gone (mined, launched, their ship broken up) is forgotten now and then.
         if ((_sinceTidy += delta) > 2)
@@ -213,14 +237,18 @@ public partial class Projectiles : Node3D
 
         // Bodies along this frame's path, nearest first: the player (unless it is their own shot) and creatures.
         var end = start + direction * travel;
-        var bodies = new List<(float At, Simulation.Creatures.Creature? Creature)>();
+        var bodies = _bodies;
+        bodies.Clear();
         if (!shot.FromPlayer && Player is { Hittable: true } player &&
             Damage.SegmentHitsSphere(start.ToNumerics(), end.ToNumerics(), player.Center.ToNumerics(),
                 Cvars.Float(Simulation.Settings.Cvars.ProjectileHitRadius)) is { } t)
             bodies.Add((t * travel, null));
         if (Creatures is { } creatures)
-            foreach (var (at, creature) in creatures.HitsAlong(start, end)) bodies.Add((at * travel, creature));
-        bodies.Sort((a, b) => a.At.CompareTo(b.At));
+        {
+            creatures.HitsAlong(start, end, _creatureHits);
+            foreach (var (at, creature) in _creatureHits) bodies.Add((at * travel, creature));
+        }
+        if (bodies.Count > 1) bodies.Sort(static (a, b) => a.At.CompareTo(b.At));
         int next = 0;
 
         float done = 0;
@@ -294,16 +322,33 @@ public partial class Projectiles : Node3D
         return broken && shot.Remaining > 0 ? BlockOutcome.Through : BlockOutcome.Spent;
     }
 
-    static void Place(Shot shot)
+    /// <summary>Writes every shot into its look's batch once, at the end of the frame, after whatever fired late.</summary>
+    void QueueDraw()
+    {
+        if (_drawQueued) return;
+        _drawQueued = true;
+        Callable.From(Draw).CallDeferred();
+    }
+
+    void Draw()
+    {
+        _drawQueued = false;
+        if (!IsInstanceValid(this)) return;
+        foreach (var look in _looks.Values) look.Batch.Clear();
+        foreach (var shot in _shots) shot.Look.Batch.Add(Placement(shot));
+        foreach (var look in _looks.Values) look.Batch.Commit();
+    }
+
+    static Transform3D Placement(Shot shot)
     {
         // The projectile's size is (width, length, width): its Y axis lies along the flight path.
         var forward = shot.Velocity.Normalized();
         var side = Math.Abs(forward.Dot(Vector3.Up)) < 0.95f ? forward.Cross(Vector3.Up).Normalized() : forward.Cross(Vector3.Right).Normalized();
         var basis = new Basis(side, forward, side.Cross(forward));
-        shot.Mesh.GlobalTransform = new Transform3D(basis, shot.Position);
+        return new Transform3D(basis, shot.Position);
     }
 
-    (Mesh, Material) LookOf(ProjectileDef def)
+    Look LookOf(ProjectileDef def)
     {
         if (_looks.TryGetValue(def.ProjectileId, out var look)) return look;
         var color = new Color(def.Color.R / 255f, def.Color.G / 255f, def.Color.B / 255f);
@@ -318,45 +363,21 @@ public partial class Projectiles : Node3D
             EmissionEnabled = true,
             Emission = color,
         };
-        return _looks[def.ProjectileId] = (mesh, material);
-    }
-
-    Mesh SparkMesh(int projectileId)
-    {
-        if (_sparkMeshes.TryGetValue(projectileId, out var mesh)) return mesh;
-        var material = new StandardMaterial3D
+        mesh.Material = material;
+        var batch = new InstanceBatch(mesh, colors: false);
+        // Top level, so the instances are world positions whatever this node's own transform.
+        AddChild(new MultiMeshInstance3D
         {
-            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
-            BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
-            VertexColorUseAsAlbedo = true,
-        };
-        return _sparkMeshes[projectileId] = new QuadMesh { Size = new Vector2(0.08f, 0.08f), Material = material };
+            Name = $"Shots_{def.ProjectileId}", Multimesh = batch.Multimesh, TopLevel = true,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        });
+        return _looks[def.ProjectileId] = new Look { Batch = batch };
     }
 
     void Spark(Vector3 at, ProjectileDef def) =>
-        Spark(at, new Color(def.Color.R / 255f, def.Color.G / 255f, def.Color.B / 255f).Lightened(0.3f), def.ProjectileId);
+        Spark(at, new Color(def.Color.R / 255f, def.Color.G / 255f, def.Color.B / 255f).Lightened(0.3f));
 
     /// <summary>A short burst of specks: a hit, or a drill at work (grey when it bites, yellow when it is too weak, as
-    /// in the original).</summary>
-    public void Spark(Vector3 at, Color color, int look = -1)
-    {
-        var sparks = new CpuParticles3D
-        {
-            Emitting = true,
-            OneShot = true,
-            Amount = 10,
-            Lifetime = 0.35,
-            Explosiveness = 1,
-            Direction = Vector3.Up,
-            Spread = 180,
-            Gravity = Vector3.Zero,
-            InitialVelocityMin = 1.5f,
-            InitialVelocityMax = 4f,
-            Color = color,
-            Mesh = SparkMesh(look),
-        };
-        AddChild(sparks);
-        sparks.GlobalPosition = at;
-        sparks.Finished += sparks.QueueFree;
-    }
+    /// in the original). Ten specks of 8 cm flying out every way at 1.5 to 4 m/s for 0.35 s.</summary>
+    public void Spark(Vector3 at, Color color) => Specks.Spark(at, color, 10, 0.08f, 0.35, 1.5f, 4f);
 }

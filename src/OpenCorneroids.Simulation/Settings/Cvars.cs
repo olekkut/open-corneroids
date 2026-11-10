@@ -45,6 +45,9 @@ public static class Cvars
     public static readonly Cvar BoostCost = new("sv_boost_cost", CvarKind.Float, 20, W,
         "Suit power boosting costs per second.", 0, 1000);
 
+    public static readonly Cvar PlayerPushoutMax = new("sv_player_pushout_max", CvarKind.Float, 2.5, W,
+        "Ours: furthest a block grid that has come to overlap the astronaut (a ship closing on them, rock their ship carried them into) pushes them out in one frame, metres. Deeper in a ship they are left to climb out; deeper in rock they are moved to the nearest free spot. 0 turns pushing off.", 0, 16);
+
     // ---- mining and drops (as in the original) ----
 
     public static readonly Cvar MineReach = new("sv_mine_reach", CvarKind.Float, 3, W,
@@ -64,6 +67,86 @@ public static class Cvars
 
     public static readonly Cvar ItemPickupReach = new("sv_item_pickup_reach", CvarKind.Float, 1.5, W,
         "Distance at which floating items fly to the player, m.", 0, 64);
+
+    public static readonly Cvar ItemTossSpeed = new("sv_item_toss_speed", CvarKind.Float, 3, W,
+        "Speed of a stack thrown out of an item window by clicking outside it, along the view, m/s.", 0, 100);
+
+    public static readonly Cvar ItemCloseTossSpeed = new("sv_item_close_toss_speed", CvarKind.Float, 2, W,
+        "Speed of a stack still held on the cursor when an item window closes, thrown along the view, m/s.", 0, 100);
+
+    public static readonly Cvar ItemTossPickupDelay = new("sv_item_toss_pickup_delay", CvarKind.Float, 2, W,
+        "Seconds before a thrown stack can be picked up again.", 0, 60);
+
+    public static readonly Cvar ItemDrag = new("sv_item_drag", CvarKind.Float, 0.98, W,
+        "Speed a moving floating item keeps per 1/60 s (the original applies it once per update; its update rate is uncertain). 1 = never slows down.", 0, 1);
+
+    // ---- using blocks and chests (as in the original) ----
+
+    public static readonly Cvar UseReach = new("sv_use_reach", CvarKind.Float, 1.7, W,
+        "How far E (use) and F (edit) reach from the eye to the block, m: doors, consoles, crafting stations, chests and power blocks. 1.7 as in the original.", 0.2, 64);
+
+    public static readonly Cvar ContainerSpill = new("sv_container_spill", CvarKind.Bool, 1, W,
+        "A broken chest throws out what it held as floating items, as in the original. 0 = the contents are lost with the block.");
+
+    public static readonly Cvar ContainerSpillSpeedMin = new("sv_container_spill_speed_min", CvarKind.Float, 1, W,
+        "Slowest speed a broken chest's stacks fly out at, m/s.", 0, 100);
+
+    public static readonly Cvar ContainerSpillSpeedMax = new("sv_container_spill_speed_max", CvarKind.Float, 4, W,
+        "Fastest speed a broken chest's stacks fly out at, m/s.", 0, 100);
+
+    public static readonly Cvar ContainerSpillPickupDelay = new("sv_container_spill_pickup_delay", CvarKind.Float, 1, W,
+        "Seconds before a stack thrown out of a broken chest can be picked up.", 0, 60);
+
+    // ---- thrown torches (as in the original) ----
+
+    public static readonly Cvar TorchThrowSpeed = new("sv_torch_throw_speed", CvarKind.Float, 7, W,
+        "Speed a torch is thrown at along the view, m/s.", 0, 100);
+
+    public static readonly Cvar TorchDecel = new("sv_torch_decel", CvarKind.Float, 5, W,
+        "How fast a thrown torch slows down, m/s² (from 7 m/s it stops about 4.9 m away).", 0, 100);
+
+    public static readonly Cvar TorchRadius = new("sv_torch_radius", CvarKind.Float, 0.2, W,
+        "Size of a thrown torch against blocks: half the side of its collision box, m.", 0.01, 2);
+
+    public static readonly Cvar TorchLifetimeScale = new("sv_torch_lifetime_scale", CvarKind.Float, 1, W,
+        "How long a thrown torch burns, × the item's burningTime.", 0, 100);
+
+    public static readonly Cvar TorchFlicker = new("sv_torch_flicker", CvarKind.Float, 0.1, W,
+        "Largest share a thrown torch's light radius drops by each frame (its radius is ln of the milliseconds left).", 0, 1);
+
+    public static readonly Cvar TorchHeldLight = new("sv_torch_held_light", CvarKind.Bool, 1, W,
+        "A torch in hand lights the area around the player with its own light.");
+
+    public static readonly Cvar TorchLimit = new("sv_torch_limit", CvarKind.Int, 0, W,
+        "Most thrown torches burning at once, the oldest going out first; 0 = no limit, as in the original.", 0, 4096);
+
+    public static readonly Cvar TorchInheritVelocity = new("sv_torch_inherit_velocity", CvarKind.Bool, 0, W,
+        "Ours: a thrown torch keeps the thrower's own velocity. In the original it does not.");
+
+    // ---- beacons (as in the original) ----
+
+    public static readonly Cvar BeaconReach = new("sv_beacon_reach", CvarKind.Float, 6, W,
+        "How near a beacon must be for the beacon tool (B) to pick it, and a click to remove it, m.", 0.5, 64);
+
+    public static readonly Cvar BeaconPlaceDistance = new("sv_beacon_place_distance", CvarKind.Float, 2, W,
+        "How far ahead along the view the beacon tool puts a new beacon, m.", 0, 64);
+
+    public static readonly Cvar BeaconNameMax = new("sv_beacon_name_max", CvarKind.Int, 20, W,
+        "Longest beacon name, characters; longer names are cut.", 1, 64);
+
+    // ---- inventory (as in the original) ----
+
+    public static readonly Cvar InventorySlots = new("sv_inventory_slots", CvarKind.Int, 30, W,
+        "Main inventory slots beside the 8-slot hotbar: 30 (6 × 5) as in the original. Takes effect when the world is loaded again; a world saved with a larger inventory keeps its size.", 6, 96)
+    {
+        AppliesOnLoad = true,
+    };
+
+    public static readonly Cvar InventoryFillHotbarFirst = new("sv_inventory_fill_hotbar_first", CvarKind.Bool, 1, W,
+        "Picked-up items go into the first slot that takes them, hotbar first and then the main inventory, as in the original. 0 = ours: matching stacks anywhere are topped up before an empty slot is used.");
+
+    public static readonly Cvar InventoryPickupWhole = new("sv_inventory_pickup_whole", CvarKind.Bool, 1, W,
+        "With sv_inventory_fill_hotbar_first 1, the part of a picked-up stack the hotbar can't take goes into the main inventory only if all of it fits there; otherwise it stays floating, as in the original. 0 = ours: the main inventory takes what fits.");
 
     // ---- building (as in the original) ----
 
@@ -90,6 +173,12 @@ public static class Cvars
     public static readonly Cvar AssistForce = new("sv_assist_force", CvarKind.Float, 30, W,
         "Ours: thruster force multiplier for the automatic flight assistant.", 0.1, 1000);
 
+    public static readonly Cvar ShipRestitution = new("sv_ship_restitution", CvarKind.Float, 0, W,
+        "Fraction of the closing speed a ship bounces back with after a hit. 0 as in the original: no bounce.", 0, 1);
+
+    public static readonly Cvar ShipContactSpinDamping = new("sv_ship_contact_spin_damping", CvarKind.Float, 0.5, W,
+        "Ours: each contact multiplies a ship's spin by this, so scraping along rock settles it (1 keeps the spin). The original turns ships by contact torque instead.", 0, 1);
+
     // ---- weapons ----
 
     public static readonly Cvar Ricochet = new("sv_ricochet", CvarKind.Bool, 0, W,
@@ -115,6 +204,15 @@ public static class Cvars
 
     public static readonly Cvar ProjectileHitRadius = new("sv_projectile_hit_radius", CvarKind.Float, 0.735, W,
         "A shot hits a player when it passes this close to their centre, m.", 0, 10);
+
+    public static readonly Cvar WeaponSpreadMode = new("sv_weapon_spread_mode", CvarKind.Int, 0, W,
+        "Hand weapon spread. 0 as in the original: aim plus spread × a fixed list of 256 directions, so shot speed varies by up to ±spread. 1 = ours: an even cone of spread radians at full speed.", 0, 1);
+
+    public static readonly Cvar ShotForwardOffset = new("sv_shot_forward_offset", CvarKind.Float, 1, W,
+        "How far along the aim a hand weapon's shot starts from the gun (0.3 m right of and 0.2 m below the eye), m.", 0, 10);
+
+    public static readonly Cvar WeaponNegativePower = new("sv_weapon_negative_power", CvarKind.Bool, 1, W,
+        "A weapon with a negative powerUsage always fires and gives that much suit power per shot, as in the original. 0 = ours: it costs the size of its powerUsage.");
 
     // ---- health, damage, death (as in the original) ----
 
@@ -182,6 +280,15 @@ public static class Cvars
     public static readonly Cvar Sensitivity = new("cl_sensitivity", CvarKind.Float, 0.5, U,
         "Mouse sensitivity: the view turns 0.01 × this radians per pixel (Controls: Mouse sensitivity).", 0, 3);
 
+    public static readonly Cvar CameraPitchLimit = new("cl_camera_pitch_limit", CvarKind.Float, 90, U,
+        "Seated at a console with a camera block, how far the mouse turns the camera up or down, degrees; it turns all the way round sideways. As in the original.", 0, 90);
+
+    public static readonly Cvar CameraEyeForward = new("cl_camera_eye_forward", CvarKind.Float, 0, U,
+        "Ours: moves a camera block's view out of the block to this far past its front face, m, when the cell there is free. 0 = the block's centre, as in the original.", 0, 0.6);
+
+    public static readonly Cvar SpeedConeFollowsView = new("cl_speed_cone_follows_view", CvarKind.Bool, 0, U,
+        "Ours: seated with a camera block in use, the speed cone turns with the camera's view. 0 = it keeps to the seat's look, as in the original.");
+
     public static readonly Cvar DrawTargets = new("cl_draw_targets", CvarKind.Bool, 1, U,
         "Distance and mass markers on asteroids and ships (Gameplay: Draw target squares).");
 
@@ -190,6 +297,12 @@ public static class Cvars
 
     public static readonly Cvar ShowHints = new("cl_show_hints", CvarKind.Bool, 1, U,
         "On-screen hints for what you hold and the block you look at (Gameplay: Show hints).");
+
+    public static readonly Cvar ItemTossOnWindow = new("cl_item_toss_on_window", CvarKind.Bool, 1, U,
+        "Holding a stack in an item window, a click on the window that is not on a slot throws it, as in the original. 0 (ours): only a click outside the windows throws it.");
+
+    public static readonly Cvar ItemClickNeedsRelease = new("cl_item_click_needs_release", CvarKind.Bool, 1, U,
+        "In item windows a press counts only while the other mouse button is up, as in the original. 0 (ours): every press acts.");
 
     public static readonly Cvar Gamma = new("cl_gamma", CvarKind.Int, 50, U,
         "Brightness, 0 to 50 (Gameplay: Gamma).", 0, 50);
@@ -220,21 +333,42 @@ public static class Cvars
     public static readonly Cvar MarkerMinBlocks = new("cl_marker_min_blocks", CvarKind.Int, 64, U,
         "Ours: asteroids smaller than this many blocks get no distance and mass marker.", 1, 1_000_000);
 
+    public static readonly Cvar RemeshPerFrame = new("cl_remesh_per_frame", CvarKind.Int, 0, U,
+        "Ours: how many chunk meshes are rebuilt per frame after blocks change, nearest the camera first; 0 = every changed chunk in the same frame. The original rebuilds one per frame.", 0, 4096);
+
+    public static readonly Cvar BatchObjects = new("cl_batch_objects", CvarKind.Bool, 1, U,
+        "Ours: draw the multi-blocks of each chunk (all but doors) as one merged mesh instead of one mesh each; looks the same, far fewer draw calls. The original also merges them into its sector meshes.");
+
+    public static readonly Cvar TorchDrawDistance = new("cl_torch_draw_distance", CvarKind.Float, 32, U,
+        "How far away a thrown torch's sprite is drawn, m (its light shines at any distance), as in the original.", 1, 1000);
+
+    public static readonly Cvar TorchLightLimit = new("cl_torch_light_limit", CvarKind.Int, 64, U,
+        "Ours: only this many thrown torches nearest the camera cast light, to spare the renderer; the original lights every one.", 0, 512);
+
+    public static readonly Cvar BeaconMarkers = new("cl_beacon_markers", CvarKind.Bool, 1, U,
+        "Beacon markers (orange, with distance and name), drawn whether or not target squares are on, as in the original. 0 = ours: hidden.");
+
     /// <summary>Every setting, in the order <c>cvarlist</c> shows them.</summary>
     public static readonly IReadOnlyList<Cvar> All =
     [
         Cheats, PlayerSpeedScale,
-        PlayerAccel, PlayerBoostAccel, PlayerSpeed, PlayerBoostSpeed, PlayerOverSpeedDecel, PlayerStopDecel, PlayerMaxSpeed, BoostCost,
+        PlayerAccel, PlayerBoostAccel, PlayerSpeed, PlayerBoostSpeed, PlayerOverSpeedDecel, PlayerStopDecel, PlayerMaxSpeed, BoostCost, PlayerPushoutMax,
         MineReach, MineTimeMax, MineTimeMin, MineTimePerPower, ItemLifetime, ItemPickupReach,
+        ItemTossSpeed, ItemCloseTossSpeed, ItemTossPickupDelay, ItemDrag,
+        UseReach, ContainerSpill, ContainerSpillSpeedMin, ContainerSpillSpeedMax, ContainerSpillPickupDelay,
+        TorchThrowSpeed, TorchDecel, TorchRadius, TorchLifetimeScale, TorchFlicker, TorchHeldLight, TorchLimit, TorchInheritVelocity,
+        BeaconReach, BeaconPlaceDistance, BeaconNameMax,
+        InventorySlots, InventoryFillHotbarFirst, InventoryPickupWhole,
         AttachDistance, BindDistance,
-        ShipMaxSpeed, ShipMaxSpin, ShipCoastDecel, ShipCoastSpinDecel, AssistForce,
+        ShipMaxSpeed, ShipMaxSpin, ShipCoastDecel, ShipCoastSpinDecel, AssistForce, ShipRestitution, ShipContactSpinDamping,
         Ricochet, RicochetBounces, RecoilPush, RecoilScale, ProjectileInheritVelocity, ProjectileLimit,
-        ProjectilePassThrough, ProjectileHitRadius,
+        ProjectilePassThrough, ProjectileHitRadius, WeaponSpreadMode, ShotForwardOffset, WeaponNegativePower,
         PlayerDamage, HealthRegen, ArmorCap, ArmorScale, ImpactSpeed, ImpactDamage, DamageSeatEject,
         RespawnMin, RespawnMax, DeathDropItems,
         Creatures, CreatureSpawnInterval, ParasitesPerSector, ParasiteEatTime, CreatureDamageScale, Scavengers,
-        FlightAssist, FixedCamera, Fov, Sensitivity, MarkerMinBlocks,
-        DrawTargets, ViewBobbing, ShowHints, Gamma,
-        Fullscreen, ResolutionWidth, ResolutionHeight, VSync, Lighting, Ssao, ViewDistance, Welcome,
+        FlightAssist, FixedCamera, Fov, Sensitivity, CameraPitchLimit, CameraEyeForward, SpeedConeFollowsView, MarkerMinBlocks,
+        DrawTargets, ViewBobbing, ShowHints, ItemTossOnWindow, ItemClickNeedsRelease, Gamma,
+        Fullscreen, ResolutionWidth, ResolutionHeight, VSync, Lighting, Ssao, ViewDistance, Welcome, RemeshPerFrame, BatchObjects,
+        TorchDrawDistance, TorchLightLimit, BeaconMarkers,
     ];
 }

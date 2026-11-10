@@ -50,6 +50,7 @@ public static class Codes
     public const string MissingField = "missing-field";
     public const string BadNumber = "bad-number";
     public const string NonIntegral = "non-integral-number";
+    public const string OutOfRange = "value-out-of-range";
     public const string BadEnum = "bad-enum";
     public const string DuplicateItemId = "duplicate-item-id";
     public const string DuplicateBlockId = "duplicate-block-id";

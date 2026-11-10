@@ -6,18 +6,79 @@ namespace OpenCorneroids.Simulation.Combat;
 /// <summary>
 /// Firing rules for hand weapons and ship guns. The numbers come from the itemset (<c>reload</c>, <c>projectileId</c>,
 /// <c>pushback</c>, <c>spread</c>, the item's <c>powerUsage</c>, and the projectile's speed, damage, lifetime and
-/// ricochet angle); how they combine is ours and tunable (docs/design/gameplay-observations.md §3).
+/// ricochet angle). Spread, where a shot starts and what it does to suit power are as in the original; recoil that
+/// moves the shooter and ricochets are ours and tunable (docs/design/gameplay-observations.md §3).
 /// </summary>
 public static class Weapons
 {
     /// <summary>
     /// Suit power one shot costs: the weapon's <c>powerUsage</c>. One vanilla weapon has a negative value (the Heavy
-    /// Plasma Launcher, -25); a weapon that gives power back makes no sense, so the size is what counts.
+    /// Plasma Launcher, -25): as in the original, such a shot always fires and gives that much power back
+    /// (<c>sv_weapon_negative_power 1</c>). Ours, with <paramref name="negativeGivesPower"/> false: the size is what it costs.
     /// </summary>
-    public static int ShotCost(ItemDef weapon)
+    public static int ShotCost(ItemDef weapon, bool negativeGivesPower = true)
     {
         ArgumentNullException.ThrowIfNull(weapon);
-        return Math.Abs(weapon.PowerUsage);
+        return negativeGivesPower ? weapon.PowerUsage : Math.Abs(weapon.PowerUsage);
+    }
+
+    /// <summary>How far right of the eye a hand weapon's shot starts, m, as in the original.</summary>
+    public const float ShotRight = 0.3f;
+
+    /// <summary>How far below the eye a hand weapon's shot starts, m, as in the original.</summary>
+    public const float ShotDown = 0.2f;
+
+    /// <summary>
+    /// Where a hand weapon's shot starts, as in the original: the gun sits 0.3 m right of the eye and 0.2 m below it,
+    /// and the shot leaves <paramref name="forwardOffset"/> m (<c>sv_shot_forward_offset</c>, 1) further along the aim.
+    /// <paramref name="right"/> and <paramref name="up"/> are the view's unit axes.
+    /// </summary>
+    public static Vector3 ShotOrigin(Vector3 eye, Vector3 aim, Vector3 right, Vector3 up, float forwardOffset = 1)
+    {
+        var forward = aim == Vector3.Zero ? Vector3.Zero : Vector3.Normalize(aim);
+        return eye + right * ShotRight - up * ShotDown + forward * forwardOffset;
+    }
+
+    /// <summary>Seed of the original's fixed list of spread directions.</summary>
+    public const int SpreadSeed = 24092004;
+
+    /// <summary>Entries in the list of spread directions; the index wraps here.</summary>
+    public const int SpreadCount = 256;
+
+    static readonly Vector3[] spreadVectors = BuildSpreadVectors();
+
+    /// <summary>
+    /// The original's fixed list of spread directions: <see cref="SpreadCount"/> unit vectors, each made from three
+    /// uniform numbers in -0.5..0.5 from a generator seeded with <see cref="SpreadSeed"/>, then normalised. They come
+    /// from a cube, so they are not spread evenly over the sphere.
+    /// </summary>
+    public static IReadOnlyList<Vector3> SpreadVectors => spreadVectors;
+
+    static Vector3[] BuildSpreadVectors()
+    {
+        // A seeded System.Random keeps the same sequence across .NET versions; the tests pin a few entries.
+        var random = new Random(SpreadSeed);
+        var list = new Vector3[SpreadCount];
+        for (int i = 0; i < list.Length; i++)
+        {
+            var v = new Vector3((float)random.NextDouble() - 0.5f, (float)random.NextDouble() - 0.5f, (float)random.NextDouble() - 0.5f);
+            list[i] = v == Vector3.Zero ? Vector3.UnitY : Vector3.Normalize(v);
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// A shot's direction as in the original (<c>sv_weapon_spread_mode 0</c>): the unit aim plus
+    /// <paramref name="spread"/> (held within 0..0.5) times entry <paramref name="index"/> of <see cref="SpreadVectors"/>
+    /// (wrapping at 256). It is not normalised: the shot flies at its projectile's speed times this length, so the speed
+    /// varies by up to ±spread.
+    /// </summary>
+    public static Vector3 OriginalSpread(Vector3 aim, float spread, int index)
+    {
+        var forward = aim == Vector3.Zero ? Vector3.Zero : Vector3.Normalize(aim);
+        if (!float.IsFinite(spread) || spread <= 0) return forward;
+        int i = ((index % SpreadCount) + SpreadCount) % SpreadCount;
+        return forward + Math.Min(spread, WeaponComponent.MaxSpread) * spreadVectors[i];
     }
 
     /// <summary>Scales <c>pushback</c> × projectile speed into m/s. Ours, tunable: at 1 a held SMG pushed the player
@@ -38,8 +99,8 @@ public static class Weapons
     }
 
     /// <summary>
-    /// <paramref name="forward"/> turned by a random angle of up to <paramref name="spread"/> radians, evenly over the
-    /// cone's solid angle. <paramref name="u1"/> and <paramref name="u2"/> are uniform in [0, 1), so tests can pick them.
+    /// Ours (<c>sv_weapon_spread_mode 1</c>): <paramref name="forward"/> turned by a random angle of up to
+    /// <paramref name="spread"/> radians, evenly over the cone's solid angle, at full speed. <paramref name="u1"/> and <paramref name="u2"/> are uniform in [0, 1), so tests can pick them.
     /// </summary>
     public static Vector3 Spread(Vector3 forward, float spread, double u1, double u2)
     {
@@ -69,6 +130,27 @@ public static class Weapons
         if (into <= 0) return null;              // moving away from the surface: not a hit at all
         if (MathF.Asin(Math.Clamp(into, 0, 1)) >= ricochetAngle) return null;
         return velocity - 2 * Vector3.Dot(velocity, normal) * normal;
+    }
+}
+
+/// <summary>
+/// Which entry of <see cref="Weapons.SpreadVectors"/> each weapon type uses next, as in the original: one index per
+/// weapon item, moving on by one per shot and wrapping at 256.
+/// </summary>
+public sealed class SpreadSequence
+{
+    readonly Dictionary<int, int> next = new();
+
+    /// <summary>The index the next shot of weapon <paramref name="weaponId"/> uses.</summary>
+    public int Peek(int weaponId) => next.GetValueOrDefault(weaponId);
+
+    /// <summary>The direction of the next shot of weapon <paramref name="weaponId"/> (<see cref="Weapons.OriginalSpread"/>),
+    /// moving its index on.</summary>
+    public Vector3 Next(int weaponId, Vector3 aim, float spread)
+    {
+        int index = next.GetValueOrDefault(weaponId);
+        next[weaponId] = (index + 1) % Weapons.SpreadCount;
+        return Weapons.OriginalSpread(aim, spread, index);
     }
 }
 

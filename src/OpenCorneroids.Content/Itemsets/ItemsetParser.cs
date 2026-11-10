@@ -34,14 +34,13 @@ public static class ItemsetParser
         ["doors/door"] = new(["door"], (e, r) => [Door(e.Element("door"), r)]),
         ["gunConsoles/gunConsole"] = new(["buttons"], (e, r) => [new ConsoleComponent(r.Int(e, "buttons"), GunsOnly: true)]),
         ["guns/gun"] = new(["barrelLength", "reloadTime", "projectileId"],
-            (e, r) => [new GunComponent(r.Float(e, "barrelLength"), r.Int(e, "reloadTime"), r.Int(e, "projectileId"))]),
+            (e, r) => [new GunComponent(r.Float(e, "barrelLength"), ReloadMs(e, r), r.Int(e, "projectileId"))]),
         ["pointLights/pointLight"] = new(["light"], Lights),
         ["spotLights/spotLight"] = new(["light"], Lights),
         ["minerals/mineral"] = new(["asteroidType", "rarity"], (e, r) => [new MineralComponent(Asteroid(e, r), r.Int(e, "rarity"))]),
         ["power/power"] = Plain,
         ["thrusters/thruster"] = new(["thruster"], (e, r) => [Thruster(e.Element("thruster"), r)]),
-        ["containers/container"] = new(["container"],
-            (e, r) => [new ContainerComponent(r.Int(e.Element("container") ?? e, "width"), r.Int(e.Element("container") ?? e, "height"))]),
+        ["containers/container"] = new(["container"], (e, r) => [Container(e.Element("container") ?? e, r)]),
         ["windows/window"] = Plain,
     };
 
@@ -52,9 +51,11 @@ public static class ItemsetParser
                 r.Int(e, "power"), r.Int(e, "duration"), r.Cell(e.Element("buffSpriteCoords")))]),
         ["ingredients/ingredient"] = Plain,
         ["drills/drill"] = new(["light", "power"], (e, r) => [new DrillComponent(r.Int(e, "power")), .. Lights(e, r)]),
-        ["torches/torch"] = new(["light", "burningTime"], (e, r) => [new TorchComponent(r.Int(e, "burningTime")), .. Lights(e, r)]),
+        ["torches/torch"] = new(["light", "burningTime"], (e, r) =>
+            [new TorchComponent(r.IntIn(e, "burningTime", TorchComponent.DefaultBurningTimeMs, 0)), .. Lights(e, r)]),
         ["weapons/weapon"] = new(["light", "reloadTime", "projectileId", "pushback", "spread"], (e, r) =>
-            [new WeaponComponent(r.Int(e, "reloadTime"), r.Int(e, "projectileId"), r.Float(e, "pushback"), r.Float(e, "spread")),
+            [new WeaponComponent(ReloadMs(e, r), r.Int(e, "projectileId"),
+                r.FloatIn(e, "pushback", 0, 0, WeaponComponent.MaxPushback), r.FloatIn(e, "spread", 0, 0, WeaponComponent.MaxSpread)),
              .. Lights(e, r)]),
         ["wearables/wearable"] = new(["slot", "armorRating", "healthRating", "powerRechargeRate"], (e, r) =>
             [new WearableComponent(Enum<WearableSlot>(e, "slot", r), r.Int(e, "armorRating"), r.Int(e, "healthRating"),
@@ -266,8 +267,18 @@ public static class ItemsetParser
 
     static IEnumerable<IItemComponent> Lights(XElement e, FieldReader r) =>
         e.Element("light") is { } light
-            ? [new LightComponent(new LightDef(light.Attribute("type")?.Value ?? "point", r.Rgb(light.Element("color")), r.Float(light, "radius")))]
+            ? [new LightComponent(new LightDef(light.Attribute("type")?.Value ?? "point", r.Rgb(light.Element("color")),
+                r.Float(light, "radius", LightDef.DefaultRadius)))]
             : [];
+
+    /// <summary>A weapon's or ship gun's <c>reloadTime</c>: <see cref="WeaponComponent.DefaultReloadMs"/> when missing and
+    /// never under <see cref="WeaponComponent.MinReloadMs"/>, as in the original.</summary>
+    static int ReloadMs(XElement e, FieldReader r) =>
+        r.IntIn(e, "reloadTime", WeaponComponent.DefaultReloadMs, WeaponComponent.MinReloadMs);
+
+    /// <summary>A missing <c>width</c> or <c>height</c> is 1, and the grid is held within 1..7 by 1..5, as in the original.</summary>
+    static ContainerComponent Container(XElement c, FieldReader r) =>
+        new(r.IntIn(c, "width", 1, 1, ContainerComponent.MaxWidth), r.IntIn(c, "height", 1, 1, ContainerComponent.MaxHeight));
 
     static DoorComponent Door(XElement? d, FieldReader r) =>
         d is null ? new DoorComponent(Vector3.Zero, 0, 0, 0)

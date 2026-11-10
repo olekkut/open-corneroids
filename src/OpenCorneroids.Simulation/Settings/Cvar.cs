@@ -68,6 +68,12 @@ public sealed class Cvar
 
     public bool IsCheat => Flags.HasFlag(CvarFlags.Cheat);
 
+    /// <summary>
+    /// The value is read once, when a world loads (the inventory size, for one): changing it does nothing until the
+    /// world is loaded again, and the console says so.
+    /// </summary>
+    public bool AppliesOnLoad { get; init; }
+
     /// <summary>The value as typed in the console and written to config files: <c>1</c>, <c>20</c>, <c>0.25</c>.</summary>
     public string Format(double value) => Kind switch
     {

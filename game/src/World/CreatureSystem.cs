@@ -44,6 +44,11 @@ public partial class CreatureSystem : Node3D, ICreatureWorld
     readonly HashSet<ushort> _food = new();
     double _sinceSpawn;
     ProjectileDef? _bolt;
+    // Where every creature is, read once per frame for the shots (see HitsAlong).
+    readonly Simulation.Combat.SphereHash _hitSpheres = new();
+    readonly List<Creature> _hitCreatures = new();
+    readonly List<(float At, int Index)> _hitScratch = new();
+    ulong _hitFrame = ulong.MaxValue;
 
     public Random Random { get; } = new();
 
@@ -56,8 +61,8 @@ public partial class CreatureSystem : Node3D, ICreatureWorld
         _content = content;
         _player = player;
         _shots = shots;
-        _specks = new Specks { Name = "Specks" };
-        AddChild(_specks);
+        // One set of specks for the blood and goo here and the sparks of shots and drills.
+        _specks = shots.Specks;
         foreach (var index in grids.Palette.Where(i => i.Get<AsteroidComponent>() is not null || i.Get<MineralComponent>() is not null))
             if (!grids.Palette.IsObject(index)) _food.Add(index);
         shots.Creatures = this;
@@ -107,8 +112,11 @@ public partial class CreatureSystem : Node3D, ICreatureWorld
         if (creature.Kind == CreatureKind.Scavenger)
             node.AddChild(new OmniLight3D { LightColor = new Color(1, 0.15f, 0.1f), OmniRange = 5, Position = new Vector3(0, 0, -2), ShadowEnabled = false });
         AddChild(node);
+        // Ours: a random phase per body, so neighbouring creatures don't wobble in step.
         _bodies.Add(new Body { Creature = creature, Node = node, Phase = (float)(Random.NextDouble() * Math.Tau) });
         Place(_bodies[^1]);
+        // Born after this frame's snapshot for the shots was taken: it can be hit this frame all the same.
+        if (_hitFrame == Engine.GetProcessFrames()) AddHitSphere(creature);
     }
 
     public void FireBolt(Num.Vector3 from, Num.Vector3 direction)
@@ -135,20 +143,34 @@ public partial class CreatureSystem : Node3D, ICreatureWorld
 
     // ---- shots ----
 
-    /// <summary>Creatures a shot from <paramref name="from"/> to <paramref name="to"/> passes within 1.5 × their radius
-    /// of, as in the original, with where along the way (0..1), nearest first.</summary>
-    public List<(float At, Creature Creature)> HitsAlong(Vector3 from, Vector3 to)
+    /// <summary>
+    /// Creatures a shot from <paramref name="from"/> to <paramref name="to"/> passes within 1.5 × their radius of, as in
+    /// the original, with where along the way (0..1), nearest first, into <paramref name="hits"/> (cleared first, so one
+    /// list serves every shot). Where the creatures are is read once per frame, at the first shot's question, into a
+    /// <see cref="Simulation.Combat.SphereHash"/> (ours, for speed: the answer is the same as testing every creature).
+    /// </summary>
+    public void HitsAlong(Vector3 from, Vector3 to, List<(float At, Creature Creature)> hits)
     {
-        var hits = new List<(float, Creature)>();
-        foreach (var body in _bodies)
+        hits.Clear();
+        ulong frame = Engine.GetProcessFrames();
+        if (_hitFrame != frame)
         {
-            var c = body.Creature;
-            if (c.Removing) continue;
-            if (Simulation.Combat.Damage.SegmentHitsSphere(from.ToNumerics(), to.ToNumerics(), c.WorldPosition(this), c.Radius * 1.5f) is { } t)
-                hits.Add((t, c));
+            _hitFrame = frame;
+            _hitSpheres.Clear();
+            _hitCreatures.Clear();
+            foreach (var body in _bodies)
+                if (!body.Creature.Removing) AddHitSphere(body.Creature);
         }
-        hits.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-        return hits;
+        if (_hitSpheres.Count == 0) return;
+        _hitSpheres.SegmentHits(from.ToNumerics(), to.ToNumerics(), _hitScratch);
+        foreach (var (at, index) in _hitScratch)
+            if (_hitCreatures[index] is { Removing: false } c) hits.Add((at, c));
+    }
+
+    void AddHitSphere(Creature c)
+    {
+        _hitSpheres.Add(c.WorldPosition(this), c.Radius * 1.5f);
+        _hitCreatures.Add(c);
     }
 
     /// <summary>A shot hits <paramref name="creature"/>; returns what the shot loses. Blood flies.</summary>
@@ -166,6 +188,7 @@ public partial class CreatureSystem : Node3D, ICreatureWorld
     public override void _Process(double delta)
     {
         if (_grids is null) return;
+        using var timing = PerfMonitor.Measure(PerfMonitor.Creatures);
         var cvars = Settings.GameSettings.Cvars;
         bool enabled = cvars.Bool(Rules.Creatures);
         double dt = Math.Min(delta, 0.1);
@@ -206,6 +229,7 @@ public partial class CreatureSystem : Node3D, ICreatureWorld
         int n = _bodies.Count;
         foreach (var body in _bodies) body.Node.QueueFree();
         _bodies.Clear();
+        _hitFrame = ulong.MaxValue;
         return n;
     }
 
@@ -378,26 +402,32 @@ public partial class CreatureSystem : Node3D, ICreatureWorld
         var at = c.WorldPosition(this).ToGodot();
         body.Node.Visible = at.DistanceTo(_player.BodyCenter) <= DrawDistance;
         if (!body.Node.Visible) return;
-        var up = (c.Grid >= 0 ? DirectionToWorld(c.Grid, c.Facing) : c.Facing).ToGodot();
-        if (up.LengthSquared() < 1e-6f) up = Vector3.Up;
-        var basis = Align(up.Normalized()) * BaseTurn(c.Kind);
-        // As in the original: the mineral parasite wobbles ±5% per axis (frozen while it attacks); the egg throbs.
+        var facing = (c.Grid >= 0 ? DirectionToWorld(c.Grid, c.Facing) : c.Facing).ToGodot();
+        if (facing.LengthSquared() < 1e-6f) facing = Vector3.Up;
+        // As in the original: the mineral parasite wobbles ±5% per axis with phases 0, π/2 and π (frozen while it
+        // attacks); the egg throbs along its own Z, which stands along the surface normal.
         var scale = Vector3.One * c.Scale;
         float t = (float)c.Age;
         if (c is MineralParasite { Attacking: false })
-            scale *= new Vector3(1 + 0.05f * MathF.Sin(MathF.PI * t + body.Phase), 1 + 0.05f * MathF.Sin(MathF.PI * t + body.Phase + 2),
-                1 + 0.05f * MathF.Sin(MathF.PI * t + body.Phase + 4));
+            scale *= new Vector3(1 + 0.05f * MathF.Sin(MathF.PI * t + body.Phase), 1 + 0.05f * MathF.Sin(MathF.PI * t + body.Phase + MathF.PI / 2),
+                1 + 0.05f * MathF.Sin(MathF.PI * t + body.Phase + MathF.PI));
         if (c is SwarmEgg) scale *= new Vector3(1, 1, 1 + 0.05f * MathF.Sin(5 * t + body.Phase));
-        body.Node.GlobalTransform = new Transform3D(basis.Scaled(scale), at);
+        // The model's own turn first, then the scale in the creature's own frame, then the look along the facing.
+        var basis = Look(facing.Normalized(), c.Grid) * Basis.FromScale(scale) * BaseTurn(c.Kind);
+        body.Node.GlobalTransform = new Transform3D(basis, at);
     }
 
-    /// <summary>A basis whose Y axis is <paramref name="up"/>.</summary>
-    static Basis Align(Vector3 up)
+    /// <summary>
+    /// A basis whose -Z axis points along <paramref name="facing"/> with no roll about the +Y axis of the grid the
+    /// creature is on (the world's in open space), as in the original. Looking straight along that axis the roll is
+    /// undefined, so the grid's +Z serves as up instead.
+    /// </summary>
+    Basis Look(Vector3 facing, int grid)
     {
-        var helper = Math.Abs(up.Dot(Vector3.Forward)) < 0.95f ? Vector3.Forward : Vector3.Right;
-        var x = helper.Cross(up).Normalized();
-        var z = x.Cross(up).Normalized();
-        return new Basis(x, up, z);
+        var up = (grid >= 0 ? DirectionToWorld(grid, Num.Vector3.UnitY) : Num.Vector3.UnitY).ToGodot().Normalized();
+        if (Math.Abs(facing.Dot(up)) > 0.999f)
+            up = (grid >= 0 ? DirectionToWorld(grid, Num.Vector3.UnitZ) : Num.Vector3.UnitZ).ToGodot().Normalized();
+        return Basis.LookingAt(facing, up);
     }
 
     /// <summary>The model's own turn about X, as in the original.</summary>

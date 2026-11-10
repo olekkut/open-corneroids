@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Simulation.Items;
+using OpenCorneroids.Simulation.Navigation;
 using OpenCorneroids.Simulation.Shapes;
 
 namespace OpenCorneroids.Simulation.Persistence;
@@ -53,8 +54,19 @@ public static class WorldSaveFormat
     /// version 4 reader would load every turned console, station and cannon facing the default way, and save it so.
     /// </summary>
     public const ushort TurnedVersion = 5;
+    /// <summary>
+    /// Version 5 plus <see cref="WorldSnapshot.Containers"/> and <see cref="ShipSnapshot.Containers"/>: a version 5
+    /// reader would load every chest empty and lose its items on the next save. Worlds without a chest that holds
+    /// something keep the older versions.
+    /// </summary>
+    public const ushort ContainersVersion = 6;
+    /// <summary>
+    /// Version 6 plus <see cref="WorldSnapshot.Beacons"/>: a version 6 reader would load the world without its beacons
+    /// and lose them on the next save. Worlds without beacons keep the older versions.
+    /// </summary>
+    public const ushort BeaconsVersion = 7;
     /// <summary>The newest version this build reads and writes.</summary>
-    public const ushort CurrentVersion = TurnedVersion;
+    public const ushort CurrentVersion = BeaconsVersion;
     /// <summary>Largest accepted edge length; 1024³ cells is already 2 GiB in memory.</summary>
     public const int MaxSize = 1024;
     /// <summary>Metadata is small (names, palette, inventory); the cap stops a hostile length from allocating gigabytes.</summary>
@@ -71,6 +83,17 @@ public static class WorldSaveFormat
     /// JSON stays well within <see cref="MaxMetadataBytes"/>; tunable.
     /// </summary>
     public const int MaxObjects = 65536;
+    /// <summary>
+    /// Most slots one saved chest may have. The original's largest container has 35; this leaves room for mods while a
+    /// hostile file can't declare millions of slots. Tunable.
+    /// </summary>
+    public const int MaxContainerSlots = 1024;
+    /// <summary>Most saved chests one grid may hold; tunable.</summary>
+    public const int MaxContainers = 65536;
+    /// <summary>Most beacons one world may hold. The original has no limit; this only stops a hostile file. Tunable.</summary>
+    public const int MaxBeacons = 65536;
+    /// <summary>Longest saved beacon name. Far above any name limit the settings allow; tunable.</summary>
+    public const int MaxBeaconMessage = 256;
     /// <summary>Most <see cref="WorldSnapshot.Ships"/> one world may hold; tunable.</summary>
     public const int MaxShips = 64;
     /// <summary>Largest accepted ship grid edge; tunable.</summary>
@@ -123,7 +146,9 @@ public static class WorldSaveFormat
     public static ushort VersionFor(WorldSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
-        return snapshot.Turned is { Count: > 0 } || snapshot.Consoles is { Count: > 0 }
+        return snapshot.Beacons is { Count: > 0 } ? BeaconsVersion
+            : snapshot.Containers is { Count: > 0 } || snapshot.Ships is { } withChests && withChests.Any(s => s.Containers is { Count: > 0 }) ? ContainersVersion
+            : snapshot.Turned is { Count: > 0 } || snapshot.Consoles is { Count: > 0 }
             || snapshot.Ships is { } ships && ships.Any(s => s.Turned is { Count: > 0 } || s.Consoles is { Count: > 0 }) ? TurnedVersion
             : snapshot.Suit is not null ? SuitVersion
             : snapshot.Ships is { Count: > 0 } ? ShipsVersion
@@ -279,7 +304,23 @@ public static class WorldSaveFormat
         if (s.Suit is { } suit && (!double.IsFinite(suit.Health) || !double.IsFinite(suit.Power) || suit.Equipment is null || suit.Buffs is null
             || suit.Buffs.Any(b => b is null || !double.IsFinite(b.SecondsLeft))))
             return "the suit state is incomplete or has a non-finite number";
-        return ObjectsProblem(s.Objects, s.Size, "object", "world", "the world") ?? ShipsProblem(s, checkShipCells) ?? AllTurnedProblem(s) ?? AllConsolesProblem(s);
+        return ObjectsProblem(s.Objects, s.Size, "object", "world", "the world") ?? ShipsProblem(s, checkShipCells) ?? AllTurnedProblem(s) ?? AllConsolesProblem(s)
+            ?? AllContainersProblem(s) ?? BeaconsProblem(s.Beacons);
+    }
+
+    static string? BeaconsProblem(IReadOnlyList<Beacon>? beacons)
+    {
+        if (beacons is null) return "the beacon list is missing";
+        if (beacons.Count > MaxBeacons) return $"the world has {beacons.Count} beacons, over the {MaxBeacons} limit";
+        for (int i = 0; i < beacons.Count; i++)
+        {
+            var b = beacons[i];
+            if (b is null) return $"beacon {i} is null";
+            if (!IsFinite(b.Position)) return $"beacon {i} has a non-finite position";
+            if (b.Message is null) return $"beacon {i} has no name";
+            if (b.Message.Length > MaxBeaconMessage) return $"beacon {i} has a name of {b.Message.Length} characters, over the {MaxBeaconMessage} limit";
+        }
+        return null;
     }
 
     /// <summary>Checked after the ships, so a missing ship list or a bad ship size is reported as that.</summary>
@@ -331,6 +372,33 @@ public static class WorldSaveFormat
                 foreach (var t in g.Targets)
                     if (!InGrid(t, size)) return $"{where} has a console target at {t}, outside its {size}-cell grid";
             }
+        }
+        return null;
+    }
+
+    static string? AllContainersProblem(WorldSnapshot s)
+    {
+        if (ContainersProblem(s.Containers, s.Size, "the world") is { } containers) return containers;
+        for (int i = 0; i < s.Ships.Count; i++)
+            if (ContainersProblem(s.Ships[i].Containers, s.Ships[i].Size, $"ship {i}") is { } shipContainers) return shipContainers;
+        return null;
+    }
+
+    /// <remarks>Unknown item ids are kept, as in the player's inventory: the itemset decides what they are on load.</remarks>
+    static string? ContainersProblem(IReadOnlyList<SavedContainer>? containers, int size, string where)
+    {
+        if (containers is null) return $"{where}'s chest list is missing";
+        if (containers.Count > MaxContainers) return $"{where} has {containers.Count} chests, over the {MaxContainers} limit";
+        var cells = new HashSet<Int3>();
+        foreach (var c in containers)
+        {
+            if (c is null) return $"{where} has a null chest";
+            if (!InGrid(c.Cell, size)) return $"{where} has a chest at {c.Cell}, outside its {size}-cell grid";
+            if (!cells.Add(c.Cell)) return $"{where} has two chests at {c.Cell}";
+            if (c.Slots is null) return $"{where} has a chest at {c.Cell} with no slot list";
+            if (c.Slots.Count > MaxContainerSlots) return $"{where} has a chest at {c.Cell} with {c.Slots.Count} slots, over the {MaxContainerSlots} limit";
+            foreach (var stack in c.Slots)
+                if (stack is { Quantity: < 1 }) return $"{where} has a chest at {c.Cell} holding a stack of {stack.Quantity}";
         }
         return null;
     }
@@ -658,6 +726,12 @@ public static class WorldSaveFormat
         // And console bindings; left out when there are none.
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ConsoleDto?[]? Consoles { get; set; }
+        // And chests holding something; left out when there are none.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ContainerDto?[]? Containers { get; set; }
+        // And beacons; left out when there are none.
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public BeaconDto?[]? Beacons { get; set; }
         // And game rules that differ from the defaults, name → value text; left out when all are defaults.
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, string?>? Rules { get; set; }
@@ -690,6 +764,8 @@ public static class WorldSaveFormat
             Suit = s.Suit is null ? null : SuitDto.From(s.Suit),
             Turned = TurnedDto(s.Turned),
             Consoles = ConsolesDto(s.Consoles),
+            Containers = ContainersDto(s.Containers),
+            Beacons = s.Beacons.Count == 0 ? null : [.. s.Beacons.Select(BeaconDto.From)],
             Rules = s.Rules.Count == 0 ? null : s.Rules.ToDictionary(p => p.Key, p => (string?)p.Value, StringComparer.Ordinal),
             CheatsUsed = s.CheatsUsed ? true : null,
         };
@@ -717,6 +793,37 @@ public static class WorldSaveFormat
                             g.Key ?? throw Missing($"{field}[{i}].groups[{j}].key"),
                             [.. (g.Targets ?? []).Select((t, k) => Int3Cell(t, $"{field}[{i}].groups[{j}].targets[{k}]"))]))],
                     c.Camera is null ? null : Int3Cell(c.Camera, $"{field}[{i}].camera")))];
+
+        public static ContainerDto?[]? ContainersDto(IReadOnlyList<SavedContainer> containers) =>
+            containers.Count == 0 ? null : [.. containers.Select(ContainerDto.From)];
+
+        public static List<SavedContainer> SavedContainers(ContainerDto?[]? containers, string field)
+        {
+            if (containers is { Length: > MaxContainers })
+                throw Damaged($"metadata field '{field}' has {containers.Length} chests, over the {MaxContainers} limit");
+            return [.. (containers ?? []).Select((c, i) => c is null
+                ? throw Damaged($"metadata field '{field}[{i}]' is null")
+                : new SavedContainer(Int3Cell(c.Cell, $"{field}[{i}].cell"), ContainerSlots(c.Slots, $"{field}[{i}].slots")))];
+        }
+
+        static List<ItemStack?> ContainerSlots(StackDto?[]? slots, string field)
+        {
+            if (slots is null) throw Missing(field);
+            if (slots.Length > MaxContainerSlots)
+                throw Damaged($"metadata field '{field}' has {slots.Length} slots, over the {MaxContainerSlots} limit");
+            return [.. slots.Select((slot, j) => slot is null ? null : new ItemStack(
+                slot.ItemId ?? throw Missing($"{field}[{j}].itemId"),
+                slot.Quantity ?? throw Missing($"{field}[{j}].quantity")))];
+        }
+
+        public static List<Beacon> SavedBeacons(BeaconDto?[]? beacons, string field)
+        {
+            if (beacons is { Length: > MaxBeacons })
+                throw Damaged($"metadata field '{field}' has {beacons.Length} beacons, over the {MaxBeacons} limit");
+            return [.. (beacons ?? []).Select((b, i) => b is null
+                ? throw Damaged($"metadata field '{field}[{i}]' is null")
+                : new Beacon(Vector(b.Position, $"{field}[{i}].position"), b.Message ?? throw Missing($"{field}[{i}].message")))];
+        }
 
         public static Int3 Int3Cell(int[]? xyz, string field) =>
             xyz is [var x, var y, var z] ? new Int3(x, y, z) : throw Damaged($"metadata field '{field}' is not three integers");
@@ -760,6 +867,8 @@ public static class WorldSaveFormat
                 Suit = Suit?.ToState(),
                 Turned = TurnedCells(Turned, "turned"),
                 Consoles = SavedConsoles(Consoles, "consoles"),
+                Containers = SavedContainers(Containers, "containers"),
+                Beacons = SavedBeacons(Beacons, "beacons"),
                 Rules = (Rules ?? []).ToDictionary(
                     p => p.Key,
                     p => p.Value ?? throw Damaged($"metadata field 'rules.{p.Key}' is null"),
@@ -804,6 +913,8 @@ public static class WorldSaveFormat
         public int[]?[]? Turned { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ConsoleDto?[]? Consoles { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public ContainerDto?[]? Containers { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public bool IsAsteroid { get; set; }
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -824,6 +935,7 @@ public static class WorldSaveFormat
                 Objects = [.. ship.Objects.Select(ObjectDto.From)],
                 Turned = MetadataDto.TurnedDto(ship.Turned),
                 Consoles = MetadataDto.ConsolesDto(ship.Consoles),
+                Containers = MetadataDto.ContainersDto(ship.Containers),
                 IsAsteroid = ship.IsAsteroid,
                 Name = ship.Name,
             };
@@ -845,6 +957,7 @@ public static class WorldSaveFormat
                 Objects = MetadataDto.PlacedObjects(Objects, $"{field}.objects"),
                 Turned = MetadataDto.TurnedCells(Turned, $"{field}.turned"),
                 Consoles = MetadataDto.SavedConsoles(Consoles, $"{field}.consoles"),
+                Containers = MetadataDto.SavedContainers(Containers, $"{field}.containers"),
                 IsAsteroid = IsAsteroid,
                 Name = Name,
             };
@@ -864,6 +977,32 @@ public static class WorldSaveFormat
             Cell = [c.Cell.X, c.Cell.Y, c.Cell.Z],
             Groups = c.Groups.Count == 0 ? null : [.. c.Groups.Select(ConsoleGroupDto.From)],
             Camera = c.Camera is { } cam ? [cam.X, cam.Y, cam.Z] : null,
+        };
+    }
+
+    /// <remarks>A chest's slots in its row-by-row order; null is an empty slot.</remarks>
+    sealed class ContainerDto
+    {
+        public int[]? Cell { get; set; }
+        public StackDto?[]? Slots { get; set; }
+
+        public static ContainerDto From(SavedContainer c) => new()
+        {
+            Cell = [c.Cell.X, c.Cell.Y, c.Cell.Z],
+            Slots = [.. c.Slots.Select(stack => stack is null ? null : new StackDto { ItemId = stack.ItemId, Quantity = stack.Quantity })],
+        };
+    }
+
+    /// <remarks>A beacon's world position and name.</remarks>
+    sealed class BeaconDto
+    {
+        public float[]? Position { get; set; }
+        public string? Message { get; set; }
+
+        public static BeaconDto From(Beacon b) => new()
+        {
+            Position = [b.Position.X, b.Position.Y, b.Position.Z],
+            Message = b.Message,
         };
     }
 

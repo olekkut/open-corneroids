@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Numerics;
 using Microsoft.Data.Sqlite;
 using OpenCorneroids.Content.Itemsets;
+using OpenCorneroids.Simulation.Navigation;
 using OpenCorneroids.Simulation.Shapes;
 using OpenCorneroids.Simulation.Ships;
 
@@ -591,7 +592,30 @@ public static class CorneroidsWrlReader
             Array.Empty<ItemStack?>())
         {
             Ships = ships,
+            Beacons = ReadBeacons(connection),
         };
+    }
+
+    /// <summary>
+    /// The world's beacons from the <c>beacons</c> table: positions in the same 2^23 fixed point and the same frame as
+    /// the player's (<see cref="DecodePosition"/>), names cut to <see cref="Beacons.NameMax"/> as the original's column
+    /// is. A world without the table has none; rows with no name are skipped, since the beacon tool never makes one.
+    /// </summary>
+    private static List<Beacon> ReadBeacons(SqliteConnection connection)
+    {
+        var beacons = new List<Beacon>();
+        if (!TableExists(connection, "beacons")) return beacons;
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SELECT posx, posy, posz, message FROM beacons;";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (reader.IsDBNull(0) || reader.IsDBNull(1) || reader.IsDBNull(2) || reader.IsDBNull(3)) continue;
+            if (Beacons.Clean(reader.GetString(3)) is not { } name) continue;
+            var position = DecodePosition(reader.GetInt64(0), reader.GetInt64(1), reader.GetInt64(2));
+            if (beacons.Count < WorldSaveFormat.MaxBeacons) beacons.Add(new Beacon(position, name));
+        }
+        return beacons;
     }
 
     private static IReadOnlyList<SavedConsole> ReadConsolesForEntity(SqliteConnection connection, int entityId, Int3 shift, int size)

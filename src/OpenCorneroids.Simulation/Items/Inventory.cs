@@ -3,6 +3,20 @@ using OpenCorneroids.Content.Itemsets;
 
 namespace OpenCorneroids.Simulation.Items;
 
+/// <summary>Where <see cref="Inventory.Add"/> and every other pickup-style addition put new items.</summary>
+public enum FillOrder
+{
+    /// <summary>
+    /// As in the original: slot by slot from the first, so the hotbar before the main inventory. Each slot takes what
+    /// it can, into an empty slot or onto a matching stack, whichever comes first. (The original also hands a slot the
+    /// whole requested count instead of what is left, which makes items; that is not reproduced.)
+    /// </summary>
+    SlotOrder,
+
+    /// <summary>Ours: matching stacks anywhere are topped up first, lowest slot first, then empty slots are used.</summary>
+    TopUpFirst,
+}
+
 /// <summary>
 /// A fixed number of slots, each empty or holding one stack. The first <see cref="HotbarSize"/> slots double as the
 /// hotbar, which is why removals drain from the back: the player's hand is the last thing to run dry.
@@ -18,8 +32,11 @@ public sealed class Inventory
     /// <summary>Slots 0..7 are the hotbar: eight, like the original's, on the number keys 1-8.</summary>
     public const int HotbarSize = 8;
 
-    /// <summary>The survival inventory: the hotbar and four backpack rows of eight.</summary>
-    public const int DefaultSlotCount = 40;
+    /// <summary>The main inventory beside the hotbar: 6 × 5 slots, as in the original (<c>sv_inventory_slots</c>).</summary>
+    public const int DefaultMainSlots = 30;
+
+    /// <summary>The survival inventory: the hotbar and the 6 × 5 main inventory, 38 slots as in the original.</summary>
+    public const int DefaultSlotCount = HotbarSize + DefaultMainSlots;
 
     /// <summary>Stack limit for item ids the itemset does not define, so stray save data still loads somewhere.</summary>
     public const int UnknownItemMaxStack = 64;
@@ -43,6 +60,14 @@ public sealed class Inventory
     /// <summary>Raised once per public call that changed the slots or the trash, so UI can redraw without diffing.</summary>
     public event Action? Changed;
 
+    /// <summary>
+    /// Where added items go. <see cref="FillOrder.TopUpFirst"/> unless set; the game sets it from
+    /// <c>sv_inventory_fill_hotbar_first</c>, whose default is the original's <see cref="FillOrder.SlotOrder"/>. A single
+    /// addition fits the same number in either order; over several additions of different items they can differ (slot
+    /// order may fill an empty slot that topping up would have left free for the next item).
+    /// </summary>
+    public FillOrder Order { get; set; } = FillOrder.TopUpFirst;
+
     /// <summary>Builds an inventory whose stack limits come from the itemset.</summary>
     public static Inventory ForItemset(ItemsetDef set, int slotCount = DefaultSlotCount)
     {
@@ -64,8 +89,8 @@ public sealed class Inventory
     internal long CountExact(int itemId) => CountIn(slots, itemId);
 
     /// <summary>
-    /// Adds as much as fits: existing stacks are topped up before empty slots are used, so pickups merge into what
-    /// the player already has instead of scattering.
+    /// Adds as much as fits, in the inventory's <see cref="Order"/>: slot by slot from the hotbar as in the original, or
+    /// topping up existing stacks before using empty slots (ours), so pickups merge into what the player already has.
     /// </summary>
     /// <returns>How many did not fit (0 when everything was added).</returns>
     public int Add(int itemId, int count) => AddFrom(itemId, count, 0);
@@ -79,6 +104,39 @@ public sealed class Inventory
         var left = Fill(next, itemId, count, firstSlot);
         Commit(next);
         return left;
+    }
+
+    /// <summary>
+    /// Adds an item picked up from space. With <paramref name="wholeRest"/> in <see cref="FillOrder.SlotOrder"/>, as in
+    /// the original: the hotbar takes what it can, slot by slot, and what is left goes into the main inventory only if
+    /// all of it fits there; otherwise that part is refused (it stays floating) and the hotbar part stays added.
+    /// Without it, or in <see cref="FillOrder.TopUpFirst"/>, it is <see cref="Add"/> (ours: the main inventory takes
+    /// what fits).
+    /// </summary>
+    /// <returns>How many were not taken.</returns>
+    public int PickUp(int itemId, int count, bool wholeRest)
+    {
+        if (count <= 0)
+            return 0;
+        var next = Snapshot();
+        var left = PickUpInto(next, itemId, count, wholeRest);
+        Commit(next);
+        return left;
+    }
+
+    /// <summary>Whether <see cref="PickUp"/> would take any of them; nothing is changed.</summary>
+    public bool CanPickUp(int itemId, int count, bool wholeRest) =>
+        count > 0 && PickUpInto(Snapshot(), itemId, count, wholeRest) < count;
+
+    /// <summary>
+    /// The slots as they would be after <see cref="Add"/> of <paramref name="extra"/>; nothing is changed. Used to save
+    /// a stack held on the cursor with the inventory. <paramref name="left"/> is how many would not fit.
+    /// </summary>
+    public ItemStack?[] SlotsWith(ItemStack? extra, out int left)
+    {
+        var scratch = Snapshot();
+        left = extra is { Quantity: > 0 } ? Fill(scratch, extra.ItemId, extra.Quantity) : 0;
+        return scratch;
     }
 
     /// <summary>Whether all the stacks would fit at once; nothing is changed. Non-positive quantities are ignored.</summary>
@@ -124,6 +182,65 @@ public sealed class Inventory
         Commit(next);
         return true;
     }
+
+    /// <summary>
+    /// Takes up to <paramref name="count"/> out of one slot and returns them (the cursor picking up a stack, as in the
+    /// original's item windows). Null when the slot is empty or <paramref name="count"/> is not positive.
+    /// </summary>
+    public ItemStack? TakeFromSlot(int slot, int count)
+    {
+        CheckSlot(slot);
+        if (count <= 0 || slots[slot] is not { } stack)
+            return null;
+        var taken = Math.Min(count, stack.Quantity);
+        var next = Snapshot();
+        next[slot] = Shrink(stack, taken);
+        Commit(next);
+        return stack with { Quantity = taken };
+    }
+
+    /// <summary>
+    /// Puts up to <paramref name="count"/> of an item into one slot: an empty slot, or one holding the same item, filled
+    /// up to the stack limit. Any other item in the slot takes none.
+    /// </summary>
+    /// <returns>How many were put in.</returns>
+    public int PutIntoSlot(int slot, int itemId, int count)
+    {
+        CheckSlot(slot);
+        if (count <= 0)
+            return 0;
+        var held = slots[slot];
+        if (held is not null && held.ItemId != itemId)
+            return 0;
+        var added = Math.Min(count, MaxStackOf(itemId) - (held?.Quantity ?? 0));
+        if (added <= 0)
+            return 0;
+        var next = Snapshot();
+        next[slot] = new ItemStack(itemId, (held?.Quantity ?? 0) + added);
+        Commit(next);
+        return added;
+    }
+
+    /// <summary>
+    /// Replaces one slot's stack with <paramref name="stack"/> (null or a non-positive quantity empties it) and returns
+    /// what the slot held. The new stack must fit the slot (<see cref="CanHoldInSlot"/>); a caller swapping the cursor's
+    /// stack checks that first, so nothing is ever cut down.
+    /// </summary>
+    /// <exception cref="ArgumentException">The stack is larger than the item's stack limit.</exception>
+    public ItemStack? ExchangeSlot(int slot, ItemStack? stack)
+    {
+        CheckSlot(slot);
+        if (!CanHoldInSlot(stack))
+            throw new ArgumentException($"A stack of {stack!.Quantity} is over the limit of {MaxStackOf(stack.ItemId)}.", nameof(stack));
+        var old = slots[slot];
+        var next = Snapshot();
+        next[slot] = stack is null || stack.Quantity <= 0 ? null : stack;
+        Commit(next);
+        return old;
+    }
+
+    /// <summary>Whether one slot can hold all of <paramref name="stack"/> (null and empty stacks always fit).</summary>
+    public bool CanHoldInSlot(ItemStack? stack) => stack is null || stack.Quantity <= MaxStackOf(stack.ItemId);
 
     public void Swap(int a, int b)
     {
@@ -207,8 +324,31 @@ public sealed class Inventory
     }
 
     /// <summary>
-    /// Puts the trashed stack back the way a pickup arrives (<see cref="Add"/>): onto matching stacks first, then
-    /// into empty slots. Whatever does not fit stays in the trash.
+    /// Throws away a stack that is not in a slot (the one held on the cursor), as <see cref="Discard(int)"/> does: it
+    /// becomes <see cref="Trash"/> and whatever the trash held is destroyed. Ours, like the trash itself.
+    /// </summary>
+    public void Discard(ItemStack stack)
+    {
+        ArgumentNullException.ThrowIfNull(stack);
+        if (stack.Quantity <= 0)
+            return;
+        Trash = stack;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Takes the trashed stack out whole (onto the cursor), leaving the trash empty; null when it was empty.</summary>
+    public ItemStack? TakeTrash()
+    {
+        if (Trash is not { } trash)
+            return null;
+        Trash = null;
+        Changed?.Invoke();
+        return trash;
+    }
+
+    /// <summary>
+    /// Puts the trashed stack back as <see cref="Add"/> does, in the inventory's <see cref="Order"/>. Whatever does not
+    /// fit stays in the trash.
     /// </summary>
     /// <returns>How many came back.</returns>
     public int RestoreTrash()
@@ -276,10 +416,39 @@ public sealed class Inventory
             throw new ArgumentOutOfRangeException(name, slot, $"slot must be in 0..{slots.Length - 1}");
     }
 
-    int Fill(ItemStack?[] target, int itemId, int count, int firstSlot = 0)
+    /// <summary>The rule of <see cref="PickUp"/> on <paramref name="target"/>; returns how many were not taken.</summary>
+    int PickUpInto(ItemStack?[] target, int itemId, int count, bool wholeRest)
+    {
+        if (!wholeRest || Order != FillOrder.SlotOrder)
+            return Fill(target, itemId, count);
+        var left = Fill(target, itemId, count, 0, HotbarSize);
+        if (left == 0)
+            return 0;
+        var withMain = (ItemStack?[])target.Clone();
+        if (Fill(withMain, itemId, left, HotbarSize) > 0)
+            return left;
+        withMain.CopyTo(target, 0);
+        return 0;
+    }
+
+    /// <summary>Adds into the slots from <paramref name="firstSlot"/> up to (not including) <paramref name="endSlot"/>.</summary>
+    int Fill(ItemStack?[] target, int itemId, int count, int firstSlot = 0, int endSlot = int.MaxValue)
     {
         var max = MaxStackOf(itemId);
-        for (var i = Math.Max(0, firstSlot); i < target.Length && count > 0; i++)
+        var end = Math.Min(target.Length, endSlot);
+        if (Order == FillOrder.SlotOrder)
+        {
+            for (var i = Math.Max(0, firstSlot); i < end && count > 0; i++)
+            {
+                var room = target[i] is not { } held ? max : held.ItemId == itemId ? max - held.Quantity : 0;
+                if (room <= 0) continue;
+                var added = Math.Min(count, room);
+                target[i] = new ItemStack(itemId, max - room + added);
+                count -= added;
+            }
+            return count;
+        }
+        for (var i = Math.Max(0, firstSlot); i < end && count > 0; i++)
         {
             if (target[i] is { } stack && stack.ItemId == itemId && stack.Quantity < max)
             {
@@ -288,7 +457,7 @@ public sealed class Inventory
                 count -= added;
             }
         }
-        for (var i = Math.Max(0, firstSlot); i < target.Length && count > 0; i++)
+        for (var i = Math.Max(0, firstSlot); i < end && count > 0; i++)
         {
             if (target[i] is null)
             {

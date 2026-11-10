@@ -6,13 +6,21 @@ using OpenCorneroids.Simulation.Items;
 namespace OpenCorneroids.Game.Ui;
 
 /// <summary>
-/// The inventory grid inside a classic bevelled window: the backpack rows on top and the hotbar row (slots 0..7) below
-/// them. Click a stack to pick it up, click another slot to put it there; putting a stack on the trash slot throws it
-/// away (<see cref="Inventory.Discard"/>), and clicking the trash with nothing picked takes the last thrown stack back.
+/// The inventory grid inside a classic bevelled window: the main inventory on top, six slots wide as in the original,
+/// and the hotbar row (slots 0..7) below it. Clicks move stacks through the cursor (<see cref="ItemHand"/>) by the
+/// original's rules: left click takes or puts the whole stack, right click takes half or puts one. Ours: putting a
+/// held stack on the trash slot throws it away (<see cref="Inventory.Discard(ItemStack)"/>), and clicking the trash
+/// with an empty hand takes the last thrown stack back onto the cursor.
 /// </summary>
 public partial class InventoryPanel : ClassicWindow
 {
     const float SlotSize = 48;
+
+    /// <summary>The main inventory is six slots wide, as in the original (6 × 5 for the default 30 slots).</summary>
+    const int MainColumns = 6;
+
+    /// <summary>Ours: a main inventory larger than this many rows (<c>sv_inventory_slots</c>) grows wider instead, so the window fits the screen.</summary>
+    const int MaxMainRows = 8;
 
     Inventory _inventory = null!;
     ItemsetDef _itemset = null!;
@@ -20,12 +28,13 @@ public partial class InventoryPanel : ClassicWindow
     ItemSlot[] _all = [];
     ItemSlot _trash = null!;
     Label _trashHint = null!;
-    int? _picked;
-    int _pickedItemId;
+    ItemHand _hand = null!;
 
-    public void Setup(Inventory inventory, ItemsetDef itemset, ItemIcons icons, IReadOnlyList<int> endless)
+    /// <param name="hand">The cursor stack shared with the other item windows.</param>
+    public void Setup(Inventory inventory, ItemHand hand, ItemsetDef itemset, ItemIcons icons, IReadOnlyList<int> endless)
     {
         _inventory = inventory;
+        _hand = hand;
         _itemset = itemset;
         _icons = icons;
         Configure("Inventory", bevel: 5, padLeft: 18, padTop: 32, padRight: 18, padBottom: 16);
@@ -35,12 +44,13 @@ public partial class InventoryPanel : ClassicWindow
         AddChild(column);
 
         _all = new ItemSlot[inventory.Slots.Count];
-        var backpack = Grid();
+        int mainSlots = Math.Max(0, _all.Length - Inventory.HotbarSize);
+        var backpack = Grid(Math.Max(MainColumns, (mainSlots + MaxMainRows - 1) / MaxMainRows));
         for (int i = Inventory.HotbarSize; i < _all.Length; i++) backpack.AddChild(_all[i] = NewSlot(i));
         column.AddChild(backpack);
 
         column.AddChild(ClassicUi.Label($"Hotbar (1-{Inventory.HotbarSize})", 14, new Color(1f, 0.96f, 0.72f)));
-        var hotbar = Grid();
+        var hotbar = Grid(Inventory.HotbarSize);
         for (int i = 0; i < Math.Min(Inventory.HotbarSize, _all.Length); i++) hotbar.AddChild(_all[i] = NewSlot(i));
         column.AddChild(hotbar);
 
@@ -80,20 +90,11 @@ public partial class InventoryPanel : ClassicWindow
         Refresh();
     }
 
+    /// <summary>An endless slot puts one more on the cursor, as in the original.</summary>
     void TakeEndless(ItemDef item)
     {
-        CancelPick();
-        _trashHint.Text = _inventory.Add(item.ItemId, 1) == 0 ? $"Took a {item.Name}" : "No room for it";
-    }
-
-    /// <summary>The slot whose stack is picked up, waiting for a second click; null when nothing is.</summary>
-    public int? PickedSlot => _picked;
-
-    /// <summary>Forgets a half-finished move, e.g. when the window closes.</summary>
-    public void CancelPick()
-    {
-        _picked = null;
-        Refresh();
+        if (_hand.TakeEndless(item.ItemId, _inventory.MaxStackOf(item.ItemId))) return;
+        _trashHint.Text = _hand.Held?.ItemId == item.ItemId ? "Your hand is full" : "Put down what you hold first";
     }
 
     public override void _ExitTree() => _inventory.Changed -= Refresh;
@@ -105,58 +106,21 @@ public partial class InventoryPanel : ClassicWindow
         return slot;
     }
 
-    void OnClicked(int index, MouseButton button)
-    {
-        if (button == MouseButton.Right || _picked == index)
-        {
-            CancelPick();
-            return;
-        }
-        if (_picked is { } from)
-        {
-            _picked = null;
-            _inventory.MoveOrMerge(from, index);
-            Refresh();
-        }
-        else if (_inventory.Slots[index] is { } stack)
-        {
-            _picked = index;
-            _pickedItemId = stack.ItemId;
-            Refresh();
-        }
-    }
+    void OnClicked(int index, MouseButton button) =>
+        _hand.Click(_inventory, index, button == MouseButton.Right ? HandButton.Right : HandButton.Left);
 
-    /// <summary>With a stack picked, throws it away; with nothing picked, takes the trashed stack back.</summary>
-    void OnTrashClicked(MouseButton button)
-    {
-        if (button == MouseButton.Right)
-        {
-            CancelPick();
-            return;
-        }
-        if (_picked is { } from)
-        {
-            _picked = null;
-            _inventory.Discard(from);
-        }
-        else if (_inventory.Trash is not null && _inventory.RestoreTrash() == 0)
-        {
-            _trashHint.Text = "No room to take it back";
-            return;
-        }
-        Refresh();
-    }
+    /// <summary>Ours: a held stack is thrown away; with an empty hand the trashed stack comes back onto the cursor.</summary>
+    void OnTrashClicked(MouseButton button) => _hand.ClickTrash(_inventory);
 
     void Refresh()
     {
-        if (_picked is { } picked && _inventory.Slots[picked]?.ItemId != _pickedItemId) _picked = null;
         for (int i = 0; i < _all.Length; i++)
         {
             var stack = _inventory.Slots[i];
             var item = stack is not null && _itemset.ItemsById.TryGetValue(stack.ItemId, out var def) ? def : null;
             _all[i].Show(item, stack?.Quantity ?? 0, _icons);
             if (stack is not null && item is null) _all[i].TooltipText = $"Unknown item {stack.ItemId}";
-            _all[i].SetLook(_picked == i ? ItemSlot.Look.Picked : i < Inventory.HotbarSize ? ItemSlot.Look.Hotbar : ItemSlot.Look.Normal);
+            _all[i].SetLook(i < Inventory.HotbarSize ? ItemSlot.Look.Hotbar : ItemSlot.Look.Normal);
         }
 
         var trash = _inventory.Trash;
@@ -165,13 +129,13 @@ public partial class InventoryPanel : ClassicWindow
         _trash.SetLook(ItemSlot.Look.Trash);
         _trash.TooltipText = trash is null ? "Trash" : $"Trash: {trashed?.Name ?? $"item {trash.ItemId}"} (click to take back)";
         _trashHint.Text = trash is null
-            ? "Trash (drop item to discard)"
+            ? "Trash (put a stack here to discard)"
             : "Trash (click to restore)";
     }
 
-    static GridContainer Grid()
+    static GridContainer Grid(int columns)
     {
-        var grid = new GridContainer { Columns = Inventory.HotbarSize };
+        var grid = new GridContainer { Columns = columns };
         grid.AddThemeConstantOverride("h_separation", 2);
         grid.AddThemeConstantOverride("v_separation", 2);
         return grid;

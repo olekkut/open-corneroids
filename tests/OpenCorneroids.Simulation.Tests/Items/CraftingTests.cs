@@ -343,6 +343,24 @@ public class CraftingTests
     }
 
     [Fact]
+    public void The_original_thirty_main_slots_are_full_when_every_one_holds_a_stack()
+    {
+        // 29 full stacks of ore and 3 rock: the plate needs a free slot once 2 rock are used, so the craft fails
+        // ("Inventory is full!") even with the hotbar empty. The old 32 main slots would still have had room.
+        var inventory = Inventory.ForItemset(TestSet);
+        Assert.Equal(30, inventory.Slots.Count - Crafting.MainInventory);
+        for (int i = Crafting.MainInventory; i < inventory.Slots.Count - 1; i++) inventory.SetSlot(i, S(Ore, 64));
+        inventory.SetSlot(inventory.Slots.Count - 1, S(Rock, 3));
+
+        Assert.False(Crafting.TryCraft(inventory, TestSet, PlateFromRock, 1, Crafting.MainInventory));
+        Assert.Equal(3, inventory.Count(Rock));
+
+        var larger = Inventory.ForItemset(TestSet, Inventory.HotbarSize + 32);
+        for (int i = 0; i < inventory.Slots.Count; i++) larger.SetSlot(i, inventory.Slots[i]);
+        Assert.True(Crafting.TryCraft(larger, TestSet, PlateFromRock, 1, Crafting.MainInventory));
+    }
+
+    [Fact]
     public void The_result_must_fit_in_the_main_inventory()
     {
         var inventory = NewInventory(Crafting.MainInventory + 1);

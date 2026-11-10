@@ -13,7 +13,13 @@ namespace OpenCorneroids.Game.Ui;
 /// character sheet, a crafting station's blueprints, the <c>"Control block"</c> colour-group key-binding window (with
 /// its overlaid <c>"Press any key"</c> prompt), the <c>"Power network"</c> status popup, and the <c>F1</c> controls
 /// help screen. While a window is open the mouse is free and clicks outside the panels are swallowed so they never reach
-/// the camera as mining or placing.
+/// the camera as mining or placing. The item windows share one cursor stack (<see cref="Hand"/>), drawn under the mouse;
+/// as in the original, a click that is not on a slot while holding it (outside the windows, or on a window's frame
+/// between its slots) throws it along the view (<c>sv_item_toss_speed</c>), and so does closing the window
+/// (<c>sv_item_close_toss_speed</c>). With <c>cl_item_toss_on_window 0</c> (ours) only a click outside the windows
+/// throws it. Also as in the original, a press in the item windows counts only while the other mouse button is up
+/// (<c>cl_item_click_needs_release</c>). An open chest shows its <c>"Container"</c> window beside the inventory, the two
+/// 50 px apart as in the original.
 /// </summary>
 public partial class GameWindows : CanvasLayer
 {
@@ -23,6 +29,10 @@ public partial class GameWindows : CanvasLayer
     InventoryPanel? _inventory;
     CraftingPanel? _crafting;
     CharacterPanel? _character;
+    ContainerPanel? _container;
+    Func<bool>? _containerStillThere;
+    HandCursor? _cursor;
+    Inventory? _playerInventory;
     ClassicWindow _consolePanel = null!;
     GridContainer _consoleGroups = null!;
     CenterContainer _askKeyCenter = null!;
@@ -39,7 +49,25 @@ public partial class GameWindows : CanvasLayer
     readonly List<ColorGroupRow> _groupRows = [];
     Action? _onSetCamera;
 
+    /// <summary>Space between windows shown side by side. Ours.</summary>
+    const int WindowGap = 12;
+
+    /// <summary>The player's inventory and an open chest are 50 px apart, as in the original.</summary>
+    const int ContainerGap = 50;
+
     public bool IsOpen => _root is not null && _root.Visible;
+
+    /// <summary>True while a chest's window is open; the Use key closes it again, as in the original.</summary>
+    public bool IsContainerOpen => IsOpen && _container is { Visible: true };
+
+    /// <summary>The stack held on the cursor, shared by every item window.</summary>
+    public ItemHand Hand { get; } = new();
+
+    /// <summary>
+    /// Throws a stack out of the windows into space at the given speed along the view; set by the world once floating
+    /// items exist. Without it a held stack goes back into the inventory instead.
+    /// </summary>
+    public Action<ItemStack, float>? Toss { get; set; }
 
     /// <summary>True while the overlaid <c>"Press any key"</c> prompt is waiting for a key for a colour group.</summary>
     public bool IsListeningForKey => IsOpen && _consolePanel.Visible && _waitingGroup >= 0;
@@ -53,6 +81,7 @@ public partial class GameWindows : CanvasLayer
         Layer = 2;   // above the HUD
         _root = new Control { Visible = false, MouseFilter = Control.MouseFilterEnum.Stop };
         _root.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _root.GuiInput += OnRootInput;
         AddChild(_root);
 
         _backdrop = new ColorRect { Color = new Color(0, 0, 0, 0.25f), Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -64,7 +93,7 @@ public partial class GameWindows : CanvasLayer
         _root.AddChild(center);
 
         _row = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
-        _row.AddThemeConstantOverride("separation", 12);
+        _row.AddThemeConstantOverride("separation", WindowGap);
         center.AddChild(_row);
 
         if (inventory is not null && suit is not null)
@@ -108,8 +137,63 @@ public partial class GameWindows : CanvasLayer
         _inventory = new InventoryPanel { Name = "Inventory", Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
         _row.AddChild(_inventory);
         _row.MoveChild(_inventory, 2);
-        _inventory.Setup(inventory, itemset, icons, endless);
-        _character.Setup(suit, inventory, _inventory, itemset, icons);
+        _inventory.Setup(inventory, Hand, itemset, icons, endless);
+        _character.Setup(suit, inventory, Hand, itemset, icons);
+        _container = new ContainerPanel { Name = "Container", Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkBegin };
+        _row.AddChild(_container);
+        _row.MoveChild(_container, 3);
+        _container.Setup(Hand, itemset, icons);
+        _playerInventory = inventory;
+        _cursor = new HandCursor { Name = "HandCursor" };
+        _root.AddChild(_cursor);
+        _cursor.Setup(Hand, itemset, icons);
+    }
+
+    /// <summary>
+    /// A press that no slot took (slots accept their clicks, window frames pass them on): with a stack on the cursor it
+    /// is thrown, as in the original. With <c>cl_item_toss_on_window 0</c> (ours) a press on a window's frame does nothing.
+    /// </summary>
+    void OnRootInput(InputEvent @event)
+    {
+        if (Hand.IsEmpty || @event is not InputEventMouseButton { Pressed: true } press
+            || press.ButtonIndex is not (MouseButton.Left or MouseButton.Right)) return;
+        if (!Settings.GameSettings.Cvars.Bool(Simulation.Settings.Cvars.ItemTossOnWindow) && IsOnAWindow(press.GlobalPosition)) return;
+        TossHeld(Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.ItemTossSpeed));
+        _root.AcceptEvent();
+    }
+
+    bool IsOnAWindow(Vector2 at)
+    {
+        foreach (var child in _row.GetChildren())
+            if (child is Control { Visible: true } panel && panel.GetGlobalRect().HasPoint(at)) return true;
+        return false;
+    }
+
+    /// <summary>
+    /// As in the original, a press in the item windows counts only while the other mouse button is up, so pressing the
+    /// second button while holding the first does nothing (<c>cl_item_click_needs_release</c>; 0, ours, lets it act).
+    /// </summary>
+    bool IsChordPress(InputEvent @event) =>
+        ItemWindowShown
+        && @event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left or MouseButton.Right } press
+        && Input.IsMouseButtonPressed(press.ButtonIndex == MouseButton.Left ? MouseButton.Right : MouseButton.Left)
+        && Settings.GameSettings.Cvars.Bool(Simulation.Settings.Cvars.ItemClickNeedsRelease);
+
+    bool ItemWindowShown => _inventory is { Visible: true } || _character is { Visible: true } || _crafting is { Visible: true }
+        || _container is { Visible: true };
+
+    /// <summary>Throws the cursor stack into space, or puts it back into the inventory when nothing can float.</summary>
+    void TossHeld(float speed)
+    {
+        if (Hand.IsEmpty) return;
+        if (Toss is { } toss)
+        {
+            if (Hand.Release() is { } stack) toss(stack, speed);
+        }
+        else if (_playerInventory is not null)
+        {
+            Hand.ReturnTo(_playerInventory);
+        }
     }
 
     ClassicWindow BuildConsolePanel()
@@ -202,7 +286,7 @@ public partial class GameWindows : CanvasLayer
             "Release RMB to empty hand (RMB places in creative) · 1-8 / wheel select slot · R / MMB rotate block.\n" +
             "Aim into open space to attach within 16 m (red beam) or start a new floating ship beyond 16 m."));
         text.AddChild(HelpSection("Ships, Consoles & Power",
-            "E on an unlaunched console launches the ship; E on a ship console sits down (or uses doors/stations).\n" +
+            "E on an unlaunched console launches the ship; E on a ship console sits down (or uses doors, stations, chests).\n" +
             "F on a console equips its binding tool (LMB thrusters/cannons within 3 m to cycle colour group;\n" +
             "press F on the console again to assign group keys or set a camera). F on power blocks shows network balance."));
         text.AddChild(HelpSection("Piloting & Shortcuts",
@@ -231,9 +315,18 @@ public partial class GameWindows : CanvasLayer
 
     void HideAllPanels()
     {
+        // Whatever the window closes for, a stack still on the cursor leaves the hand, as in the original.
+        TossHeld(Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.ItemCloseTossSpeed));
         if (_crafting is not null) _crafting.Visible = false;
         if (_character is not null) _character.Visible = false;
         if (_inventory is not null) _inventory.Visible = false;
+        if (_container is not null)
+        {
+            _container.Visible = false;
+            _container.Detach();
+        }
+        _containerStillThere = null;
+        _row.AddThemeConstantOverride("separation", WindowGap);
         _consolePanel.Visible = false;
         _powerPanel.Visible = false;
         _helpPanel.Visible = false;
@@ -270,6 +363,31 @@ public partial class GameWindows : CanvasLayer
         _crafting.Visible = true;
         _inventory.Visible = true;
         Reveal();
+    }
+
+    /// <summary>
+    /// Opens a chest: the player's inventory on the left and the chest's <c>"Container"</c> window on the right, 50 px
+    /// apart, as in the original. The window closes by itself once <paramref name="stillThere"/> says the chest is gone
+    /// (its block was broken meanwhile), so nothing is put into a chest that no longer exists.
+    /// </summary>
+    /// <param name="width">Slots per row of the chest.</param>
+    public void OpenContainer(Inventory container, int width, Func<bool>? stillThere = null)
+    {
+        if (_container is null || _inventory is null) return;
+        OpenStation = null;
+        HideAllPanels();
+        _backdrop.Visible = true;
+        _row.AddThemeConstantOverride("separation", ContainerGap);
+        _inventory.Visible = true;
+        _container.ShowContainer(container, width);
+        _container.Visible = true;
+        _containerStillThere = stillThere;
+        Reveal();
+    }
+
+    public override void _Process(double delta)
+    {
+        if (IsContainerOpen && _containerStillThere is { } stillThere && !stillThere()) Close();
     }
 
     /// <summary>Opens the <c>"Control block"</c> window for the console at <paramref name="consoleCell"/> in <paramref name="grid"/>,
@@ -378,6 +496,12 @@ public partial class GameWindows : CanvasLayer
             return;
         }
 
+        if (IsChordPress(@event))
+        {
+            GetViewport().SetInputAsHandled();
+            return;
+        }
+
         // Right-clicking closes the Power network popup, as in the original.
         if (_powerPanel.Visible && @event is InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true })
         {
@@ -389,7 +513,6 @@ public partial class GameWindows : CanvasLayer
     public void Close()
     {
         if (!IsOpen) return;
-        _inventory?.CancelPick();
         HideAllPanels();
         _root.Visible = false;
         OpenStation = null;

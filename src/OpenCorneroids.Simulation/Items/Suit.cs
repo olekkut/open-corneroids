@@ -93,6 +93,25 @@ public sealed class Suit
         return true;
     }
 
+    /// <summary>
+    /// Puts <paramref name="wear"/> on in <paramref name="slot"/> (null takes it off) and returns what was worn there:
+    /// the cursor's side of a click on an equipment slot. Fails, returning false and changing nothing, unless
+    /// <paramref name="wear"/> is null or a single item worn in that slot.
+    /// </summary>
+    public bool TryExchange(WearableSlot slot, ItemStack? wear, out ItemStack? old)
+    {
+        int i = (int)slot;
+        old = null;
+        if (i is < 0 or >= SlotCount) return false;
+        if (wear is not null && (wear.Quantity != 1 || WearableOf(wear.ItemId)?.Slot != slot)) return false;
+        old = equipment[i];
+        if (old == wear) return true;
+        equipment[i] = wear;
+        ClampHealth();
+        Changed?.Invoke();
+        return true;
+    }
+
     /// <summary>Takes off what is worn in <paramref name="slot"/> into the inventory; false when nothing is worn or there is no room.</summary>
     public bool TryUnequip(WearableSlot slot, Inventory inventory)
     {
@@ -142,6 +161,19 @@ public sealed class Suit
     {
         if (GodMode || amount <= 0) return true;
         if (Power < amount) return false;
+        SetPower(Power - amount);
+        return true;
+    }
+
+    /// <summary>
+    /// Uses <paramref name="amount"/> power for something like a shot: a positive amount is spent as with
+    /// <see cref="TrySpend"/>; a negative one always succeeds and gives that much power back (up to
+    /// <see cref="MaxPower"/>), as a weapon with a negative <c>powerUsage</c> does in the original.
+    /// </summary>
+    public bool TryUse(double amount)
+    {
+        if (!double.IsFinite(amount)) return false;
+        if (amount >= 0) return TrySpend(amount);
         SetPower(Power - amount);
         return true;
     }
@@ -243,23 +275,35 @@ public sealed class Suit
     /// <summary>
     /// Loads saved values: health and power are clamped to their maxima. Saved equipment that this itemset can't wear in
     /// that slot (an unknown id, a changed slot, an eighth slot) is not worn but returned, for the caller to put in the
-    /// inventory, so a changed itemset never silently deletes items.
+    /// inventory, so a changed itemset never silently deletes items. A worn stack of more than one keeps one on the suit
+    /// and returns the rest the same way. Running buffs are clamped (see <see cref="ClampBuff"/>).
     /// </summary>
-    /// <returns>The saved equipment that could not be worn.</returns>
-    public IReadOnlyList<ItemStack> Restore(SuitState state)
+    /// <returns>The saved equipment that is not worn now.</returns>
+    public IReadOnlyList<ItemStack> Restore(SuitState state) => [.. Restore(state, out var extras), .. extras];
+
+    /// <inheritdoc cref="Restore(SuitState)"/>
+    /// <returns>The saved equipment that can't be worn.</returns>
+    /// <param name="extras">The items above one of worn stacks, also for the inventory.</param>
+    public IReadOnlyList<ItemStack> Restore(SuitState state, out IReadOnlyList<ItemStack> extras)
     {
         ArgumentNullException.ThrowIfNull(state);
         var rejected = new List<ItemStack>();
+        var extra = new List<ItemStack>();
+        extras = extra;
         Array.Clear(equipment);
         for (int i = 0; i < state.Equipment.Count; i++)
         {
             if (state.Equipment[i] is not { Quantity: > 0 } stack) continue;
-            if (i < SlotCount && WearableOf(stack.ItemId) is { } w && (int)w.Slot == i) equipment[i] = stack with { Quantity = 1 };
+            if (i < SlotCount && WearableOf(stack.ItemId) is { } w && (int)w.Slot == i)
+            {
+                equipment[i] = stack with { Quantity = 1 };
+                if (stack.Quantity > 1) extra.Add(stack with { Quantity = stack.Quantity - 1 });
+            }
             else rejected.Add(stack);
         }
         buffs.Clear();
         foreach (var b in state.Buffs)
-            if (b.SecondsLeft > 0 && double.IsFinite(b.SecondsLeft)) buffs.Add(b);
+            if (b.SecondsLeft > 0 && double.IsFinite(b.SecondsLeft)) buffs.Add(ClampBuff(b));
         Health = Math.Clamp(double.IsFinite(state.Health) ? state.Health : MaxHealth, 0, MaxHealth);
         Power = Math.Clamp(double.IsFinite(state.Power) ? state.Power : MaxPower, 0, MaxPower);
         // Ours: a world saved by a dead player loads with them respawned where they lie.
@@ -267,6 +311,25 @@ public sealed class Suit
         if (Health <= 0) Health = Math.Min(BaseMaxHealth, MaxHealth);
         Changed?.Invoke();
         return rejected;
+    }
+
+    /// <summary>The largest armor and maximum-health bonus a restored buff keeps. Ours.</summary>
+    public const int MaxBuffBonus = 1000;
+
+    /// <summary>
+    /// A saved buff brought within sane bounds, so a damaged or hand-edited save can't break the suit. Ours: armor
+    /// 0..<see cref="MaxBuffBonus"/> (negative armor would make the armor formula meaningless), recharge
+    /// -<see cref="MaxPower"/>..<see cref="MaxPower"/> per second, maximum-health bonus 0..<see cref="MaxBuffBonus"/>.
+    /// </summary>
+    public static SuitBuff ClampBuff(SuitBuff buff)
+    {
+        ArgumentNullException.ThrowIfNull(buff);
+        return buff with
+        {
+            Armor = Math.Clamp(buff.Armor, 0, MaxBuffBonus),
+            Power = Math.Clamp(buff.Power, -BaseMaxPower, BaseMaxPower),
+            Health = Math.Clamp(buff.Health, 0, MaxBuffBonus),
+        };
     }
 
     public SuitState Save() => new(Health, Power, [.. equipment], [.. buffs]);

@@ -27,9 +27,9 @@ public class TurnedSaveFormatTests
     }
 
     [Fact]
-    public void Turned_cells_make_the_newest_version_and_none_keep_the_old_one()
+    public void Turned_cells_make_version_5_and_none_keep_the_old_one()
     {
-        Assert.Equal(WorldSaveFormat.TurnedVersion, WorldSaveFormat.CurrentVersion);
+        Assert.True(WorldSaveFormat.TurnedVersion < WorldSaveFormat.CurrentVersion);
         Assert.Equal(WorldSaveFormat.TurnedVersion, Split(ToBytes(SmallWorld() with { Turned = Turns })).Version);
         Assert.Equal(WorldSaveFormat.TurnedVersion,
             Split(ToBytes(SmallWorld() with { Ships = [Ship() with { Turned = [new TurnedCell(Int3.Zero, 1)] }] })).Version);

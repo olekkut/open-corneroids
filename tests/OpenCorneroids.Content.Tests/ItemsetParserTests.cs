@@ -114,7 +114,76 @@ public class ItemsetParserTests
         var bad = Assert.Single(diagnostics, d => d.Code == Codes.BadNumber);
         var expectedLine = xml.Split('\n').ToList().FindIndex(l => l.Contains("fast")) + 1;
         Assert.Equal(expectedLine, bad.Line);
-        Assert.Equal(0, set.ItemsById[21].Get<WeaponComponent>()?.ReloadMs);
+        Assert.Equal(WeaponComponent.DefaultReloadMs, set.ItemsById[21].Get<WeaponComponent>()?.ReloadMs);   // the default, as for a missing one
+    }
+
+    static string Gun(int id, string fields) =>
+        $"""<gun itemId="{id}" blockId="{id}">{MiniItemset.Common("Gun")}{MiniItemset.BlockFields("0 0 1 1")}<barrelLength>1</barrelLength><projectileId>1</projectileId>{fields}</gun>""";
+
+    [Fact]
+    public void Reload_time_defaults_to_a_second_and_is_never_under_50_ms_as_in_the_original()
+    {
+        var diagnostics = new DiagnosticBag();
+        var xml = MiniItemset.Xml(blocksExtra: $"<guns>{Gun(30, "")}{Gun(31, "<reloadTime>10</reloadTime>")}</guns>")
+            .Replace("<reloadTime>200</reloadTime>", "");
+        var set = Parse(xml, diagnostics);
+
+        Assert.Equal(1000, set.ItemsById[21].Get<WeaponComponent>()?.ReloadMs);
+        Assert.Equal(1000, set.ItemsById[30].Get<GunComponent>()?.ReloadMs);
+        Assert.Equal(50, set.ItemsById[31].Get<GunComponent>()?.ReloadMs);
+        var clamped = Assert.Single(diagnostics, d => d.Code == Codes.OutOfRange);
+        Assert.Equal(Severity.Info, clamped.Severity);
+    }
+
+    [Theory]
+    [InlineData("0.9", "-1", 0.5f, 0f)]
+    [InlineData("-0.2", "2", 0f, 1f)]
+    [InlineData("0.1", "0.2", 0.1f, 0.2f)]
+    public void Spread_and_pushback_are_held_in_range_as_in_the_original(string spread, string pushback, float wantSpread, float wantPushback)
+    {
+        var xml = MiniItemset.Xml()
+            .Replace("<spread>0.05</spread>", $"<spread>{spread}</spread>")
+            .Replace("<pushback>0.025</pushback>", $"<pushback>{pushback}</pushback>");
+        var weapon = Parse(xml).ItemsById[21].Get<WeaponComponent>();
+
+        Assert.Equal(wantSpread, weapon?.Spread);
+        Assert.Equal(wantPushback, weapon?.Pushback);
+    }
+
+    [Fact]
+    public void A_torch_without_burning_time_or_light_radius_gets_the_original_defaults()
+    {
+        var torches = $"""
+            <torches>
+              <torch itemId="40">{MiniItemset.Common("Torch")}<light><color r="128" g="128" b="255" /></light></torch>
+              <torch itemId="41">{MiniItemset.Common("Bad torch")}<burningTime>-5</burningTime></torch>
+            </torches>
+            """;
+        var set = Parse(MiniItemset.Xml(itemsExtra: torches));
+
+        Assert.Equal(10_000, set.ItemsById[40].Get<TorchComponent>()?.BurningTimeMs);
+        Assert.Equal(1f, set.ItemsById[40].Get<LightComponent>()?.Light.Radius);
+        Assert.Equal(0, set.ItemsById[41].Get<TorchComponent>()?.BurningTimeMs);
+    }
+
+    [Fact]
+    public void Container_size_is_at_least_1_by_1_and_at_most_7_by_5_as_in_the_original()
+    {
+        static string Chest(int id, string size) =>
+            $"""<container itemId="{id}" blockId="{id}">{MiniItemset.Common("Chest")}{MiniItemset.BlockFields("0 0 1 1")}<container>{size}</container></container>""";
+        var set = Parse(MiniItemset.Xml(blocksExtra: $"""
+            <containers>
+              {Chest(60, "")}
+              {Chest(61, "<width>9</width><height>6</height>")}
+              {Chest(62, "<width>0</width><height>4</height>")}
+              {Chest(63, "<width>5</width><height>4</height>")}
+            </containers>
+            """));
+
+        Assert.Equal(new ContainerComponent(1, 1), set.ItemsById[60].Get<ContainerComponent>());
+        Assert.Equal(new ContainerComponent(7, 5), set.ItemsById[61].Get<ContainerComponent>());
+        Assert.Equal(new ContainerComponent(1, 4), set.ItemsById[62].Get<ContainerComponent>());
+        Assert.Equal(new ContainerComponent(5, 4), set.ItemsById[63].Get<ContainerComponent>());
     }
 
     [Fact]

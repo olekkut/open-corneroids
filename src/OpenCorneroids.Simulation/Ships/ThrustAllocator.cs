@@ -77,16 +77,27 @@ public static class ThrustAllocator
     /// </param>
     /// <exception cref="ArgumentException"><paramref name="throttles"/> is shorter than the thruster list.</exception>
     public static void Allocate(IReadOnlyList<ThrusterMount> thrusters, Vector3 comLocal, Vector3 desiredForceLocal,
-        Vector3 desiredTorqueLocal, float availability, Span<float> throttles)
+        Vector3 desiredTorqueLocal, float availability, Span<float> throttles) =>
+        Allocate(thrusters, comLocal, desiredForceLocal, desiredTorqueLocal, availability, throttles, new Workspace());
+
+    /// <summary>
+    /// As <see cref="Allocate(IReadOnlyList{ThrusterMount}, Vector3, Vector3, Vector3, float, Span{float})"/>, with its
+    /// scratch arrays taken from <paramref name="workspace"/>, so a ship solving twice per physics step makes no garbage.
+    /// The throttles are exactly those of a fresh workspace.
+    /// </summary>
+    public static void Allocate(IReadOnlyList<ThrusterMount> thrusters, Vector3 comLocal, Vector3 desiredForceLocal,
+        Vector3 desiredTorqueLocal, float availability, Span<float> throttles, Workspace workspace)
     {
         ArgumentNullException.ThrowIfNull(thrusters);
+        ArgumentNullException.ThrowIfNull(workspace);
         int n = thrusters.Count;
         if (throttles.Length < n) throw new ArgumentException("One throttle slot per thruster is needed.", nameof(throttles));
         throttles[..n].Clear();
         availability = float.IsFinite(availability) ? Math.Clamp(availability, 0, 1) : 0;
         if (n == 0 || availability <= 0 || !Finite(comLocal) || !Finite(desiredForceLocal) || !Finite(desiredTorqueLocal)) return;
 
-        Solve(thrusters, comLocal, desiredForceLocal, desiredTorqueLocal, availability, TorquePriority, throttles[..n]);
+        workspace.Fit(n);
+        Solve(thrusters, comLocal, desiredForceLocal, desiredTorqueLocal, availability, TorquePriority, throttles[..n], workspace);
         float requested = desiredForceLocal.Length();
         if (!(requested > 0)) return;
         var direction = desiredForceLocal / requested;
@@ -95,8 +106,8 @@ public static class ThrustAllocator
 
         // Little of the push survives the torque priority: compare with what the ship gives when push and turn weigh
         // the same, and lean toward that the less the turn-first answer delivers of it.
-        var pushFirst = new float[n];
-        Solve(thrusters, comLocal, desiredForceLocal, desiredTorqueLocal, availability, 1, pushFirst);
+        var pushFirst = workspace.PushFirst.AsSpan(0, n);
+        Solve(thrusters, comLocal, desiredForceLocal, desiredTorqueLocal, availability, 1, pushFirst, workspace);
         float push = Vector3.Dot(Wrench(thrusters, comLocal, pushFirst, availability).Force, direction);
         if (!(push > 0) || turnFirst >= FallbackShare * push) return;
         float blend = Math.Clamp(1 - Math.Max(0, turnFirst) / (FallbackShare * push), 0, 1);
@@ -106,7 +117,7 @@ public static class ThrustAllocator
     /// <summary>The bounded least-squares allocation (see the remarks) with torque rows weighted by
     /// <paramref name="torquePriority"/>; <paramref name="throttles"/> is cleared on entry.</summary>
     static void Solve(IReadOnlyList<ThrusterMount> thrusters, Vector3 comLocal, Vector3 desiredForceLocal,
-        Vector3 desiredTorqueLocal, float availability, double torquePriority, Span<float> throttles)
+        Vector3 desiredTorqueLocal, float availability, double torquePriority, Span<float> throttles, Workspace workspace)
     {
         int n = thrusters.Count;
         throttles.Clear();
@@ -117,8 +128,9 @@ public static class ThrustAllocator
         double torqueWeight = torquePriority / lever;
 
         // Weighted columns (force, torque · weight) at full throttle and current availability.
-        var columns = new double[6 * n];
-        var norms = new double[n];
+        var columns = workspace.Columns.AsSpan(0, 6 * n);
+        var norms = workspace.Norms.AsSpan(0, n);
+        norms.Clear();
         double normSum = 0;
         for (int i = 0; i < n; i++)
         {
@@ -128,7 +140,7 @@ public static class ThrustAllocator
             var force = dir * magnitude;
             var arm = t.LocalPosition - comLocal;
             var torque = Finite(arm) ? Vector3.Cross(arm, force) : Vector3.Zero;
-            var c = columns.AsSpan(6 * i, 6);
+            var c = columns.Slice(6 * i, 6);
             c[0] = force.X; c[1] = force.Y; c[2] = force.Z;
             c[3] = torque.X * torqueWeight; c[4] = torque.Y * torqueWeight; c[5] = torque.Z * torqueWeight;
             for (int k = 0; k < 6; k++) norms[i] += c[k] * c[k];
@@ -143,15 +155,16 @@ public static class ThrustAllocator
             desiredForceLocal.X, desiredForceLocal.Y, desiredForceLocal.Z,
             desiredTorqueLocal.X * torqueWeight, desiredTorqueLocal.Y * torqueWeight, desiredTorqueLocal.Z * torqueWeight,
         ];
-        var current = new double[n];
+        var current = workspace.Current.AsSpan(0, n);
+        current.Clear();
         CoordinateDescent(columns, norms, request, lambda, current);
-        ActiveSet(columns, norms, request, lambda, current, 2 * n + MaxActiveSetSteps);
+        ActiveSet(columns, norms, request, lambda, current, 2 * n + MaxActiveSetSteps, workspace.Free.AsSpan(0, n), workspace.Target.AsSpan(0, n));
         for (int i = 0; i < n; i++) throttles[i] = (float)Math.Clamp(current[i], 0, 1);
     }
 
     /// <summary>Projected coordinate descent from <paramref name="t"/>: exact minimisation along one throttle at a
     /// time, clamped to the box.</summary>
-    static void CoordinateDescent(double[] columns, double[] norms, ReadOnlySpan<double> request, double lambda, double[] t)
+    static void CoordinateDescent(ReadOnlySpan<double> columns, ReadOnlySpan<double> norms, ReadOnlySpan<double> request, double lambda, Span<double> t)
     {
         Span<double> r = stackalloc double[6];
         Residual(columns, request, t, r);
@@ -160,7 +173,7 @@ public static class ThrustAllocator
             for (int i = 0; i < t.Length; i++)
             {
                 if (norms[i] <= 0) continue;
-                var c = columns.AsSpan(6 * i, 6);
+                var c = columns.Slice(6 * i, 6);
                 double gradient = lambda * t[i];
                 for (int k = 0; k < 6; k++) gradient += c[k] * r[k];
                 double next = Math.Clamp(t[i] - gradient / (norms[i] + lambda), 0, 1);
@@ -176,12 +189,12 @@ public static class ThrustAllocator
     /// Primal active-set finish for <c>min ½‖A·t − w‖² + ½λ‖t‖²</c>, <c>0 ≤ t ≤ 1</c>, from the feasible
     /// <paramref name="t"/>. Every step keeps <paramref name="t"/> feasible and never raises the objective.
     /// </summary>
-    static void ActiveSet(double[] columns, double[] norms, ReadOnlySpan<double> request, double lambda, double[] t, int maxSteps)
+    static void ActiveSet(ReadOnlySpan<double> columns, ReadOnlySpan<double> norms, ReadOnlySpan<double> request, double lambda,
+        Span<double> t, int maxSteps, Span<bool> free, Span<double> target)
     {
         int n = t.Length;
-        var free = new bool[n];
         for (int i = 0; i < n; i++) free[i] = norms[i] > 0 && t[i] > 0 && t[i] < 1;
-        var target = new double[n];
+        target.Clear();
         Span<double> b = stackalloc double[6];
         Span<double> m = stackalloc double[36];
         Span<double> y = stackalloc double[6];
@@ -200,7 +213,7 @@ public static class ThrustAllocator
             for (int k = 0; k < 6; k++) m[7 * k] = lambda;
             for (int i = 0; i < n; i++)
             {
-                var c = columns.AsSpan(6 * i, 6);
+                var c = columns.Slice(6 * i, 6);
                 if (free[i])
                 {
                     for (int row = 0; row < 6; row++)
@@ -218,7 +231,7 @@ public static class ThrustAllocator
             for (int i = 0; i < n; i++)
             {
                 if (!free[i]) continue;
-                var c = columns.AsSpan(6 * i, 6);
+                var c = columns.Slice(6 * i, 6);
                 double z = 0;
                 for (int k = 0; k < 6; k++) z += c[k] * y[k];
                 target[i] = z;
@@ -254,7 +267,7 @@ public static class ThrustAllocator
             for (int i = 0; i < n; i++)
             {
                 if (free[i] || norms[i] <= 0) continue;
-                var c = columns.AsSpan(6 * i, 6);
+                var c = columns.Slice(6 * i, 6);
                 double gradient = lambda * t[i];
                 for (int k = 0; k < 6; k++) gradient += c[k] * r[k];
                 double inward = (t[i] == 0 ? -gradient : gradient) / Math.Sqrt(norms[i]);
@@ -267,7 +280,7 @@ public static class ThrustAllocator
     }
 
     /// <summary>r = A·t − w.</summary>
-    static void Residual(double[] columns, ReadOnlySpan<double> request, double[] t, Span<double> r)
+    static void Residual(ReadOnlySpan<double> columns, ReadOnlySpan<double> request, ReadOnlySpan<double> t, Span<double> r)
     {
         for (int k = 0; k < 6; k++) r[k] = -request[k];
         for (int i = 0; i < t.Length; i++)
@@ -355,6 +368,32 @@ public static class ThrustAllocator
             torque += Vector3.Cross(t.LocalPosition - comLocal, f);
         }
         return (force, torque);
+    }
+
+    /// <summary>
+    /// Scratch arrays for <see cref="Allocate(IReadOnlyList{ThrusterMount}, Vector3, Vector3, Vector3, float, Span{float}, Workspace)"/>,
+    /// grown to the largest ship seen and reused. One per caller; not for use by two solves at once.
+    /// </summary>
+    public sealed class Workspace
+    {
+        internal double[] Columns = [];
+        internal double[] Norms = [];
+        internal double[] Current = [];
+        internal double[] Target = [];
+        internal bool[] Free = [];
+        internal float[] PushFirst = [];
+
+        /// <summary>Makes room for <paramref name="n"/> thrusters.</summary>
+        internal void Fit(int n)
+        {
+            if (Norms.Length >= n) return;
+            Columns = new double[6 * n];
+            Norms = new double[n];
+            Current = new double[n];
+            Target = new double[n];
+            Free = new bool[n];
+            PushFirst = new float[n];
+        }
     }
 
     static bool Finite(Vector3 v) => float.IsFinite(v.X) && float.IsFinite(v.Y) && float.IsFinite(v.Z);

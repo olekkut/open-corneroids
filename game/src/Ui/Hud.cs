@@ -29,7 +29,7 @@ public partial class Hud : CanvasLayer
     ItemIcons _icons = null!;
     readonly List<ItemSlot> _slots = new();
     PanelContainer _debugPlate = null!;
-    Label _title = null!, _status = null!, _controls = null!, _selectedName = null!, _message = null!, _centerPrompt = null!;
+    Label _title = null!, _status = null!, _perf = null!, _controls = null!, _selectedName = null!, _message = null!, _centerPrompt = null!;
     Label _speedLabel = null!, _flightModeLabel = null!;
     ProgressBar _progress = null!;
     CrosshairView _crosshair = null!;
@@ -53,7 +53,7 @@ public partial class Hud : CanvasLayer
         set
         {
             _debugPlate.Visible = value;
-            _log.Position = new Vector2(12, value ? 96 : 12);
+            _log.Position = new Vector2(12, value ? 130 : 12);
         }
     }
 
@@ -87,6 +87,7 @@ public partial class Hud : CanvasLayer
         top.AddThemeConstantOverride("separation", 1);
         top.AddChild(_title = Text(title, 15, new Color(0.85f, 0.92f, 1f)));
         top.AddChild(_status = Text("", 13));
+        top.AddChild(_perf = Text("", 12, new Color(1f, 0.9f, 0.6f)));
         top.AddChild(_controls = Text("", 12, new Color(1, 1, 1, 0.75f)));
         _debugPlate.AddChild(top);
         root.AddChild(_debugPlate);
@@ -328,6 +329,9 @@ public partial class Hud : CanvasLayer
     public void SetStatus(string text) => _status.Text = text;
 
     public void SetControls(string text) => _controls.Text = text;
+
+    /// <summary>The performance lines of the F3 readout (<see cref="World.PerfMonitor.Readout"/>); ours.</summary>
+    public void SetPerf(string text) => _perf.Text = text;
 
     /// <summary>Shows a short transient notice above the hotbar.</summary>
     public void Flash(string text, bool warning = false, double seconds = 2.0)

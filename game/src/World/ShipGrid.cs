@@ -1,4 +1,5 @@
 using Godot;
+using OpenCorneroids.Simulation.Grids;
 using OpenCorneroids.Simulation.Persistence;
 using OpenCorneroids.Simulation.Ships;
 using Num = System.Numerics;
@@ -16,17 +17,16 @@ public partial class ShipGrid : BlockGrid
 {
     MassProperties? _mass;
     int _massRevision = -1;
-    int _blockCount;
-    int _countRevision = -1;
+    /// <summary>Mass sums kept up to date by every edit, so the mass after an edit needs no walk over the blocks.</summary>
+    readonly MassAccumulator _massSums = new();
     (Vector3 Center, float Radius) _extent;
     int _extentRevision = -1;
-    Num.Vector3[] _surface = [];
-    (int, int) _surfaceRevision = (-1, -1);
+    readonly SurfaceSampler _surface;
 
     public ShipGrid() : this(Launch.ShipGridSize) { }
 
     /// <param name="size">Edge of the local grid; a positive multiple of <see cref="BlockGrid.ChunkSize"/>.</param>
-    public ShipGrid(int size) : base(size) { }
+    public ShipGrid(int size) : base(size) => _surface = new SurfaceSampler(CellStore);
 
     protected override string OutsideMessage => "No room: that would reach outside the ship's grid";
 
@@ -129,7 +129,7 @@ public partial class ShipGrid : BlockGrid
     /// <summary>
     /// A sphere around everything built (grid blocks and whole object footprints), local centre and radius: far
     /// tighter than <see cref="BlockGrid.Bounds"/>, which covers the whole grid, so ship-against-ship tests can skip
-    /// ships that are not near each other. Recomputed after edits.
+    /// ships that are not near each other. Recomputed after edits, scanning only the outer chunks of the blocks.
     /// </summary>
     public (Vector3 Center, float Radius) LocalExtent
     {
@@ -139,7 +139,7 @@ public partial class ShipGrid : BlockGrid
             _extentRevision = Revision;
             var min = new Vector3I(int.MaxValue, int.MaxValue, int.MaxValue);
             var max = new Vector3I(int.MinValue, int.MinValue, int.MinValue);
-            foreach (var (cell, _) in Blocks()) (min, max) = (min.Min(cell), max.Max(cell));
+            if (BlockBounds() is { } blocks) (min, max) = blocks;
             foreach (var obj in Objects)
                 foreach (var cell in obj.Footprint) (min, max) = (min.Min(cell), max.Max(cell));
             if (min.X > max.X) return _extent = (Vector3.One * (GridSize * 0.5f), 0);
@@ -155,38 +155,16 @@ public partial class ShipGrid : BlockGrid
     /// Points that stand for the ship's solid volume in collisions, local: for every solid cell (grid block or object
     /// model cell, doors where they are now) with an open face, its centre and a point just inside each open face
     /// (0.45 of a cell out from the centre). Buried cells add nothing: a body can't reach them without first
-    /// touching the surface. Recomputed after edits and door moves.
+    /// touching the surface. After edits and door moves only the chunks around what changed are sampled again
+    /// (<see cref="SurfaceSampler"/>).
     /// </summary>
-    public IReadOnlyList<Num.Vector3> SurfacePoints
-    {
-        get
-        {
-            if (_surfaceRevision == (Revision, ModelRevision)) return _surface;
-            _surfaceRevision = (Revision, ModelRevision);
-            var points = new List<Num.Vector3>();
-            void Add(Vector3I cell)
-            {
-                var center = new Vector3(cell.X + 0.5f, cell.Y + 0.5f, cell.Z + 0.5f);
-                bool open = false;
-                foreach (var step in Steps)
-                {
-                    if (IsSolid(cell + step)) continue;
-                    points.Add((center + (Vector3)step * 0.45f).ToNumerics());
-                    open = true;
-                }
-                if (open) points.Add(center.ToNumerics());
-            }
-            foreach (var (cell, _) in Blocks()) Add(cell);
-            foreach (var obj in Objects)
-                foreach (var cell in obj.ModelCells) Add(cell);
-            return _surface = [.. points];
-        }
-    }
+    public IReadOnlyList<Num.Vector3> SurfacePoints => _surface.Points;
 
     /// <summary>
     /// Mass, centre of mass and inertia in local coordinates, from each block's <c>BlockDef.Mass</c>: a grid block is a
     /// solid unit cube, a multi-block a solid box of its model with the block's whole mass (an itemset gives one mass
-    /// per item, whatever its size). Recomputed after edits, on first use.
+    /// per item, whatever its size). Summed as blocks come and go (<see cref="MassAccumulator"/>); the inertia is
+    /// worked out from the sums after edits, on first use.
     /// </summary>
     public MassProperties Mass
     {
@@ -195,7 +173,7 @@ public partial class ShipGrid : BlockGrid
             if (_mass is null || _massRevision != Revision)
             {
                 var previous = _mass;
-                _mass = MassProperties.From(MassBoxes());
+                _mass = _massSums.ToProperties();
                 _massRevision = Revision;
                 // LinearVelocity is the centre of mass's: when an edit moves that centre on a turning ship, the hull
                 // keeps its motion only if the stored velocity becomes the new centre's, v + ω × Δ (world axes).
@@ -208,30 +186,32 @@ public partial class ShipGrid : BlockGrid
         }
     }
 
-    /// <summary>Grid blocks plus objects. Counting walks the whole grid, so it is redone only after an edit: the HUD asks
-    /// every frame while a ship is aimed at.</summary>
-    public int BlockCount
+    /// <summary>Grid blocks plus objects, both counted as they change.</summary>
+    public int BlockCount => GridBlockCount + Objects.Count;
+
+    /// <summary>A grid block's mass box: a unit cube at the cell.</summary>
+    static Num.Vector3 CellCenter(Vector3I cell) => new(cell.X + 0.5f, cell.Y + 0.5f, cell.Z + 0.5f);
+
+    protected override void BlockChanged(Vector3I p, ushort old, ushort now)
     {
-        get
-        {
-            if (_countRevision != Revision)
-            {
-                _blockCount = Blocks().Count() + Objects.Count;
-                _countRevision = Revision;
-            }
-            return _blockCount;
-        }
+        if (old != BlockPalette.Air) _massSums.Remove(CellCenter(p), Num.Vector3.One, Palette.Mass(old));
+        if (now != BlockPalette.Air) _massSums.Add(CellCenter(p), Num.Vector3.One, Palette.Mass(now));
     }
 
-    IEnumerable<(Num.Vector3 Center, Num.Vector3 Size, float Mass)> MassBoxes()
+    /// <summary>An object weighs as a solid box of its model, closed (a door's travel does not move its mass).</summary>
+    protected override void ObjectChanged(WorldObject obj, bool added)
     {
-        foreach (var (cell, block) in Blocks())
-            yield return (new Num.Vector3(cell.X + 0.5f, cell.Y + 0.5f, cell.Z + 0.5f), Num.Vector3.One, Palette.Item(block).Block!.Mass);
-        foreach (var obj in Objects)
-        {
-            var box = obj.Shape.ModelBox(obj.Origin, obj.Orientation);
-            yield return (box.Center, box.Size, Palette.Item(obj.Block).Block!.Mass);
-        }
+        var box = obj.Shape.ModelBox(obj.Origin, obj.Orientation);
+        if (added) _massSums.Add(box.Center, box.Size, Palette.Mass(obj.Block));
+        else _massSums.Remove(box.Center, box.Size, Palette.Mass(obj.Block));
+    }
+
+    protected override void CellsReplaced()
+    {
+        _massSums.Clear();
+        if (Palette is null) return;
+        foreach (var (cell, block) in Blocks()) _massSums.Add(CellCenter(cell), Num.Vector3.One, Palette.Mass(block));
+        foreach (var obj in Objects) ObjectChanged(obj, added: true);
     }
 
     /// <summary>The ship as a save stores it.</summary>
@@ -246,6 +226,7 @@ public partial class ShipGrid : BlockGrid
             Objects = ExportObjects(),
             Turned = ExportTurned(),
             Consoles = ExportConsoles(),
+            Containers = ExportContainers(),
             IsAsteroid = IsAsteroid,
             Name = IsAsteroid ? "Asteroid" : Name,
         };

@@ -70,6 +70,13 @@ public sealed class GridSystems
 
     readonly BlockGrid _grid;
     readonly List<ShipThruster> _thrusters = [];
+    /// <summary>Each thruster's flame node, kept by its object across edits: an edit elsewhere on the ship frees and
+    /// recreates nothing, only the flames of thrusters that are gone are freed.</summary>
+    readonly Dictionary<WorldObject, MeshInstance3D> _flames = new();
+    readonly HashSet<WorldObject> _stillThrusters = new();
+    readonly List<WorldObject> _goneFlames = new();
+    /// <summary>The flight assistant's scratch arrays, reused every solve.</summary>
+    readonly ThrustAllocator.Workspace _allocation = new();
     int _revision = -1;
     PowerNode[] _nodes = [];
     /// <summary>What each power node is on screen: a grid cell, or an object (then the cell is its origin).</summary>
@@ -97,7 +104,16 @@ public sealed class GridSystems
     }
 
     /// <summary>Thrusters lit right now.</summary>
-    public int Firing => _thrusters.Count(t => t.Lit);
+    public int Firing
+    {
+        get
+        {
+            int lit = 0;
+            for (int i = 0; i < _thrusters.Count; i++)
+                if (_thrusters[i].Lit) lit++;
+            return lit;
+        }
+    }
 
     /// <summary>Whether any thruster is actively pushing right now.</summary>
     public bool AnyThrusting
@@ -208,7 +224,7 @@ public sealed class GridSystems
         }
 
         var command = FlightAssist.Command(state, mass, r.LinearVelocity, r.AngularVelocity, r.Dampeners, Gains);
-        ThrustAllocator.Allocate(_scaled, mass.CenterOfMass, command.ForceLocal, command.TorqueLocal, 1, _throttles);
+        ThrustAllocator.Allocate(_scaled, mass.CenterOfMass, command.ForceLocal, command.TorqueLocal, 1, _throttles, _allocation);
         SetThrottles(step);
         return ThrustAllocator.Wrench(_scaled, mass.CenterOfMass, _throttles);
     }
@@ -271,7 +287,6 @@ public sealed class GridSystems
     {
         if (_revision == _grid.Revision) return;
         _revision = _grid.Revision;
-        foreach (var t in _thrusters) t.Flame?.QueueFree();
         _thrusters.Clear();
 
         var palette = _grid.Palette;
@@ -296,12 +311,32 @@ public sealed class GridSystems
                 blocks.Add((obj.Origin.ToGodot(), obj));
             }
             if (thruster is not null)
-                _thrusters.Add(new ShipThruster(obj, thruster, ThrusterMount.FromShape(obj.Shape, obj.Origin, obj.Orientation, thruster), node));
+                _thrusters.Add(new ShipThruster(obj, thruster, ThrusterMount.FromShape(obj.Shape, obj.Origin, obj.Orientation, thruster), node)
+                {
+                    Flame = _flames.GetValueOrDefault(obj),
+                });
         }
+        ForgetGoneFlames();
         _nodes = [.. nodes];
         _nodeBlocks = [.. blocks];
         _powerDirty = true;
         _shownValid = false;
+    }
+
+    /// <summary>Frees the flames of thrusters no longer on the grid (broken, or no longer thrusters).</summary>
+    void ForgetGoneFlames()
+    {
+        if (_flames.Count == 0) return;
+        _stillThrusters.Clear();
+        foreach (var t in _thrusters) _stillThrusters.Add(t.Object);
+        _goneFlames.Clear();
+        foreach (var obj in _flames.Keys)
+            if (!_stillThrusters.Contains(obj)) _goneFlames.Add(obj);
+        foreach (var obj in _goneFlames)
+        {
+            _flames.Remove(obj, out var flame);
+            flame?.QueueFree();
+        }
     }
 
     /// <summary>The power solution for the grid, solved again only when blocks change.</summary>
@@ -375,6 +410,7 @@ public sealed class GridSystems
         if (t.Flame is null)
         {
             t.Flame = CreateFlame();
+            _flames[t.Object] = t.Flame;
             _grid.AddChild(t.Flame);
         }
 

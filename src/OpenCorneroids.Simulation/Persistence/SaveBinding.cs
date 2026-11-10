@@ -1,4 +1,5 @@
 using OpenCorneroids.Content.Itemsets;
+using OpenCorneroids.Simulation.Items;
 
 namespace OpenCorneroids.Simulation.Persistence;
 
@@ -16,16 +17,42 @@ public enum BindingStatus
 
 /// <param name="MissingBlockIds">Used blockIds the current itemset lacks, ascending. Only non-empty for <see cref="BindingStatus.Incompatible"/>.</param>
 /// <param name="Message">Explains the status to the player.</param>
-public sealed record BindingResult(BindingStatus Status, IReadOnlyList<int> MissingBlockIds, string Message);
+public sealed record BindingResult(BindingStatus Status, IReadOnlyList<int> MissingBlockIds, string Message)
+{
+    /// <summary>
+    /// How the player's saved items fit the itemset (see <see cref="ItemCheck"/>). It does not change
+    /// <see cref="Status"/>: blocks decide whether a world can load at all, items only whether to ask first.
+    /// </summary>
+    public ItemProblems ItemProblems { get; init; } = ItemProblems.None;
+
+    /// <summary>
+    /// Loading should ask first because of the player's items: some would be lost, or the itemset changed and some no
+    /// longer match. With the exact itemset the world was saved with, items that were already unknown then (kept from
+    /// an earlier load) don't ask again.
+    /// </summary>
+    public bool AsksAboutItems => ItemProblems.LostItems > 0 || (Status != BindingStatus.Exact && !ItemProblems.IsClean);
+}
 
 /// <summary>
 /// Decides whether a saved world can be loaded with the itemset that is active now. Worlds store ORIGINAL blockIds, so
 /// an edited mod keeps working as long as the blocks actually placed survive; palette entries no cell references
-/// (left over after mining) don't count.
+/// (left over after mining) don't count. The player's items are checked as well (<see cref="BindingResult.ItemProblems"/>).
 /// </summary>
 public static class SaveBinding
 {
-    public static BindingResult Check(WorldSnapshot snapshot, ItemsetDef current, string currentPackId)
+    /// <param name="inventorySlots">The size of the inventory a load creates, for the item check.</param>
+    /// <param name="fillOrder">Where that inventory puts added items, for the item check.</param>
+    public static BindingResult Check(WorldSnapshot snapshot, ItemsetDef current, string currentPackId,
+        int inventorySlots = Inventory.DefaultSlotCount, FillOrder fillOrder = FillOrder.SlotOrder)
+    {
+        var result = CheckBlocks(snapshot, current, currentPackId);
+        return result.Status == BindingStatus.DifferentItemset
+            ? result
+            : result with { ItemProblems = ItemCheck.Of(snapshot, current, inventorySlots, fillOrder) };
+    }
+
+    /// <summary>The verdict from the blocks alone: a different itemset is refused before its items are looked at.</summary>
+    static BindingResult CheckBlocks(WorldSnapshot snapshot, ItemsetDef current, string currentPackId)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(current);

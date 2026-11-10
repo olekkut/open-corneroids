@@ -60,14 +60,16 @@ dropped in next to them.
 - **Survival.** Drill blocks with a drill strong enough for them, pick up what floats free, smelt and craft at the
   crafting table, ore furnace and mineral extractor, and keep your suit's health and power up with armor, power
   sources and consumables. Shots and hard crashes hurt, armor softens them, and dying sends you back 64 to 95 m away
-  with your inventory intact.
+  with your inventory intact. The inventory, item clicks and tossing work as in the original, chests hold your
+  things (and spill them when broken), thrown torches light the dark, and beacons (`B`) mark points in space.
 - **Building.** Place single blocks and multi-block parts (thrusters, cannons, power blocks, doors) in any of 24
   orientations, with 8-corner footprint brackets, an outward facing/exhaust arrow, and empty-space placement that
   attaches to the nearest structure within 16 m (shown by a red attachment beam) or starts a new floating ship beyond it.
 - **Ships.** Launch what you built or build straight in space, wire all-or-nothing power networks (`F` shows block count
   and power balance), and bind thrusters, cannons and cameras to colour-coded console groups (`F` on a console, then `F`
   again to assign keys). Fly with the original's console bindings by default, or press `H` for the optional automatic
-  flight assistant; ships collide with rock and each other, and you ride along when you stand inside one.
+  flight assistant; look out through a bound camera block and turn it with the mouse. Ships collide with rock and each
+  other, and you ride along when you stand inside one.
 - **Weapons.** Hand weapons and ship cannons fire the itemset's projectiles, which spend their damage on what they
   hit and fly on through what they break; gun consoles aim bound cannons where you look.
 - **Creatures.** Mineral parasites eat the asteroids and charge you, swarm eggs hatch homing needles, and (if you turn
@@ -105,18 +107,18 @@ Each download is the game with its data included, so there is nothing to install
 |---|---|
 | Move | `W` `A` `S` `D`, `Space` up, `Ctrl` down, `Shift` boost |
 | Look and roll | mouse, `Z` / `X` roll, `L` level the view |
-| Use what you hold | left mouse button (drill, shoot, place, consume); right button empties your hand |
+| Use what you hold | left mouse button (drill, shoot, place, consume, throw a torch); right button empties your hand |
 | Hotbar | `1`–`8` or the mouse wheel |
 | Turn the block to place | `R` or the middle mouse button |
-| Use a block / edit it | `E` (consoles, crafting stations, doors) / `F` (console binding & key setup, power network info) |
-| Inventory | `C` |
+| Use a block / edit it | `E` (consoles, crafting stations, doors, chests) / `F` (console binding & key setup, power network info) |
+| Inventory / beacon tool | `C` / `B` |
 | Flashlight / fixed camera aboard | `T` / `K` |
-| Console | `` ` `` (any setting by name, `find`, `differences`, `preset`, `exec`, `mode`, `kill`, `respawn`, `creatures`, `spawnship`, `importship`, `exportship`, `help`; with `sv_cheats 1` also `speed`, `tp`, `give`, `noclip`, `god`, `heal`) |
+| Console | `` ` `` (any setting by name, `find`, `differences`, `preset`, `exec`, `mode`, `kill`, `respawn`, `creatures`, `spawnship`, `importship`, `exportship`, `help`; with `sv_cheats 1` also `speed`, `tp`, `give`, `noclip`, `god`, `heal`, `kit`, `health`, `power`, `spawn`, `stress`; `help` lists them all) |
 | Game menu (Options, Save and exit) | `Esc` |
 | Welcome window / debug readout / hide HUD / save | `F1` / `F3` / `F6` / `F5` |
 
 Flying a ship: by default, bound console group keys fire their thrusters and cannons while held (`V` seat/camera or
-chase view, `E` to stand up, gun consoles aim bound cannons with the mouse). Press `H` to toggle the optional flight
+chase view, `E` to stand up, gun consoles aim bound cannons with the mouse, the mouse turns a bound camera). Press `H` to toggle the optional flight
 assistant (`W` `S` forward/back, `A` `D` strafe, `Space` `Ctrl` up/down, mouse pitch/yaw, `Z` `X` roll, `G` dampeners,
 left mouse button to fire all guns).
 
@@ -170,7 +172,8 @@ flowchart LR
 - [x] Damage to the player, armor, death and respawn
 - [x] Creatures: mineral parasites, swarm eggs and needles (scavengers optional)
 - [x] The original's menus and Options (Gameplay, Graphics, Controls with key rebinding), welcome window, Game menu
-- [ ] Sound (the original has none; ours to add)
+- [x] Chests, thrown torches, beacons, camera blocks, the original's inventory and item clicks, faster drawing
+- [ ] Sound, next (the original has none; ours to add)
 - [ ] Multiplayer
 
 ## Credits

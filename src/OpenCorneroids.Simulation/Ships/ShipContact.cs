@@ -5,16 +5,18 @@ namespace OpenCorneroids.Simulation.Ships;
 /// <summary>
 /// The pieces of our approximate ship collision: whether sample points of a body are inside a block grid, which way
 /// is out, how far back along a step the body was still free, and the velocity change at the contact. Bodies are
-/// not swept and contacts carry no spin (see the remarks of each member). All ours, tunable; original behaviour
-/// unknown.
+/// not swept (see the remarks of each member). As in the original, a contact has no bounce
+/// (<c>sv_ship_restitution 0</c>) and does no damage to blocks. The original's contacts also give both bodies spin from
+/// the contact point; ours carry none and damp the spin instead (<c>sv_ship_contact_spin_damping</c>, ours).
 /// </summary>
 public static class ShipContact
 {
-    /// <summary>Fraction of the closing speed a ship keeps, bounced back, after hitting something. Tunable.</summary>
-    public const float Restitution = 0.2f;
+    /// <summary>Fraction of the closing speed a ship keeps, bounced back, after hitting something: none, as in the
+    /// original (<c>sv_ship_restitution</c>).</summary>
+    public const float Restitution = 0f;
 
     /// <summary>Each contact multiplies the ship's spin by this, so a ship scraping along rock settles instead of
-    /// spinning on: contacts give no torque of their own. Tunable.</summary>
+    /// spinning on: contacts give no torque of their own. Ours (<c>sv_ship_contact_spin_damping</c>).</summary>
     public const float ContactSpinDamping = 0.5f;
 
     /// <summary>How far a ship that is already inside something (built into rock, loaded overlapping) is pushed out

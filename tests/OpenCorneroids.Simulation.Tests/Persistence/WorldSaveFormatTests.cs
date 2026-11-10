@@ -287,9 +287,9 @@ public class WorldSaveFormatTests
     [Fact]
     public void Newer_version_message_says_to_update()
     {
-        var bytes = Container(ValidJson, ValidCells, version: 7);
+        var bytes = Container(ValidJson, ValidCells, version: WorldSaveFormat.CurrentVersion + 1);
         var error = Assert.Throws<WorldSaveException>(() => FromBytes(bytes));
-        Assert.Contains("version 7", error.Message);
+        Assert.Contains($"version {WorldSaveFormat.CurrentVersion + 1}", error.Message);
     }
 
     // The caps must reject from the declared numbers alone; the damaged-input cases above would also pass if a too-large

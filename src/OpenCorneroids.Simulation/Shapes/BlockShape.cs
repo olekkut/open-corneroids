@@ -11,6 +11,18 @@ public readonly record struct Aabb(Vector3 Min, Vector3 Max)
 }
 
 /// <summary>
+/// The cells a model covers (<paramref name="Lo"/>..<paramref name="Hi"/>) and, within them, the ones it fills
+/// entirely (<paramref name="FullLo"/>..<paramref name="FullHi"/>, empty on an axis where FullLo &gt; FullHi). See
+/// <see cref="BlockShape.CellSpan"/>.
+/// </summary>
+public readonly record struct ModelCellSpan(Int3 Lo, Int3 Hi, Int3 FullLo, Int3 FullHi)
+{
+    /// <summary>Whether the model fills cell <paramref name="c"/> entirely (given that it covers it).</summary>
+    public bool Fills(Int3 c) =>
+        c.X >= FullLo.X && c.Y >= FullLo.Y && c.Z >= FullLo.Z && c.X <= FullHi.X && c.Y <= FullHi.Y && c.Z <= FullHi.Z;
+}
+
+/// <summary>
 /// The geometry of one block type, taken from its <see cref="BlockDef"/>: placement bounds, visible model box and the
 /// face textures, with the rules for turning and placing it in the grid.
 /// </summary>
@@ -180,15 +192,50 @@ public sealed class BlockShape
     /// </summary>
     public IEnumerable<Int3> ModelCells(Int3 origin, Orientation o, Vector3 localOffset = default)
     {
-        var box = ModelBox(origin, o, localOffset);
+        var (lo, hi) = ModelCellRange(ModelBox(origin, o, localOffset));
+        return CellsOf(lo, hi - lo + Int3.One);
+    }
+
+    /// <summary>The smallest and largest cell <see cref="ModelCells"/> gives for a model box.</summary>
+    static (Int3 Lo, Int3 Hi) ModelCellRange(Aabb box)
+    {
         var lo = Int3.Floor(box.Min + new Vector3(CellEpsilon));
         var hi = Int3.Floor(box.Max - new Vector3(CellEpsilon));
         // A model thinner than two epsilons still occupies the cell its centre is in.
         var center = Int3.Floor(box.Center);
         lo = new Int3(lo.X > hi.X ? center.X : lo.X, lo.Y > hi.Y ? center.Y : lo.Y, lo.Z > hi.Z ? center.Z : lo.Z);
         hi = Int3.Max(lo, hi);
-        return CellsOf(lo, hi - lo + Int3.One);
+        return (lo, hi);
     }
+
+    /// <summary>
+    /// Everything that decides which cells the model at <paramref name="localOffset"/> covers and which of them it
+    /// fills entirely (a cell <c>c</c> is filled when <c>Min ≤ c + ε</c> and <c>Max ≥ c + 1 − ε</c> on every axis,
+    /// <see cref="CellEpsilon"/>). Two offsets with equal spans cover and fill exactly the same cells, so a sliding door
+    /// works its cells out again only when its span changes, not every frame it moves.
+    /// </summary>
+    public ModelCellSpan CellSpan(Int3 origin, Orientation o, Vector3 localOffset = default)
+    {
+        var box = ModelBox(origin, o, localOffset);
+        var (lo, hi) = ModelCellRange(box);
+        int FirstFull(int axis)
+        {
+            float min = Axis(box.Min, axis);
+            for (int c = lo[axis]; c <= hi[axis]; c++)
+                if (min <= c + CellEpsilon) return c;
+            return hi[axis] + 1;
+        }
+        int LastFull(int axis)
+        {
+            float max = Axis(box.Max, axis);
+            for (int c = hi[axis]; c >= lo[axis]; c--)
+                if (max >= c + 1 - CellEpsilon) return c;
+            return lo[axis] - 1;
+        }
+        return new ModelCellSpan(lo, hi, new Int3(FirstFull(0), FirstFull(1), FirstFull(2)), new Int3(LastFull(0), LastFull(1), LastFull(2)));
+    }
+
+    static float Axis(Vector3 v, int axis) => axis switch { 0 => v.X, 1 => v.Y, _ => v.Z };
 
     /// <summary>
     /// Where to put the origin when the player clicks a block face and the new block should start at

@@ -86,6 +86,12 @@ public sealed class GameArgs
     /// normal placing rules (survival spends it), so a placed object can be saved and loaded without a mouse.</summary>
     public bool Place { get; private set; }
 
+    /// <summary>
+    /// <c>--beacon[=name]</c>: put the beacon tool in hand, and with a name put a beacon of that name ahead as its name
+    /// window would, so the marker, the red box and the help text can be screenshotted. Empty string: the tool only.
+    /// </summary>
+    public string? Beacon { get; private set; }
+
     /// <summary>Move the camera close to the first placed multi-block of this item, for screenshots.</summary>
     public int? Focus { get; private set; }
 
@@ -108,7 +114,8 @@ public sealed class GameArgs
     public int? PlaceOnShip { get; private set; }
 
     /// <summary>Sit at the first ship's console and pilot it, with this view ("seat", "chase", or "fixed": the camera
-    /// stays where it was, for before/after screenshots).</summary>
+    /// stays where it was, for before/after screenshots). When the world has no ship yet, this waits for the
+    /// <c>--console</c> commands, which may build one (<c>stress ship 6000</c>).</summary>
     public string? Pilot { get; private set; }
 
     /// <summary>Automatic flight assistant on or off (default off: original console key bindings).</summary>
@@ -231,6 +238,7 @@ public sealed class GameArgs
                     if (int.TryParse(value, out var previewSpace)) parsed.PreviewSpace = previewSpace;
                     else Godot.GD.PushWarning($"--preview-space: '{value}' is not an item id");
                     break;
+                case "--beacon": parsed.Beacon = value; break;
                 case "--select":
                     if (int.TryParse(value, out var select)) parsed.Select = select;
                     else Godot.GD.PushWarning($"--select: '{value}' is not an item id");

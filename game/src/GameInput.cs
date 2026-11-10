@@ -6,7 +6,7 @@ namespace OpenCorneroids.Game;
 /// <summary>
 /// Input actions, registered in code. Physical keys, so WASD stays under the same fingers on Ukrainian,
 /// Polish or any other keyboard layout. The defaults are the original's: Z/X roll, E use, F edit,
-/// C inventory, R orientate the block to place, T flashlight. Keys the original lacks are ours: L levels the view, N
+/// C inventory, B beacon tool, R orientate the block to place, T flashlight. Keys the original lacks are ours: L levels the view, N
 /// noclip, I opens the inventory too, F5 saves, H toggles the optional flight assistant (console key bindings are the
 /// default), G toggles the flight assistant's dampeners, K toggles fixed camera when aboard, V toggles the pilot's view.
 /// </summary>
@@ -28,6 +28,8 @@ public static class GameInput
     public const string Flashlight = "toggle_flashlight";
     /// <summary>Opens and closes the inventory window.</summary>
     public const string Inventory = "toggle_inventory";
+    /// <summary>Puts the beacon tool in hand, which marks points in space (B, as in the original).</summary>
+    public const string BeaconTool = "beacon_tool";
     /// <summary>Turns the astronaut back upright (keeping the heading): no roll, and a level view if within reach.</summary>
     public const string Level = "level_view";
     /// <summary>Locks the astronaut's camera up vector to the ship's deck while aboard (ours, K; also in original options).</summary>
@@ -81,6 +83,7 @@ public static class GameInput
         Add(Noclip, Key.N);
         Add(Interact, Key.E);
         Add(Inventory, Key.C, Key.I);
+        Add(BeaconTool, Key.B);
         Add(Spin, Key.R);
         Add(Help, Key.F1);
         Add(DebugHud, Key.F3);
@@ -134,6 +137,7 @@ public static class GameInput
         new("Down", [Down, ShipDown]),
         new("Orientate block", [Spin]),
         new("Inventory", [Inventory]),
+        new("Beacon tool", [BeaconTool]),
         new("Roll left", [RollLeft]),
         new("Roll right", [RollRight]),
         new("Flashlight", [Flashlight]),

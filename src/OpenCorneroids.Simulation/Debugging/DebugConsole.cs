@@ -79,6 +79,10 @@ public interface IDebugConsoleHost
     string ImportShip(string path);
     string ExportShip(string? selector, string path);
     string? SaveWorld();
+
+    /// <summary>Ours: builds a <c>stress</c> scene (a huge ship, a gun battery, a swarm, a field of multi-blocks) for
+    /// measuring performance; returns what was built, with its block, object and creature counts.</summary>
+    string Stress(StressRequest request) => "Stress tests need a running world.";
 }
 
 /// <summary>
@@ -107,7 +111,7 @@ public sealed class DebugConsole
     static readonly HashSet<string> CheatCommands =
     [
         "noclip", "nc", "god", "invincible", "give", "item", "kit", "heal", "health", "hp", "power", "tp", "teleport",
-        "spawn", "summon",
+        "spawn", "summon", "stress",
     ];
 
     public static readonly IReadOnlyList<CommandHelp> Catalog =
@@ -149,6 +153,7 @@ public sealed class DebugConsole
         new("exportship", "exportship [ship#|name] <path.sbs>", "Export a ship to a Spacebox structure file (.sbs).", "sbsexport", "export"),
         new("launch", "launch", "Launch the aimed structure (or nearest world console) as a ship."),
         new("clearships", "clearships", "Remove all floating ships from the world."),
+        new("stress", StressTest.Usage, "Ours: build a big scene to measure with the F3 readout: a launched hull of about n blocks with fittings, a gun platform, n creatures, or n multi-blocks (cheat)."),
         new("save", "save", "Save the world immediately."),
         new("clear", "clear", "Clear the debug console output log.", "cls"),
     ];
@@ -415,14 +420,7 @@ public sealed class DebugConsole
 
             case "spawn" or "summon":
             {
-                Creatures.CreatureKind? kind = args.Count == 0 ? null : args[0].ToLowerInvariant() switch
-                {
-                    "parasite" or "mineralparasite" or "mineral" => Creatures.CreatureKind.MineralParasite,
-                    "egg" or "swarmegg" => Creatures.CreatureKind.SwarmEgg,
-                    "needle" => Creatures.CreatureKind.Needle,
-                    "scavenger" or "flyer" => Creatures.CreatureKind.Scavenger,
-                    _ => null,
-                };
+                Creatures.CreatureKind? kind = args.Count == 0 ? null : StressTest.CreatureNamed(args[0]);
                 return kind is { } k
                     ? ([host.SpawnCreature(k)], false, false)
                     : (["Usage: spawn <parasite|egg|needle|scavenger>"], true, false);
@@ -445,6 +443,11 @@ public sealed class DebugConsole
 
             case "ships":
                 return RunShips(host);
+
+            case "stress":
+                return StressTest.Parse(args, out var stressError) is { } stress
+                    ? ([host.Stress(stress)], false, false)
+                    : ([stressError!], true, false);
 
             case "spawnship" or "demoship":
                 return ([host.SpawnDemoShip()], false, false);
@@ -511,7 +514,24 @@ public sealed class DebugConsole
         if (cvar.Flags.HasFlag(CvarFlags.World)) tags.Add("world rule");
         if (cvar.Flags.HasFlag(CvarFlags.User)) tags.Add("preference");
         if (cvar.IsCheat) tags.Add("cheat");
+        if (cvar.AppliesOnLoad) tags.Add("on load");
         return $"{cvar.Name} = {cvar.Format(cvars.Get(cvar))}  ({string.Join(", ", tags)})";
+    }
+
+    static string OnLoadNote(Cvar cvar) => cvar.AppliesOnLoad ? " (takes effect when the world is loaded again)" : "";
+
+    /// <summary>
+    /// Resets a whole scope, then names each setting read only when the world loads that this changed, with the same
+    /// note a single change gets, so a reset (or a preset that runs one) never changes such a setting silently.
+    /// </summary>
+    static List<string> ResetScope(CvarStore cvars, CvarFlags scope, string done)
+    {
+        var onLoad = cvars.Differences(scope).Where(c => c.AppliesOnLoad).ToList();
+        cvars.ResetAll(scope);
+        var lines = new List<string> { done };
+        foreach (var cvar in onLoad)
+            lines.Add($"{cvar.Name} = {cvar.Format(cvars.Get(cvar))} (default){OnLoadNote(cvar)}");
+        return lines;
     }
 
     static (IReadOnlyList<string>, bool, bool) RunCvar(Cvar cvar, List<string> args, CvarStore cvars)
@@ -521,11 +541,11 @@ public sealed class DebugConsole
         if (args[0].Equals("default", StringComparison.OrdinalIgnoreCase) || args[0].Equals("reset", StringComparison.OrdinalIgnoreCase))
         {
             cvars.Reset(cvar);
-            return ([ $"{cvar.Name} = {cvar.Format(cvars.Get(cvar))} (default)"], false, false);
+            return ([ $"{cvar.Name} = {cvar.Format(cvars.Get(cvar))} (default){OnLoadNote(cvar)}"], false, false);
         }
         if (!cvars.TrySet(cvar, string.Join(' ', args), out var error))
             return ([error!], true, false);
-        return ([ $"{cvar.Name} = {cvar.Format(cvars.Get(cvar))}"], false, false);
+        return ([ $"{cvar.Name} = {cvar.Format(cvars.Get(cvar))}{OnLoadNote(cvar)}"], false, false);
     }
 
     static (IReadOnlyList<string>, bool, bool) RunFind(List<string> args, CvarStore cvars)
@@ -579,14 +599,11 @@ public sealed class DebugConsole
         switch (args[0].ToLowerInvariant())
         {
             case "rules":
-                cvars.ResetAll(CvarFlags.World);
-                return (["World rules (sv_) reset to the original game's."], false, false);
+                return (ResetScope(cvars, CvarFlags.World, "World rules (sv_) reset to the original game's."), false, false);
             case "prefs" or "preferences":
-                cvars.ResetAll(CvarFlags.User);
-                return (["Preferences (cl_) reset to defaults."], false, false);
+                return (ResetScope(cvars, CvarFlags.User, "Preferences (cl_) reset to defaults."), false, false);
             case "all":
-                cvars.ResetAll();
-                return (["Every setting reset to its default."], false, false);
+                return (ResetScope(cvars, CvarFlags.None, "Every setting reset to its default."), false, false);
         }
         if (cvars.Find(args[0]) is not { } cvar) return ([ $"Unknown setting '{args[0]}'."], true, false);
         return RunCvar(cvar, ["default"], cvars);

@@ -1,6 +1,7 @@
 using System.Numerics;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Simulation.Items;
+using OpenCorneroids.Simulation.Navigation;
 using OpenCorneroids.Simulation.Shapes;
 
 namespace OpenCorneroids.Simulation.Persistence;
@@ -68,6 +69,13 @@ public sealed record SavedConsoleGroup(int Index, string Key, IReadOnlyList<Int3
 public sealed record SavedConsole(Int3 Cell, IReadOnlyList<SavedConsoleGroup> Groups, Int3? Camera = null);
 
 /// <summary>
+/// The contents of one container block (chest) at <see cref="Cell"/>, its origin for a multi-cell block. Slots are in
+/// the chest's row-by-row order; null is an empty slot, so positions survive a round trip. Only chests holding
+/// something are saved, as in the original.
+/// </summary>
+public sealed record SavedContainer(Int3 Cell, IReadOnlyList<ItemStack?> Slots);
+
+/// <summary>
 /// One ship: a cubic block grid of its own with a transform, so it can sit anywhere in the world at any angle. Cells and
 /// objects follow the same rules as the world's (<see cref="WorldSnapshot.Palette"/>, <see cref="WorldSnapshot.Cells"/>,
 /// <see cref="PlacedObject"/>), in the ship's LOCAL cell coordinates 0..<see cref="Size"/>−1.
@@ -92,6 +100,9 @@ public sealed record ShipSnapshot(
     /// <summary>Console colour-group and camera bindings on this ship, in ship-local cells. Optional in the file.</summary>
     public IReadOnlyList<SavedConsole> Consoles { get; init; } = [];
 
+    /// <summary>The ship's chests and what they hold, in ship-local cells. Optional in the file.</summary>
+    public IReadOnlyList<SavedContainer> Containers { get; init; } = [];
+
     /// <summary>Whether this floating body is a static natural asteroid rather than a ship.</summary>
     public bool IsAsteroid { get; init; } = false;
 
@@ -115,7 +126,9 @@ public sealed record WorldSnapshot(
 {
     /// <summary>
     /// Creative rules (free placing, instant mining, no inventory) rather than survival. Optional in the file: saves
-    /// written before it existed have no such field and read as survival, which is what every world was then.
+    /// written before it existed have no such field and read as survival, which is what every world was then. A world
+    /// that has had a survival player still saves its <see cref="Inventory"/> and <see cref="Suit"/> while in creative
+    /// (see <see cref="InventoryRestore"/>).
     /// </summary>
     public bool Creative { get; init; }
 
@@ -154,6 +167,18 @@ public sealed record WorldSnapshot(
     /// Console colour-group and camera bindings in the static world. Optional in the file.
     /// </summary>
     public IReadOnlyList<SavedConsole> Consoles { get; init; } = [];
+
+    /// <summary>
+    /// The static world's chests and what they hold. Optional in the file: saves written before chests held anything
+    /// have none.
+    /// </summary>
+    public IReadOnlyList<SavedContainer> Containers { get; init; } = [];
+
+    /// <summary>
+    /// The beacons the player put with the beacon tool, in world space. Optional in the file: saves written before
+    /// beacons existed have none, which is what they held.
+    /// </summary>
+    public IReadOnlyList<Beacon> Beacons { get; init; } = [];
 
     /// <summary>
     /// Game rules (<c>sv_</c> settings) that differ from their defaults, name → value as typed in the console.

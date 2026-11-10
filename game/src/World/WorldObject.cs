@@ -13,7 +13,7 @@ namespace OpenCorneroids.Game.World;
 public sealed class WorldObject
 {
     internal WorldObject(int id, ushort block, BlockShape shape, Int3 origin, Orientation orientation, DoorComponent? door,
-        bool opaque, MeshInstance3D node)
+        bool opaque, MeshInstance3D? node)
     {
         Id = id;
         Block = block;
@@ -38,10 +38,13 @@ public sealed class WorldObject
     /// <summary>Set for blocks with a <see cref="DoorComponent"/>.</summary>
     public DoorComponent? Door { get; }
     public DoorState DoorState { get; internal set; }
-    /// <summary>False when the model's textures have see-through pixels; such a model never hides a grid face.</summary>
+    /// <summary>False when the model's textures have see-through pixels, or for a camera block (see-through as in the
+    /// original); such a model never hides a grid face.</summary>
     public bool Opaque { get; }
-    /// <summary>The model's mesh, built at door offset 0 and moved by its <see cref="BlockGrid"/> as the door travels.</summary>
-    public MeshInstance3D Node { get; }
+    /// <summary>The model's own mesh node, built at door offset 0 and moved by its <see cref="BlockGrid"/> as the door
+    /// travels; null when the object is drawn as part of its chunk's merged object mesh (<c>cl_batch_objects</c>, every
+    /// object but doors).</summary>
+    public MeshInstance3D? Node { get; internal set; }
 
     /// <summary>Drawn with its active (powered) textures; false shows the unpowered ones. Set through
     /// <see cref="BlockGrid.SetInactive"/>.</summary>
@@ -83,15 +86,22 @@ public sealed class WorldObject
         return [.. Shape.ModelCells(Origin, Orientation, offset).Select(c => c.ToGodot()).Where(FootprintContains)];
     }
 
-    /// <summary>Of <paramref name="cells"/>, those the model at <paramref name="open"/> covers entirely.</summary>
-    internal HashSet<Vector3I> FullCellsAt(float open, HashSet<Vector3I> cells)
+    /// <summary>The cell span (<see cref="BlockShape.CellSpan"/>) the model has where <see cref="ModelCells"/> were last
+    /// worked out: while a moving door keeps it, its cells stay the same.</summary>
+    internal ModelCellSpan CellSpan { get; set; }
+
+    /// <summary>The model's cell span at door open fraction <paramref name="open"/>.</summary>
+    internal ModelCellSpan SpanAt(float open) =>
+        Shape.CellSpan(Origin, Orientation, Door is { } door ? DoorMotion.Offset(open, door) : default);
+
+    /// <summary>Of <paramref name="cells"/>, those the model with <paramref name="span"/> covers entirely (a cell
+    /// within <see cref="BlockShape.CellEpsilon"/> of full counts).</summary>
+    internal HashSet<Vector3I> FullCellsAt(HashSet<Vector3I> cells, ModelCellSpan span)
     {
-        if (!Opaque) return [];
-        var offset = Door is { } door ? DoorMotion.Offset(open, door) : default;
-        var box = Shape.ModelBox(Origin, Orientation, offset);
-        const float e = BlockShape.CellEpsilon;
-        return [.. cells.Where(c =>
-            box.Min.X <= c.X + e && box.Min.Y <= c.Y + e && box.Min.Z <= c.Z + e &&
-            box.Max.X >= c.X + 1 - e && box.Max.Y >= c.Y + 1 - e && box.Max.Z >= c.Z + 1 - e)];
+        var full = new HashSet<Vector3I>();
+        if (!Opaque) return full;
+        foreach (var c in cells)
+            if (span.Fills(c.ToInt3())) full.Add(c);
+        return full;
     }
 }

@@ -68,6 +68,14 @@ public class DebugConsoleSettingsTests
     DebugConsoleResult Run(string line) => console.Execute(line, host);
 
     [Fact]
+    public void Stress_needs_a_world_that_can_build_it()
+    {
+        // This host does not build stress scenes, so the interface's own answer is given.
+        var result = Run("sv_cheats 1; stress objects 5");
+        Assert.Contains("running world", result.Lines[^1]);
+    }
+
+    [Fact]
     public void A_setting_name_shows_it_and_a_value_sets_it()
     {
         var shown = Run("sv_ricochet");
@@ -90,6 +98,34 @@ public class DebugConsoleSettingsTests
     }
 
     [Fact]
+    public void A_setting_read_when_the_world_loads_says_so_when_changed()
+    {
+        Assert.Contains("on load", Run("sv_inventory_slots").Lines[0]);
+
+        var set = Run("sv_inventory_slots 36");
+        Assert.False(set.IsError);
+        Assert.Equal("sv_inventory_slots = 36 (takes effect when the world is loaded again)", set.Lines[0]);
+        Assert.Equal(Inventory.DefaultSlotCount, host.Inventory.Slots.Count);   // the open inventory keeps its size
+
+        Assert.Equal("sv_ricochet = 1", Run("sv_ricochet 1").Lines[0]);
+    }
+
+    [Fact]
+    public void Resetting_rules_names_the_settings_read_when_the_world_loads()
+    {
+        Run("sv_inventory_slots 32; sv_ricochet 1");
+        var reset = Run("reset rules");
+        Assert.Equal(["World rules (sv_) reset to the original game's.",
+            "sv_inventory_slots = 30 (default) (takes effect when the world is loaded again)"], reset.Lines);
+
+        Assert.Single(Run("reset rules").Lines);   // nothing read on load changed this time
+
+        Run("sv_inventory_slots 40");
+        Assert.Contains(Run("preset original").Lines, l => l.StartsWith("sv_inventory_slots = 30") && l.Contains("loaded again"));
+        Assert.Contains(Run("sv_inventory_slots 40; reset all").Lines, l => l.StartsWith("sv_inventory_slots = 30"));
+    }
+
+    [Fact]
     public void Help_on_a_setting_describes_it()
     {
         var help = Run("help cl_fov");
@@ -105,7 +141,7 @@ public class DebugConsoleSettingsTests
         Assert.Contains(found.Lines, l => l.Contains("sv_ricochet_bounces"));
 
         var listed = Run("cvarlist sv_ship");
-        Assert.Equal(5, listed.Lines.Count);   // the header and four ship settings
+        Assert.Equal(7, listed.Lines.Count);   // the header and six ship settings
 
         Assert.Contains("original preset", Run("differences").Lines[0]);
         Run("sv_ship_max_speed 30");
@@ -256,7 +292,7 @@ public class DebugConsoleSettingsTests
         Assert.Equal("sv_ricochet", console.Autocomplete("sv_ric", host.Cvars));
         Assert.Equal("sv_ricochet_bounces ", console.Autocomplete("sv_ricochet_", host.Cvars));
         Assert.Equal("cl_fov ", console.Autocomplete("cl_fo", host.Cvars));
-        Assert.Equal("sv_ship_", console.Autocomplete("sv_sh", host.Cvars));
+        Assert.Equal("sv_ship_", console.Autocomplete("sv_shi", host.Cvars));
         Assert.Equal("noclip ", console.Autocomplete("noc", host.Cvars));
     }
 }

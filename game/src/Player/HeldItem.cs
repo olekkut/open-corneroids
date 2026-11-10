@@ -8,7 +8,8 @@ namespace OpenCorneroids.Game.Player;
 /// The selected tool or weapon drawn at the lower right of the view, as the original shows it. The model is the
 /// item's own icon pushed out into a slab of little cubes, <c>modelDepth</c> pixels thick (the itemset field that,
 /// going by its name and values, is meant for exactly this), so any itemset's items get a model with no extra art.
-/// Firing kicks it back for a moment.
+/// Firing kicks it back for a moment. A torch in hand lights the area around the player with its own light, as in the
+/// original (<c>sv_torch_held_light</c>).
 /// </summary>
 public partial class HeldItem : Node3D
 {
@@ -19,6 +20,7 @@ public partial class HeldItem : Node3D
     PlayMode _mode = null!;
     ItemIcons _icons = null!;
     MeshInstance3D _model = null!;
+    OmniLight3D _torchLight = null!;
     readonly Dictionary<int, ArrayMesh?> _meshes = new();
     int _shownItem = -1;
     float _kick;
@@ -30,6 +32,9 @@ public partial class HeldItem : Node3D
         // Icons have their barrel or bit on the left; turned this way, that end points into the screen.
         _model.RotationDegrees = new Vector3(4, -78, 0);
         AddChild(_model);
+        // At the eye, as the original puts it on the astronaut; not in the light group, as _Process decides.
+        _torchLight = new OmniLight3D { Name = "TorchLight", Visible = false };
+        AddChild(_torchLight);
         SetMode(mode);
     }
 
@@ -62,8 +67,22 @@ public partial class HeldItem : Node3D
             _shownItem = id;
             _model.Mesh = item is null ? null : MeshOf(item);
         }
+        ShowTorchLight(item);
         _kick = Math.Max(0, _kick - (float)delta * KickRecovery);
         _model.Position = Rest + new Vector3(0, 0.2f, 1f) * (_kick * KickScale);
+    }
+
+    /// <summary>
+    /// A held torch shines with its item light (colour and radius from the itemset) while <c>sv_torch_held_light</c> and
+    /// lighting are on. Only a torch: a light-giving weapon or drill in hand stays dark, as in the original.
+    /// </summary>
+    void ShowTorchLight(ItemDef? item)
+    {
+        var light = item?.Get<TorchComponent>() is not null ? item.Get<LightComponent>() : null;
+        bool on = light is not null && Settings.Visuals.LightingOn &&
+                  Settings.GameSettings.Cvars.Bool(Simulation.Settings.Cvars.TorchHeldLight);
+        if (on) World.PointLights.Set(_torchLight, light!.Light.Color, light.Light.Radius);
+        _torchLight.Visible = on;
     }
 
     ArrayMesh? MeshOf(ItemDef item)

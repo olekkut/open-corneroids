@@ -57,9 +57,15 @@ public abstract class PlayMode
     /// <summary>Where shots go; set by the world. Null (no weapons) until then.</summary>
     public Projectiles? Shots { get; set; }
 
+    /// <summary>Where thrown torches burn; set by the world. Null (no throwing) until then.</summary>
+    public ThrownTorches? Torchlight { get; set; }
+
     /// <summary>The player's eye, view direction and velocity this frame; the camera sets them before
     /// <see cref="Update"/>, so a mode can fire from where the player looks.</summary>
     public (Vector3 Eye, Vector3 Forward, Vector3 Velocity) View { get; set; }
+
+    /// <summary>The view's up axis, set with <see cref="View"/>; a hand weapon's shot starts below the eye along it.</summary>
+    public Vector3 ViewUp { get; set; } = Vector3.Up;
 
     /// <summary>How far along the view the aimed block starts (the ray's hit), set with <see cref="View"/>; infinite
     /// when nothing is aimed at.</summary>

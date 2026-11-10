@@ -27,15 +27,36 @@ public sealed class BlockPalette
     readonly Dictionary<int, ushort> _byBlockId = new();
 
     readonly record struct Entry(ItemDef Item, Rect2 Walls, Rect2 Top, Rect2 Bottom, bool Cutout, CellRect IconCell, BlockShape? Shape,
-        Rect2 InactiveWalls, Rect2 InactiveTop, Rect2 InactiveBottom, bool HasInactive);
+        Rect2 InactiveWalls, Rect2 InactiveTop, Rect2 InactiveBottom, bool HasInactive, bool SeeThrough);
 
     public int Count => _entries.Count - 1;
+
+    ItemsetDef? _itemset;
+
+    /// <summary>
+    /// The itemset's stack limit for any item, not only blocks (a chest holds anything); items it does not define get
+    /// <see cref="Simulation.Items.Inventory.UnknownItemMaxStack"/>, as in the player's inventory.
+    /// </summary>
+    public int MaxStackOf(int itemId) =>
+        _itemset is not null && _itemset.ItemsById.TryGetValue(itemId, out var item) ? item.MaxStackSize
+            : Simulation.Items.Inventory.UnknownItemMaxStack;
 
     public ItemDef Item(ushort index) => _entries[index].Item;
 
     /// <summary>Whether any of the block's active face regions has see-through pixels (windows); such faces go
     /// through the cutout material.</summary>
     public bool IsCutout(ushort index) => _entries[index].Cutout;
+
+    /// <summary>
+    /// A block that never hides its neighbours' faces and always draws all of its own, whatever its texture: camera
+    /// blocks, as in the original, so the view from a camera at its block's centre is not walled in by the hull around
+    /// it. (The original treats guns, doors and lights the same way; ours keeps those opaque for now.)
+    /// </summary>
+    public bool IsSeeThrough(ushort index) => index != Air && _entries[index].SeeThrough;
+
+    /// <summary>What the chunk mesher needs to know about a block to decide which faces it hides.</summary>
+    public Simulation.Grids.FaceBlock FaceBlockOf(ushort index) =>
+        index == Air ? default : new(index, _entries[index].Cutout, _entries[index].SeeThrough);
 
     public CellRect IconCell(ushort index) => _entries[index].IconCell;
 
@@ -78,6 +99,12 @@ public sealed class BlockPalette
     /// consumes, 0 only conducts).</summary>
     public bool IsPowered(ushort index) => index != Air && _entries[index].Item.Block!.Power is not null;
 
+    /// <summary>The block shoots: it has a gun component (a cannon, single-cell or multi-block).</summary>
+    public bool IsGun(ushort index) => index != Air && _entries[index].Item.Get<GunComponent>() is not null;
+
+    /// <summary>The block's itemset mass, what a ship's mass is summed from.</summary>
+    public float Mass(ushort index) => _entries[index].Item.Block!.Mass;
+
     /// <summary>The runtime index of an item's block, or null when the item is not a placeable block here
     /// (tools, ingots, blocks whose texture cells are missing).</summary>
     public ushort? IndexOf(int itemId) => _byItemId.TryGetValue(itemId, out var index) ? index : null;
@@ -101,7 +128,7 @@ public sealed class BlockPalette
 
     public static BlockPalette Build(ItemsetDef itemset, BlockTextures textures)
     {
-        var palette = new BlockPalette();
+        var palette = new BlockPalette { _itemset = itemset };
         var grid = textures.Grid;
         foreach (var item in itemset.Blocks)
         {
@@ -120,7 +147,8 @@ public sealed class BlockPalette
             palette._entries.Add(new Entry(item,
                 textures.Uv(faces.Walls), textures.Uv(faces.Top), textures.Uv(faces.Bottom), cutout, faces.Walls,
                 shape.IsSingleCell ? null : shape,
-                textures.Uv(inactive.Walls), textures.Uv(inactive.Top), textures.Uv(inactive.Bottom), !ReferenceEquals(inactive, faces)));
+                textures.Uv(inactive.Walls), textures.Uv(inactive.Top), textures.Uv(inactive.Bottom), !ReferenceEquals(inactive, faces),
+                SeeThrough: Simulation.Grids.FaceVisibility.IsSeeThroughKind(item.Kind)));
         }
         return palette;
     }

@@ -2,8 +2,10 @@ using Godot;
 using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Game.Ui;
 using OpenCorneroids.Game.World;
+using OpenCorneroids.Simulation.Items;
 using OpenCorneroids.Simulation.Shapes;
 using OpenCorneroids.Simulation.Ships;
+using OpenCorneroids.Simulation.Timing;
 using Num = System.Numerics;
 using Orientation = OpenCorneroids.Simulation.Shapes.Orientation;
 
@@ -141,6 +143,8 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         if (_seat is not null) StandUp();
         StopActions();
         _bindTool = null;
+        PutAwayBeaconTool();
+        CloseBeaconDialog();
         _windows?.Close();
         _mode.OnDeath(_deathAt);
         Motor.Velocity = Motor.Drift = Vector3.Zero;
@@ -179,6 +183,18 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
     /// <summary>Radians per pixel at sensitivity 1, as in the original (its default 0.5 makes 0.005).</summary>
     const float BaseMouseSensitivity = 0.01f;
     const float Reach = 8f;
+
+    /// <summary><c>sv_use_reach</c>: E and F reach 1.7 m from the eye to the block, as in the original.</summary>
+    static float UseReach => Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.UseReach);
+
+    /// <summary>How far the aim ray looks: far enough to place blocks and for the use reach.</summary>
+    static float AimReach => Math.Max(Reach, UseReach);
+
+    /// <summary>
+    /// Whether E and F reach the aimed block (<see cref="UseReach"/>). A pinned aim, which the <c>--launch</c> and
+    /// screenshot hooks set, always does.
+    /// </summary>
+    bool CanUseTarget => _hasTarget && (PinnedAim is not null || _aimDistance <= UseReach);
 
     /// <summary>Exposed so a save system can persist velocity and noclip.</summary>
     public PlayerMotor Motor { get; } = new();
@@ -258,6 +274,14 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
     Vector2 _mouseDelta;
     Vector3 _mouseRate;
     float _seatYaw, _seatPitch;
+    /// <summary>While a camera block is the view: the seat's own look (global), which waits unturned, as in the
+    /// original; null otherwise.</summary>
+    Basis? _seatLookBehindCamera;
+
+    /// <summary>What the HUD's speed cone is turned by: the seat's look even while a camera block is the view, as in the
+    /// original, or the view itself with <c>cl_speed_cone_follows_view</c> 1 (Ours).</summary>
+    Basis ConeBasis => _seatLookBehindCamera is { } seatLook && !Settings.GameSettings.Cvars.Bool(Simulation.Settings.Cvars.SpeedConeFollowsView)
+        ? seatLook : GlobalTransform.Basis;
     static readonly HashSet<Int3> EmptyTargets = [];
     /// <summary><c>--hold</c>: controls held one after another as if pressed, with how long the first has run.</summary>
     readonly List<(HashSet<string> Actions, float Seconds)> _holds = [];
@@ -411,7 +435,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         Input.MouseMode = Input.MouseModeEnum.Captured;
     }
 
-    bool WindowOpen => _windows?.IsOpen == true || _consoleOverlay?.IsOpen == true || MenusOpen?.Invoke() == true;
+    bool WindowOpen => _windows?.IsOpen == true || _consoleOverlay?.IsOpen == true || MenusOpen?.Invoke() == true || _beaconDialog is not null;
 
     /// <summary>Whether a menu (the Game menu, Options, the welcome window) is up; set by the world.</summary>
     public Func<bool>? MenusOpen { get; set; }
@@ -427,6 +451,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
     {
         StopActions();
         _bindTool = null;
+        PutAwayBeaconTool();
         _mode?.Detach();
         _mode = mode;
         _mode.Push = kick => Motor.Velocity += kick;
@@ -523,6 +548,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
                 if (_primaryHeld)
                 {
                     if (_bindTool is not null) ApplyBindToolClick();
+                    else if (_beaconTool) ApplyBeaconToolClick();
                     else _mode.PrimaryReleased(GlobalPosition, _hasTarget ? _aim : null);
                 }
                 _primaryHeld = false;
@@ -531,6 +557,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
                 if (_secondaryHeld)
                 {
                     if (_bindTool is not null) _bindTool = null;
+                    else if (_beaconTool) PutAwayBeaconTool();
                     else _mode.SecondaryReleased();
                 }
                 _secondaryHeld = false;
@@ -540,21 +567,23 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
                 {
                     case MouseButton.Left:
                         _primaryHeld = true;
-                        if (_bindTool is null) _mode.PrimaryPressed(_hasTarget ? _target : null);
+                        if (_bindTool is null && !_beaconTool) _mode.PrimaryPressed(_hasTarget ? _target : null);
                         break;
                     case MouseButton.Right:
                         _secondaryHeld = true;
-                        if (_bindTool is null) _mode.SecondaryPressed(GlobalPosition, _hasTarget ? _aim : null);
+                        if (_bindTool is null && !_beaconTool) _mode.SecondaryPressed(GlobalPosition, _hasTarget ? _aim : null);
                         break;
                     case MouseButton.Middle:
-                        if (_bindTool is null) Turn(NextOrientation);
+                        if (_bindTool is null && !_beaconTool) Turn(NextOrientation);
                         break;
                     case MouseButton.WheelUp:
                         _bindTool = null;
+                        PutAwayBeaconTool();
                         _mode.Cycle(-1);
                         break;
                     case MouseButton.WheelDown:
                         _bindTool = null;
+                        PutAwayBeaconTool();
                         _mode.Cycle(1);
                         break;
                 }
@@ -584,11 +613,14 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
                     EditBlock();
                 else if (key.IsAction(GameInput.Flashlight))
                     ToggleFlashlight();
+                else if (key.IsAction(GameInput.BeaconTool))
+                    EquipBeaconTool();
                 else if (key.IsAction(GameInput.Spin))
                     Turn(NextOrientation);
                 else if (key.PhysicalKeycode is >= Key.Key1 and <= Key.Key8)
                 {
                     _bindTool = null;
+                    PutAwayBeaconTool();
                     _mode.Select((int)(key.PhysicalKeycode - Key.Key1));
                 }
                 break;
@@ -671,6 +703,11 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
                 {
                     _mouseDelta += motion.Relative;
                 }
+                else if (_seat is { } seat && View == PilotView.Seat && BoundCameraPose(seat) is { } cam)
+                {
+                    // A camera block in use turns itself, not the seat's look, which waits where it was, as in the original.
+                    seat.Ship.Consoles.CameraLooks.Rotate(cam.Cell, motion.Relative.X, motion.Relative.Y, MouseSensitivity, CameraPitchLimit);
+                }
                 else
                 {
                     _seatYaw -= motion.Relative.X * MouseSensitivity;
@@ -715,9 +752,10 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
     /// <summary>While a window is open only the keys that close it count; the windows take their own clicks.</summary>
     void WindowInput(InputEvent @event)
     {
-        if (_windows?.IsListeningForKey == true) return;
+        if (_windows?.IsListeningForKey == true || _beaconDialog is not null) return;
         if (@event is InputEventKey { Pressed: true, Echo: false } key &&
-            (key.PhysicalKeycode == Key.Escape || key.IsAction(GameInput.Inventory) || key.IsAction(GameInput.Edit) || key.IsAction(GameInput.Help)))
+            (key.PhysicalKeycode == Key.Escape || key.IsAction(GameInput.Inventory) || key.IsAction(GameInput.Edit) || key.IsAction(GameInput.Help)
+             || (key.IsAction(GameInput.Interact) && _windows?.IsContainerOpen == true)))
         {
             _windows!.Close();
             GetViewport().SetInputAsHandled();
@@ -761,6 +799,36 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         }
         StopActions();
         _windows.OpenCrafting(station, title);
+    }
+
+    /// <summary>Opens the chest at <paramref name="cell"/> of <paramref name="grid"/>, as E on it does.</summary>
+    public void OpenContainer(BlockGrid grid, Int3 cell, ContainerComponent container)
+    {
+        // The mode, not only the panels: those stay after a switch from survival to creative.
+        if (_windows is null || !_windows.HasSurvivalInventory || _mode is not SurvivalMode)
+        {
+            _hud.Flash("Containers are off in creative mode", warning: true);
+            return;
+        }
+        var inventory = grid.OpenContainer(cell, container);
+        OpenContainerWindow(inventory, ContainerRules.Size(container).Width,
+            () => _grids.Contains(grid) && grid.Containers.TryGet(cell) == inventory);
+    }
+
+    /// <summary>
+    /// Shows a chest's window. <paramref name="stillThere"/> closes it once the chest is gone; <c>--open=container</c>
+    /// also uses this for a demo chest that belongs to no block.
+    /// </summary>
+    public void OpenContainerWindow(Inventory container, int width, Func<bool>? stillThere = null)
+    {
+        // The mode, not only the panels: those stay after a switch from survival to creative.
+        if (_windows is null || !_windows.HasSurvivalInventory || _mode is not SurvivalMode)
+        {
+            _hud.Flash("Containers are off in creative mode", warning: true);
+            return;
+        }
+        StopActions();
+        _windows.OpenContainer(container, width, stillThere);
     }
 
     /// <summary>Equips <paramref name="consoleCell"/>'s trigger binding tool (deselecting the hotbar), as pressing F on it does.</summary>
@@ -821,12 +889,13 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
     }
 
     /// <summary>
-    /// E: a door opens or closes (in either mode); a console of the static world launches its structure as a ship, a
-    /// ship's console is for piloting; a crafting station, single-cell or multi-block, opens crafting.
+    /// E, within <c>sv_use_reach</c>: a door opens or closes (in either mode); a console of the static world launches its
+    /// structure as a ship, a ship's console is for piloting; a chest opens; a crafting station, single-cell or
+    /// multi-block, opens crafting.
     /// </summary>
     void Interact()
     {
-        if (!_hasTarget) return;
+        if (!CanUseTarget) return;
         if (_target.Object is { Door: not null } door)
         {
             _target.Grid.ToggleDoor(door);
@@ -836,6 +905,11 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         if (item.Get<ConsoleComponent>() is not null)
         {
             UseConsole(_target);
+            return;
+        }
+        if (item.Get<ContainerComponent>() is { } container)
+        {
+            OpenContainer(_target.Grid, _target.Object?.Origin ?? _target.Cell.ToInt3(), container);
             return;
         }
         if (item.Get<CraftingStationComponent>() is not { } station)
@@ -899,7 +973,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         _riding = null;
         UpdateSeatedControlsHint();
         FollowShip();
-        _hud.SetPiloting(true, ship.LinearVelocity, GlobalTransform.Basis, FlightAssist && !seat.Component.GunsOnly, Dampeners);
+        _hud.SetPiloting(true, ship.LinearVelocity, ConeBasis, FlightAssist && !seat.Component.GunsOnly, Dampeners);
         return true;
     }
 
@@ -945,8 +1019,10 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         _hud.SetPiloting(false);
         _hud.SelectionVisible = true;
         GlobalPosition = eye;
-        // Facing the way the seat did, roll and all (unless FixedCamera levels to the ship's deck).
-        GlobalBasis = new Basis(GlobalBasis.GetRotationQuaternion());
+        // Facing the way the seat did, roll and all (unless FixedCamera levels to the ship's deck); from a camera block's
+        // view, the seat's own look, which waited while the camera turned, as in the original.
+        GlobalBasis = new Basis((_seatLookBehindCamera ?? GlobalBasis).GetRotationQuaternion());
+        _seatLookBehindCamera = null;
         Motor.Velocity = Motor.Drift = Vector3.Zero;
         // A button held to fire the guns must not place or use anything when it comes up on foot.
         _primaryHeld = _secondaryHeld = false;
@@ -979,8 +1055,8 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
 
     /// <summary>
     /// Boards a ship whose blocks come within <see cref="BoardReach"/>, leaves the one aboard once its blocks are further
-    /// than <see cref="LeaveReach"/>. Boarding takes the ship's motion out of the player's velocity,
-    /// leaving gives it back, so nothing jumps.
+    /// than <see cref="LeaveReach"/>. Boarding pushes the player out of the ship first (<see cref="PlayerMotor.Board"/>)
+    /// and takes the ship's motion out of the player's velocity, leaving gives it back, so nothing jumps.
     /// </summary>
     void UpdateBoarding()
     {
@@ -997,7 +1073,9 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
                 var (center, radius) = ships[i].WorldExtent;
                 if (GlobalPosition.DistanceSquaredTo(center) > (radius + BoardReach + 1) * (radius + BoardReach + 1)) continue;
                 if (!PlayerMotor.Touches(ships[i], GlobalPosition, BoardReach)) continue;
-                Motor.Velocity -= ships[i].PointVelocity(GlobalPosition);
+                // Out of the ship before boarding it: one that closed faster than the gap between the reach and the
+                // body in one frame would otherwise swallow the player.
+                GlobalPosition = Motor.Board(GlobalPosition, ships[i], _grids);
                 _riding = ships[i];
                 if (FixedCamera) LevelAstronautView();
                 break;
@@ -1020,19 +1098,20 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
 
     /// <summary>
     /// F: edit the aimed block, as in the original. On a console, equips its colour-group binding tool (deselecting the
-    /// hotbar), or if already holding that console's binding tool, opens the "Control block" key-binding window. On any
-    /// other powered block, opens the "Power network" status popup.
+    /// hotbar), or if already holding that console's binding or camera tool, opens the "Control block" key-binding
+    /// window. On any other powered block, opens the "Power network" status popup.
     /// </summary>
     void EditBlock()
     {
-        if (_hasTarget)
+        if (CanUseTarget)
         {
             var block = _target.Grid.BlockOf(_target);
             if (block != BlockPalette.Air && _grids.Palette.Item(block).Get<ConsoleComponent>() is { } consoleComp)
             {
                 var consoleCell = _target.Object is { } o ? o.Origin.ToGodot() : _target.Cell;
                 _target.Grid.Consoles.GetOrCreate(consoleCell.ToInt3(), consoleComp.Buttons, consoleComp.GunsOnly);
-                if (_bindTool is { Kind: BindToolKind.Triggers } bt && bt.Grid == _target.Grid && bt.ConsoleCell == consoleCell)
+                // Either of this console's tools in hand (triggers or camera): F opens its window, as in the original.
+                if (_bindTool is { } bt && bt.Grid == _target.Grid && bt.ConsoleCell == consoleCell)
                 {
                     OpenConsoleWindow(_target.Grid, consoleCell, consoleComp);
                     return;
@@ -1042,13 +1121,13 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
             }
         }
 
-        if (_bindTool is { Kind: BindToolKind.Triggers } activeBt)
+        if (_bindTool is { } activeBt)
         {
             OpenConsoleWindow(activeBt.Grid, activeBt.ConsoleCell, activeBt.Component);
             return;
         }
 
-        if (!_hasTarget) return;
+        if (!CanUseTarget) return;
         var aimedBlock = _target.Grid.BlockOf(_target);
         if (aimedBlock == BlockPalette.Air) return;
         var item = _grids.Palette.Item(aimedBlock);
@@ -1068,6 +1147,8 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         {
             if (_hasTarget && _target.Grid == bt.Grid && _aimDistance > BindReach)
                 _hud.Flash("Move closer (within 3 m) to bind blocks", warning: true);
+            // Only blocks of the console's own ship or structure, triggers and cameras alike. For cameras that is Ours:
+            // the original binds any camera block in reach, even on another object.
             else if (_hasTarget && _target.Grid != bt.Grid)
                 _hud.Flash("Blocks can only be bound on the same ship or structure", warning: true);
             return;
@@ -1269,9 +1350,14 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         return new PilotRequest((frame * (move * speed)).ToNumerics(), (frame * turn).ToNumerics(), Dampeners, UseFlightAssist: true);
     }
 
-    /// <summary>Resolves a powered camera block bound to <paramref name="seat"/>'s console, if any, returning its
-    /// ship-local frame and eye position.</summary>
-    (Basis Frame, Vector3 Eye)? BoundCameraPose(Seat seat)
+    /// <summary>
+    /// Resolves a powered camera block bound to <paramref name="seat"/>'s console, if any, returning its ship-local frame,
+    /// eye position and cell (its origin, which keys its look). The eye is the block's centre, as in the original: the
+    /// camera is see-through, so the hull blocks around it do not wall the view in. <c>cl_camera_eye_forward</c> (Ours)
+    /// moves it that far past the front face instead (<see cref="CameraLook.EyeOutsideDistance"/>), when the cell it
+    /// lands in is free.
+    /// </summary>
+    (Basis Frame, Vector3 Eye, Int3 Cell)? BoundCameraPose(Seat seat)
     {
         if (seat.Ship.Consoles.TryGet(seat.Cell.ToInt3())?.Camera is not { } camInt3) return null;
         var camCell = camInt3.ToGodot();
@@ -1283,11 +1369,24 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         var turn = camObj?.Orientation ?? seat.Ship.TurnOf(camCell);
         var basis = TurnBasis(turn);
         var center = camObj?.ModelBox.GetCenter() ?? (Vector3)camCell + new Vector3(0.5f, 0.5f, 0.5f);
-        var forward = -basis.Z;
-        var outside = center + forward * 0.55f;
-        var eye = !seat.Ship.IsSolid((Vector3I)outside.Floor()) ? outside : center;
-        return (basis, eye);
+        // Centre to front face along the camera's front (basis.Z is its back): half a cell, or half the model's depth.
+        float halfDepth = camObj is null ? 0.5f : Mathf.Abs(basis.Z.Dot(camObj.ModelBox.Size)) * 0.5f;
+        var eye = center;
+        if (CameraLook.EyeOutsideDistance(Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.CameraEyeForward), halfDepth) is { } distance)
+        {
+            var outside = center - basis.Z * distance;
+            if (!seat.Ship.IsSolid((Vector3I)outside.Floor())) eye = outside;
+        }
+        return (basis, eye, camInt3);
     }
+
+    /// <summary><c>cl_camera_pitch_limit</c> in radians.</summary>
+    static float CameraPitchLimit =>
+        CameraLook.PitchLimitRadians(Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.CameraPitchLimit));
+
+    /// <summary>A camera block's look as a turn of its rest frame: yaw about its up, then pitch about its right, no
+    /// roll, as in the original.</summary>
+    static Basis CameraLookBasis(CameraLook look) => Basis.FromEuler(new Vector3(look.Pitch, look.Yaw, 0));
 
     /// <summary>Puts the camera where the view mode has it: at the bound camera block (if powered) or the seat, or
     /// chasing the ship from behind; <see cref="PilotView.Fixed"/> leaves it.</summary>
@@ -1298,11 +1397,17 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         var frame = ConsoleFrame(seat);
         bool freeLook = !FlightAssist || seat.Component.GunsOnly;
         var lookOffset = freeLook ? Basis.FromEuler(new Vector3(_seatPitch, _seatYaw, 0)) : Basis.Identity;
+        _seatLookBehindCamera = null;
         switch (View)
         {
             case PilotView.Seat:
                 if (BoundCameraPose(seat) is { } cam)
-                    GlobalTransform = ship.GlobalTransform * new Transform3D(cam.Frame * lookOffset, cam.Eye);
+                {
+                    // The camera's own look (the flight assistant, ours, steers with the mouse and keeps it at rest).
+                    var look = freeLook ? CameraLookBasis(ship.Consoles.CameraLooks.Get(cam.Cell).Clamped(CameraPitchLimit)) : Basis.Identity;
+                    GlobalTransform = ship.GlobalTransform * new Transform3D(cam.Frame * look, cam.Eye);
+                    _seatLookBehindCamera = ship.GlobalTransform.Basis.Orthonormalized() * (frame * lookOffset);
+                }
                 else
                     GlobalTransform = ship.GlobalTransform * new Transform3D(frame * lookOffset, SeatEye(seat, frame));
                 break;
@@ -1355,7 +1460,16 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         if (_holdTime < _holds[0].Seconds) return;
         GD.Print(FormattableString.Invariant($"--hold: released {string.Join("+", _holds[0].Actions)} after {_holds[0].Seconds:0.##} s"));
         _holdTime -= _holds[0].Seconds;
+        bool primaryUp = _holds[0].Actions.Contains(PrimaryHold) && (_holds.Count < 2 || !_holds[1].Actions.Contains(PrimaryHold));
         _holds.RemoveAt(0);
+        // Letting go of a held primary button acts as a real release does: a torch is thrown, a block placed. Only on
+        // foot, as with real input: in a seat every click goes to the ship.
+        if (primaryUp && !_dead && !WindowOpen && _seat is null)
+        {
+            if (_bindTool is not null) ApplyBindToolClick();
+            else if (_beaconTool) ApplyBeaconToolClick();
+            else _mode.PrimaryReleased(GlobalPosition, _hasTarget ? _aim : null);
+        }
     }
 
     /// <summary>A window opening mid-drill must not leave the drill running behind it.</summary>
@@ -1383,6 +1497,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
     {
         AdvanceHolds((float)Math.Min(delta, ShipPhysics.MaxFrame));
         ValidateBindTool();
+        UpdateBeaconTool();
         _touchCooldown = Math.Max(0, _touchCooldown - delta);
         UndoBob();
         ShowFlashlight();
@@ -1394,6 +1509,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
             if (!_grids.Contains(seat.Ship))
             {
                 _seat = null;
+                _seatLookBehindCamera = null;
                 _hud.SetPiloting(false);
                 _hud.SelectionVisible = true;
             }
@@ -1453,20 +1569,21 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         }
         else
         {
-            _hasTarget = _grids.Raycast(GlobalPosition, -GlobalTransform.Basis.Z, Reach, out _aim, out _aimDistance);
+            _hasTarget = _grids.Raycast(GlobalPosition, -GlobalTransform.Basis.Z, AimReach, out _aim, out _aimDistance);
         }
         if (_hasTarget) _target = _aim.Grid.TargetAt(_aim.Hit);
 
         bool captured = Input.MouseMode == Input.MouseModeEnum.Captured;
         if (!captured) _primaryHeld = false;
         _mode.View = (GlobalPosition, -GlobalTransform.Basis.Z, WorldVelocity);
+        _mode.ViewUp = GlobalTransform.Basis.Y;
         _mode.AimDistance = _hasTarget ? _aimDistance : float.PositiveInfinity;
 
         ShowHighlight();
         ShowGhost();
         ShowBindOverlay();
 
-        _mode.Update(delta, _hasTarget ? _target : null, drilling: PrimaryDown && !windowOpen && _bindTool is null);
+        _mode.Update(delta, _hasTarget ? _target : null, drilling: PrimaryDown && !windowOpen && _bindTool is null && !_beaconTool);
 
         _hud.SetPiloting(false);
         _hud.BoardedVisible = _riding is { } currentShip && IsInstanceValid(currentShip);
@@ -1477,12 +1594,17 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         _hud.SetCenterPrompt(BuildCenterPrompt());
 
         CountFrame(delta);
+        if (!_statusClock.Due(delta))
+        {
+            ApplyBob(Motor.Velocity.Length());
+            return;
+        }
 
         var p = GlobalPosition;
-        bool turnable = _bindTool is null && (_grids.Palette.IsObject(_mode.SelectedBlock) || _grids.Palette.IsTurnable(_mode.SelectedBlock));
+        bool turnable = _bindTool is null && !_beaconTool && (_grids.Palette.IsObject(_mode.SelectedBlock) || _grids.Palette.IsTurnable(_mode.SelectedBlock));
         string bindStatus = _bindTool is { } bt
             ? (bt.Kind == BindToolKind.Camera ? "   [Camera binding tool]" : "   [Console binding tool]")
-            : "";
+            : _beaconTool ? "   [Beacon tool]" : "";
         _hud.SetStatus($"FPS {_fps}   position {p.X:0},{p.Y:0},{p.Z:0}" + (_riding is { } aboard ? $"   aboard {aboard.Name}" : "") +
                        _mode.Status + bindStatus +
                        (turnable ? $"   orientation {_mode.Orientation.Describe()}" : "") +
@@ -1498,8 +1620,9 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
             return "Choose a camera block you wish to bind to the console!";
         if (_bindTool is { Kind: BindToolKind.Triggers })
             return "Choose blocks you wish to control!\n\nPress F again to assign keys!";
+        if (_beaconTool) return BeaconPrompt();
         if (!Rules.Bool(Simulation.Settings.Cvars.ShowHints)) return "";
-        if (!_hasTarget || (PinnedAim is null && _aimDistance > 4.5f)) return "";
+        if (!CanUseTarget) return "";
 
         var block = _target.Grid.BlockOf(_target);
         if (block == BlockPalette.Air) return "";
@@ -1508,7 +1631,8 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
             return "F to edit\nE to use";
 
         bool canEdit = _grids.Palette.IsPowered(block) && _target.Grid.Systems.NetworkOf(_target) is not null;
-        bool canUse = _target.Object?.Door is not null || item.Get<CraftingStationComponent>() is not null;
+        bool canUse = _target.Object?.Door is not null || item.Get<CraftingStationComponent>() is not null
+                      || item.Get<ContainerComponent>() is not null;
         return (canEdit, canUse) switch
         {
             (true, true) => "F to edit\nE to use",
@@ -1555,9 +1679,10 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         _hud.BoardedVisible = false;
         _hud.SetCrosshair(Hud.CrosshairKind.Default);
         _hud.SetCenterPrompt("");
-        _hud.SetPiloting(true, ship.LinearVelocity, GlobalTransform.Basis, FlightAssist && !seat.Component.GunsOnly, Dampeners);
+        _hud.SetPiloting(true, ship.LinearVelocity, ConeBasis, FlightAssist && !seat.Component.GunsOnly, Dampeners);
 
         CountFrame(delta);
+        if (!_statusClock.Due(delta)) return;
 
         var (supply, demand, _) = ship.Systems.PowerSummary;
         float balance = supply - demand;
@@ -1593,6 +1718,10 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
         return whole > 0 ? FormattableString.Invariant($"+{whole}") : FormattableString.Invariant($"{whole}");
     }
 
+    /// <summary>The status line is written ten times a second, not every frame: building and laying out its text each
+    /// frame costs more than it shows. Ours.</summary>
+    readonly RefreshClock _statusClock = new(0.1);
+
     void CountFrame(double delta)
     {
         if (_fpsFrames++ > 0) _fpsWindow += delta;
@@ -1613,7 +1742,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
     void ShowHighlight()
     {
         bool miningReady = _mode.SelectedBlock == BlockPalette.Air && (_mode.HeldItem?.Get<DrillComponent>() is not null || !_mode.HasInventory);
-        _highlight.Visible = !WindowOpen && _hasTarget && _bindTool is null && miningReady;
+        _highlight.Visible = !WindowOpen && _hasTarget && _bindTool is null && !_beaconTool && miningReady;
         if (!_highlight.Visible) return;
         Transform3D local;
         if (_target.Object is { } obj)
@@ -1673,8 +1802,9 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
                     AddBox(bt.Grid, target.ToGodot(), color, SelectorScale);
             }
         }
-        if (state.Camera is { } cam)
-            AddBox(bt.Grid, cam.ToGodot(), new Color(1f, 0.2f, 1f), 1.04f);
+        // The bound camera in Magenta, only while choosing a camera, as in the original.
+        if (bt.Kind == BindToolKind.Camera && state.Camera is { } cam)
+            AddBox(bt.Grid, cam.ToGodot(), new Color(1f, 0f, 1f), SelectorScale);
 
         // White highlight on aimed bindable block within 3.0 units on the same grid, as in the original.
         if (!WindowOpen && _hasTarget && _target.Grid == bt.Grid && _aimDistance <= BindReach)
@@ -1702,7 +1832,7 @@ public partial class FlyCamera : Camera3D, Projectiles.ITarget
 
     void ShowGhost()
     {
-        if (WindowOpen || _bindTool is not null)
+        if (WindowOpen || _bindTool is not null || _beaconTool)
         {
             _ghostFootprint.Visible = _ghostModel.Visible = _attachLine.Visible = false;
             if (_facing is not null) _facing.Visible = false;

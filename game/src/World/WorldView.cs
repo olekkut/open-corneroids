@@ -34,9 +34,13 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     /// <summary>The static world and the ships.</summary>
     public GridSet Grids { get; private set; } = null!;
     public FlyCamera Player { get; private set; } = null!;
-    /// <summary>The player's 36 slots. Exists in creative too (empty and unused) so callers never need a null check.</summary>
+    /// <summary>The player's survival inventory. Exists in creative too, so callers never need a null check; creative
+    /// leaves it alone, and it is saved and restored in either mode.</summary>
     public Inventory Inventory { get; private set; } = null!;
-    /// <summary>The survival suit; null in creative.</summary>
+    /// <summary>The beacons the player put with the beacon tool (B), in world space; drawn by the markers and saved.</summary>
+    public List<Simulation.Navigation.Beacon> Beacons { get; } = [];
+    /// <summary>The survival suit; null until the world has had a survival player (a creative world never switched to
+    /// survival). Kept, saved and restored while in creative.</summary>
     public Suit? Suit { get; private set; }
     public bool Creative => Info.Creative;
     /// <summary>Name, seed, rules and texture packs: what the save keeps besides the world itself.</summary>
@@ -47,8 +51,14 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     /// <summary>Solid cells (and objects) of the loaded save, world and ships, that became air because this palette
     /// lacks their block (or they lie outside this build's grid sizes).</summary>
     public int LostCells { get; private set; }
-    /// <summary>What restoring the saved inventory could not keep as it was, for the player; null when nothing.</summary>
-    public string? InventoryNote { get; private set; }
+    /// <summary>Saved items (inventory and suit) that found no room on this load and are gone once the world is saved.</summary>
+    public long LostItems { get; private set; }
+    /// <summary>
+    /// What this load could not restore exactly as saved, one sentence each, for the player: the inventory and suit,
+    /// turned blocks that face the default way now, console bindings that no longer fit their blocks.
+    /// </summary>
+    public IReadOnlyList<string> LoadNotes => _loadNotes;
+    readonly List<string> _loadNotes = [];
     /// <summary>
     /// While true, <see cref="Save"/> writes nothing: the player has not yet agreed that this load may lose content,
     /// so the file on disk, which still has it, must not be replaced by an F5, leaving or closing the window.
@@ -62,6 +72,7 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     Hud _hud = null!;
     GameWindows _windows = null!;
     Projectiles _shots = null!;
+    ThrownTorches _torches = null!;
     HeldItem _held = null!;
     string _packId = "";
     Vector3 _eye;
@@ -85,6 +96,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     /// <summary>Builds the world asynchronously, optionally reporting step-by-step progress.</summary>
     public async Task<bool> SetupAsync(LoadedItemset loaded, WorldInfo info, WorldSnapshot? saved = null, ProgressReporter? onProgress = null)
     {
+        // The F3 timers start again with this world (what loading costs is not a frame).
+        PerfMonitor.Timers.Restart();
         if (onProgress != null) await onProgress("Compiling block textures & materials...", 0.40);
         var itemset = loaded.Itemset!;
         var textures = BlockTextures.Create(loaded);
@@ -103,6 +116,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         foreach (var problem in Cvars.Import(saved?.Rules ?? new Dictionary<string, string>(), CvarFlags.World))
             GD.PushWarning($"World rules of '{info.Name}': {problem}");
         Cvars.CheatsUsed = saved?.CheatsUsed ?? false;
+        // The inventory size is read once, here; a world saved before the rule existed keeps its larger inventory.
+        int inventorySlots = InventorySize.Apply(Cvars, saved);
 
         if (onProgress != null) await onProgress("Initializing voxel environment...", 0.48, completed: "Textures & materials compiled");
 
@@ -113,6 +128,7 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         AddChild(world);
         Voxels = world;
         Grids = new GridSet(world, this);
+        Grids.ContentsSpilled += SpillContainer;
         Vector3 eye, target = default;
         if (saved is null)
         {
@@ -126,9 +142,10 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             if (onProgress != null) await onProgress("Importing voxel world...", 0.50);
             // Objects whose block is gone, or that no longer fit this world, are dropped and counted like lost cells.
             LostCells = world.Import(saved.Palette, saved.Cells, saved.Size) + world.ImportObjects(saved.Objects);
-            if (world.ImportTurned(saved.Turned) is > 0 and var unturned)
-                GD.PushWarning($"{unturned} turned blocks of the world could not be turned again and face the default way");
-            world.ImportConsoles(saved.Consoles);
+            int unturned = world.ImportTurned(saved.Turned);
+            int unbound = world.ImportConsoles(saved.Consoles);
+            int unchested = KeepChestLeftovers(world, world.ImportContainers(saved.Containers));
+            world.FlushMeshes();
 
             if (onProgress != null) await onProgress("Importing ships...", 0.60, completed: "World voxels rebuilt");
 
@@ -150,15 +167,25 @@ public partial class WorldView : Node3D, IDebugConsoleHost
                     ship.Name = savedShip.Name;
 
                 LostCells += ship.Import(savedShip.Palette, savedShip.Cells, savedShip.Size) + ship.ImportObjects(savedShip.Objects);
-                if (ship.ImportTurned(savedShip.Turned) is > 0 and var shipUnturned)
-                    GD.PushWarning($"{shipUnturned} turned blocks of a ship could not be turned again and face the default way");
-                ship.ImportConsoles(savedShip.Consoles);
+                unturned += ship.ImportTurned(savedShip.Turned);
+                unbound += ship.ImportConsoles(savedShip.Consoles);
+                unchested += KeepChestLeftovers(ship, ship.ImportContainers(savedShip.Containers));
+                ship.FlushMeshes();
                 // Everything it had is gone (counted above): an empty ship is not kept.
                 if (ship.IsEmpty) Grids.RemoveShip(ship);
                 else GD.Print(FormattableString.Invariant(
                     $"Loaded {ship.Name}: {ship.BlockCount} blocks, moving at {ship.LinearVelocity.Length():0.##} m/s, turning at {ship.AngularVelocity.Length():0.###} rad/s"));
             }
             eye = ToGodot(saved.Player.Position);
+            if (unturned > 0)
+                AddLoadNote($"{unturned} turned block(s) could not be turned again and face the default way.");
+            if (unbound > 0)
+                AddLoadNote($"{unbound} console binding(s) no longer matched their blocks and were dropped.");
+            int beaconsDropped = Simulation.Navigation.Beacons.Restore(saved.Beacons, Beacons, Cvars.Int(Simulation.Settings.Cvars.BeaconNameMax));
+            if (beaconsDropped > 0)
+                AddLoadNote($"{beaconsDropped} beacon(s) had no name or no valid position and were dropped.");
+            if (unchested > 0 || _chestLeftovers.Count > 0)
+                AddLoadNote(FormattableString.Invariant($"{unchested} chest(s) no longer matched their blocks; {_chestLeftovers.Count} stack(s) that no longer fit a chest go into the inventory, and what does not fit there floats where the chest was for {Cvars.Get(Simulation.Settings.Cvars.ItemLifetime):0.#} s."));
         }
 
         if (onProgress != null) await onProgress("Configuring HUD & player systems...", 0.88, completed: saved != null ? $"{saved.Ships.Count} ships imported" : "Asteroid meshes built");
@@ -171,9 +198,14 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         var markers = new SpaceMarkers { Name = "Markers" };
         hud.AddChild(markers);
         hud.MoveChild(markers, 0);   // under the rest of the HUD
-        markers.Setup(Grids);
+        markers.Setup(Grids, Beacons);
 
-        Inventory = Inventory.ForItemset(itemset);
+        Inventory = Inventory.ForItemset(itemset, inventorySlots);
+        // The order the item check before loading used (the same as the rule just imported), so they agree.
+        Inventory.Order = InventorySize.FillOrderFor(saved);
+        // The survival inventory and suit come back whatever the mode: a survival world saved while in creative keeps
+        // them, and switching back to survival finds them.
+        if (saved is not null) RestorePlayerItems(saved);
         PlayMode mode;
         var windows = new GameWindows { Name = "Windows" };
         AddChild(windows);
@@ -190,20 +222,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
                 int leftOver = StartingKit.Give(Inventory, itemset, Crafting.MainInventory);
                 if (leftOver > 0) GD.PushWarning($"Starting kit: {leftOver} items did not fit the inventory");
             }
-            else
-            {
-                RestoreInventory(saved.Inventory);
-            }
-            Suit = new Suit(itemset);
-            if (saved?.Suit is { } suitState && Suit.Restore(suitState) is { Count: > 0 } unworn)
-            {
-                // Equipment this itemset can't wear goes back to the inventory rather than vanishing.
-                long lost = unworn.Sum(stack => (long)Inventory.Add(stack.ItemId, stack.Quantity));
-                var note = $"{unworn.Count} worn items can't be worn with {header.Name} and were moved to the inventory" +
-                           (lost > 0 ? $"; {lost} did not fit and were lost" : "");
-                GD.PushWarning(note);
-                hud.Flash(note, warning: true, seconds: 6);
-            }
+            // A save from before suits existed starts a fresh one.
+            Suit ??= new Suit(itemset);
             mode = new SurvivalMode(Grids, hud, Inventory, itemset, Suit);
             windows.Setup(Inventory, Suit, itemset, Icons, StartingKit.Endless(itemset));
         }
@@ -214,7 +234,7 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         consoleOverlay.Setup(this, () => windows.IsOpen);
         DebugConsole = consoleOverlay;
 
-        var camera = new FlyCamera { Name = "Player", Position = eye };
+        var camera = new FlyCamera { Name = "Player", Position = eye, Beacons = Beacons };
         AddChild(camera);
         if (saved is null)
         {
@@ -238,6 +258,11 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         shots.BlockDestroyed += name => hud.Log($"Shot apart: {name}");
         mode.Shots = shots;
         _shots = shots;
+        var torches = new ThrownTorches { Name = "ThrownTorches" };
+        AddChild(torches);
+        torches.Setup(Grids, Icons);
+        mode.Torchlight = torches;
+        _torches = torches;
         if (mode is SurvivalMode survival)
         {
             var drops = new FloatingItems { Name = "Drops" };
@@ -246,6 +271,7 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             drops.PickedUp += (name, count) => hud.Flash($"+{count} {name}");
             survival.Drops = drops;
             _drops = drops;
+            windows.Toss = TossFromView;
         }
         camera.Setup(Grids, hud, mode, windows, consoleOverlay);
         // The Game menu, Options and the welcome window sit above the HUD and the in-world windows.
@@ -278,9 +304,14 @@ public partial class WorldView : Node3D, IDebugConsoleHost
 
     Godot.Environment? _environment;
 
+    /// <summary>Where pickups go: slot by slot from the hotbar as in the original, or topping up first (ours).</summary>
+    static FillOrder FillOrderRule => InventorySize.FillOrderOf(Cvars.Bool(Simulation.Settings.Cvars.InventoryFillHotbarFirst));
+
     void OnSettingChanged(Cvar cvar, double value)
     {
         if (cvar == Simulation.Settings.Cvars.Fov && IsInstanceValid(Player)) Player.Fov = (float)value;
+        if (cvar == Simulation.Settings.Cvars.InventoryFillHotbarFirst && Inventory is not null) Inventory.Order = FillOrderRule;
+        if (cvar == Simulation.Settings.Cvars.BatchObjects) BlockGrid.BatchingChanged();
         if (IsInsideTree()) Settings.Visuals.Changed(GetTree(), cvar, _environment);
     }
 
@@ -340,42 +371,40 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     public override void _Process(double delta)
     {
         if (Player is null) return;
+        // This node is processed first each frame, so here one frame of the section timers ends and the next begins.
+        if (PerfMonitor.Timers.EndFrame() && _hud.DebugVisible) _hud.SetPerf(PerfMonitor.Readout());
         RunAutoexec();
+        if (_chestLeftovers.Count > 0) ReleaseChestLeftovers();
         if (_welcomePending)
         {
             _welcomePending = false;
             if (!Player.InputLocked) ShowWelcome();
         }
-        _shipPhysics.Advance(delta, Grids, Player.PilotShip, Player.PilotControls((float)delta));
+        using (PerfMonitor.Measure(PerfMonitor.Ships))
+            _shipPhysics.Advance(delta, Grids, Player.PilotShip, Player.PilotControls((float)delta));
     }
 
-    void RestoreInventory(IReadOnlyList<ItemStack?> slots)
+    /// <summary>
+    /// Puts the saved inventory and suit back (see <see cref="InventoryRestore"/>), in either mode. The suit is only
+    /// created when the save has one, so a creative world that never had a survival player still has none.
+    /// </summary>
+    void RestorePlayerItems(WorldSnapshot saved)
     {
-        int unknown = 0, split = 0;
-        var overflow = new List<ItemStack>();
-        for (int i = 0; i < slots.Count; i++)
-        {
-            if (slots[i] is not { } stack || stack.Quantity <= 0) continue;
-            if (i >= Inventory.Slots.Count) { overflow.Add(stack); continue; }
-            if (!Itemset.ItemsById.ContainsKey(stack.ItemId)) unknown++;
-            int max = Inventory.MaxStackOf(stack.ItemId);
-            if (stack.Quantity > max)
-            {
-                split++;
-                overflow.Add(stack with { Quantity = stack.Quantity - max });
-            }
-            Inventory.SetSlot(i, stack);
-        }
-        long lost = 0;
-        foreach (var stack in overflow) lost += Inventory.Add(stack.ItemId, stack.Quantity);
+        var name = Itemset.Header.Name;
+        var inventory = InventoryRestore.Restore(Inventory, saved.Inventory, Itemset);
+        LostItems = inventory.LostItems;
+        if (inventory.Describe(name) is { } inventoryNote) AddLoadNote(inventoryNote);
+        if (saved.Suit is not { } suitState) return;
+        Suit = new Suit(Itemset);
+        var suit = InventoryRestore.RestoreSuit(Suit, suitState, Inventory);
+        LostItems += suit.LostItems;
+        if (suit.Describe(name) is { } suitNote) AddLoadNote(suitNote + ".");
+    }
 
-        var notes = new List<string>();
-        if (unknown > 0) notes.Add($"{unknown} inventory stack(s) are items {Itemset.Header.Name} does not define (kept, without an icon)");
-        if (split > 0) notes.Add($"{split} inventory stack(s) were above this itemset's stack size and were split");
-        if (lost > 0) notes.Add($"{lost} item(s) did not fit the inventory and were lost");
-        if (notes.Count == 0) return;
-        InventoryNote = string.Join("; ", notes) + ".";
-        GD.PushWarning(InventoryNote);
+    void AddLoadNote(string note)
+    {
+        _loadNotes.Add(note);
+        GD.PushWarning(note);
     }
 
     /// <summary>The world as it is right now, ready for <see cref="WorldStore.Save"/>.</summary>
@@ -390,7 +419,9 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             rotation = FlyCamera.LevelRotation(toShip.LengthSquared() > 0.01f ? toShip : -Player.GlobalTransform.Basis.Z);
         }
         var player = new PlayerState(ToNumerics(eye), ToNumerics(velocity), rotation.X, rotation.Y) { Roll = rotation.Z };
-        IReadOnlyList<ItemStack?> slots = Creative ? [] : Inventory.Slots.ToArray();
+        // Whatever the mode: a survival world saved while in creative must not lose its survival items. A stack held on
+        // the cursor (saving with an item window open, or quitting from one) is saved with them.
+        var slots = InventoryRestore.SlotsToSave(Inventory, Suit, _windows?.Hand.Held);
         return new WorldSnapshot(Info.Name, DateTimeOffset.Now, Binding, Info.Seed, VoxelWorld.Size, palette, cells, player, slots)
         {
             Creative = Creative,
@@ -398,9 +429,11 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             Objects = Voxels.ExportObjects(),
             Turned = Voxels.ExportTurned(),
             Consoles = Voxels.ExportConsoles(),
+            Containers = Voxels.ExportContainers(),
+            Beacons = [.. Beacons],
             Ships = [.. Grids.Ships.Where(s => !s.IsEmpty).Select(s => s.ToSnapshot())],
             Suit = Suit?.Save(),
-            Rules = Cvars.Export(CvarFlags.World),
+            Rules = InventorySize.RulesToSave(Cvars.Export(CvarFlags.World), Cvars.Int(Simulation.Settings.Cvars.InventorySlots), slots.Count),
             CheatsUsed = Cvars.CheatsUsed,
         };
     }
@@ -447,11 +480,14 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         }
     }
 
-    /// <summary>Opens a window right after loading (<c>--open</c>), for screenshots: "inventory", "crafting", "console", or "power".</summary>
+    /// <summary>Opens a window right after loading (<c>--open</c>), for screenshots: "inventory", "crafting", "container", "console", or "power".</summary>
     public void OpenWindow(string which)
     {
         switch (which)
         {
+            case "container":
+                OpenAnyContainer();
+                break;
             case "inventory":
                 Player.OpenInventory();
                 break;
@@ -512,7 +548,7 @@ public partial class WorldView : Node3D, IDebugConsoleHost
                 OptionsMenu.Open(_menus);
                 break;
             default:
-                GD.PushWarning($"--open: unknown window '{which}', expected inventory, crafting, console, power, help or debug");
+                GD.PushWarning($"--open: unknown window '{which}', expected inventory, crafting, container, console, power, help or debug");
                 break;
         }
     }
@@ -584,7 +620,7 @@ public partial class WorldView : Node3D, IDebugConsoleHost
         if (creative)
         {
             if (_windows.IsOpen) _windows.Close();
-            mode = new CreativeMode(Grids, _hud) { Shots = _shots };
+            mode = new CreativeMode(Grids, _hud) { Shots = _shots, Torchlight = _torches };
             _hud.HideSuit();
         }
         else
@@ -596,15 +632,7 @@ public partial class WorldView : Node3D, IDebugConsoleHost
                 Suit = new Suit(Itemset);
             }
             _windows.EnsureSurvival(Inventory, Suit, Itemset, Icons, StartingKit.Endless(Itemset));
-            if (_drops is null)
-            {
-                var drops = new FloatingItems { Name = "Drops" };
-                AddChild(drops);
-                drops.Setup(Inventory, Itemset, Icons, () => Player.GlobalPosition);
-                drops.PickedUp += (name, count) => _hud.Flash($"+{count} {name}");
-                _drops = drops;
-            }
-            mode = new SurvivalMode(Grids, _hud, Inventory, Itemset, Suit) { Shots = _shots, Drops = _drops };
+            mode = new SurvivalMode(Grids, _hud, Inventory, Itemset, Suit) { Shots = _shots, Torchlight = _torches, Drops = EnsureDrops() };
         }
         _hud.SetControls(mode.Controls + "   F5 save");
         Player.SetMode(mode);
@@ -712,6 +740,8 @@ public partial class WorldView : Node3D, IDebugConsoleHost
             ship.ImportObjects(snapshot.Objects);
             ship.ImportTurned(snapshot.Turned);
             ship.ImportConsoles(snapshot.Consoles);
+            ship.ImportContainers(snapshot.Containers);
+            ship.FlushMeshes();
 
             if (ship.IsEmpty)
             {
@@ -772,6 +802,9 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     }
 
     string? IDebugConsoleHost.SaveWorld() => Save();
+
+    string IDebugConsoleHost.Stress(StressRequest request) =>
+        new StressBuilder(Grids, Player, Creatures).Build(request);
 
     public void Showcase()
     {
@@ -878,6 +911,121 @@ public partial class WorldView : Node3D, IDebugConsoleHost
     }
 
     FloatingItems? _drops;
+
+    /// <summary>
+    /// The floating items, made the first time something has to float: at the start of a survival world, on a switch to
+    /// survival, or when a chest breaks or gives back stacks in a world loaded in creative mode. Pickups go into the
+    /// survival inventory, which every world keeps.
+    /// </summary>
+    FloatingItems EnsureDrops()
+    {
+        if (_drops is not null) return _drops;
+        var drops = new FloatingItems { Name = "Drops" };
+        AddChild(drops);
+        drops.Setup(Inventory, Itemset, Icons, () => Player.GlobalPosition);
+        drops.PickedUp += (name, count) => _hud.Flash($"+{count} {name}");
+        _drops = drops;
+        _windows.Toss = TossFromView;
+        return drops;
+    }
+
+    readonly Random _spillRandom = new();
+
+    /// <summary>
+    /// A broken chest throws out what it held, as in the original (<c>sv_container_spill</c>): every stack floats away
+    /// from the block's centre in a random direction at <c>sv_container_spill_speed_min</c>..<c>_max</c>, out of reach
+    /// of pickup for <c>sv_container_spill_pickup_delay</c>. In creative mode too (ours): the contents float there to
+    /// be picked up into the survival inventory rather than being lost with the block.
+    /// </summary>
+    void SpillContainer(Vector3 at, IReadOnlyList<ItemStack> stacks)
+    {
+        if (!Cvars.Bool(Simulation.Settings.Cvars.ContainerSpill)) return;
+        var drops = EnsureDrops();
+        float min = Cvars.Float(Simulation.Settings.Cvars.ContainerSpillSpeedMin);
+        float max = Cvars.Float(Simulation.Settings.Cvars.ContainerSpillSpeedMax);
+        double delay = Cvars.Get(Simulation.Settings.Cvars.ContainerSpillPickupDelay);
+        foreach (var stack in stacks)
+            drops.Drop(stack.ItemId, stack.Quantity, at, ContainerSpill.Velocity(_spillRandom, min, max).ToGodot(), delay);
+    }
+
+    /// <summary>Stacks of loaded chests that found no slot, with where they belong; released on the first frame.</summary>
+    readonly List<(Vector3 At, ItemStack Stack)> _chestLeftovers = [];
+
+    /// <summary>
+    /// Keeps what a grid's saved chests gave back on load (a chest that became smaller, or one whose block is gone), with
+    /// the chest's position, for <see cref="ReleaseChestLeftovers"/>. Positions are taken now: an emptied ship is removed
+    /// right after.
+    /// </summary>
+    /// <returns>How many saved chests were not restored.</returns>
+    int KeepChestLeftovers(BlockGrid grid, ContainerLoad load)
+    {
+        foreach (var (cell, stack) in load.Leftovers)
+            _chestLeftovers.Add((grid.Transform * ((Vector3)cell.ToGodot() + new Vector3(0.5f, 0.5f, 0.5f)), stack));
+        return load.Dropped;
+    }
+
+    /// <summary>
+    /// Ours: the leftovers of loaded chests go into the survival inventory (in either mode), and only what does not fit
+    /// there floats where the chest was, like any floating item for <c>sv_item_lifetime</c>; the original empties a
+    /// chest whose size changed.
+    /// </summary>
+    void ReleaseChestLeftovers()
+    {
+        foreach (var (at, stack) in _chestLeftovers)
+        {
+            int left = Inventory.Add(stack.ItemId, stack.Quantity);
+            if (left > 0) EnsureDrops().Drop(stack.ItemId, left, at);
+        }
+        _chestLeftovers.Clear();
+    }
+
+    /// <summary>
+    /// Throws a stack out of an item window: from the eye along the view at <paramref name="speed"/>, out of reach of
+    /// pickup for <c>sv_item_toss_pickup_delay</c> seconds, as in the original.
+    /// </summary>
+    void TossFromView(ItemStack stack, float speed)
+    {
+        if (_drops is null) return;   // not reached: the windows get this only once floating items exist
+        var forward = -Player.GlobalTransform.Basis.Z;
+        _drops.Drop(stack.ItemId, stack.Quantity, Player.GlobalPosition, forward * speed,
+            Cvars.Get(Simulation.Settings.Cvars.ItemTossPickupDelay));
+    }
+
+    /// <summary>
+    /// <c>--open=container</c>, needing no aiming: the chest nearest the player in any grid, or when there is none a
+    /// demo chest of the itemset's first container block (5 x 4 by default) that belongs to no block, so its contents
+    /// go when the window closes.
+    /// </summary>
+    void OpenAnyContainer()
+    {
+        var eye = Player.GlobalPosition;
+        (BlockGrid Grid, Int3 Cell, ContainerComponent Container)? nearest = null;
+        float best = float.PositiveInfinity;
+        void Consider(BlockGrid grid, Int3 cell, ContainerComponent container, Vector3 local)
+        {
+            float distance = grid.ToGlobal(local).DistanceSquaredTo(eye);
+            if (distance >= best) return;
+            best = distance;
+            nearest = (grid, cell, container);
+        }
+        foreach (var grid in Grids.All)
+        {
+            foreach (var (cell, block) in grid.Blocks())
+                if (grid.Palette.Item(block).Get<ContainerComponent>() is { } container)
+                    Consider(grid, cell.ToInt3(), container, (Vector3)cell + new Vector3(0.5f, 0.5f, 0.5f));
+            foreach (var obj in grid.Objects)
+                if (grid.Palette.Item(obj.Block).Get<ContainerComponent>() is { } container)
+                    Consider(grid, obj.Origin, container, (Vector3)obj.Origin.ToGodot());
+        }
+        if (nearest is { } found)
+        {
+            Player.OpenContainer(found.Grid, found.Cell, found.Container);
+            return;
+        }
+        var demo = Itemset.Items.Select(i => i.Get<ContainerComponent>()).FirstOrDefault(c => c is not null) ?? new ContainerComponent(5, 4);
+        GD.PushWarning("--open=container: no container block in the world or ships; showing an empty demo chest");
+        Player.OpenContainerWindow(Inventory.ForItemset(Itemset, ContainerRules.SlotCount(demo)), ContainerRules.Size(demo).Width);
+    }
 
     public void SelectItem(int itemId)
     {

@@ -35,6 +35,148 @@ public class InventoryTests
     public void Hotbar_is_eight_slots_like_the_original() => Assert.Equal(8, Inventory.HotbarSize);
 
     [Fact]
+    public void Default_inventory_is_the_hotbar_and_six_by_five_main_slots_as_in_the_original()
+    {
+        Assert.Equal(30, Inventory.DefaultMainSlots);
+        Assert.Equal(38, Inventory.DefaultSlotCount);
+        Assert.Equal(38, Inventory.ForItemset(TestItems.Set()).Slots.Count);
+    }
+
+    // --- fill order ---
+
+    static Inventory InSlotOrder(params ItemStack?[] contents)
+    {
+        var inventory = With(contents);
+        inventory.Order = FillOrder.SlotOrder;
+        return inventory;
+    }
+
+    [Fact]
+    public void Slot_order_puts_an_item_in_the_first_slot_that_takes_it_as_in_the_original()
+    {
+        // The empty slot 0 comes before the matching stack in slot 1, so it is used first.
+        var inventory = InSlotOrder(null, S(A, 3), S(B, 1), null);
+        Assert.Equal(0, inventory.Add(A, 4));
+        Assert.Equal(["7x4", "7x3", "8x1", "-"], inventory.Layout());
+    }
+
+    [Fact]
+    public void Slot_order_tops_up_a_stack_that_comes_before_an_empty_slot()
+    {
+        var inventory = InSlotOrder(S(B, 1), S(A, 3), null, S(A, 1));
+        Assert.Equal(0, inventory.Add(A, 6));
+        Assert.Equal(["8x1", "7x5", "7x4", "7x1"], inventory.Layout());
+    }
+
+    [Fact]
+    public void Slot_order_adds_only_what_is_left_to_each_slot()
+    {
+        // The original gives every slot it tries the whole count, which makes items; ours adds exactly what was asked.
+        var inventory = InSlotOrder(S(A, 4), null, null, null);
+        Assert.Equal(0, inventory.Add(A, 3));
+        Assert.Equal(7, inventory.Count(A));
+        Assert.Equal(["7x5", "7x2", "-", "-"], inventory.Layout());
+    }
+
+    [Fact]
+    public void Slot_order_fills_the_hotbar_before_the_main_inventory()
+    {
+        var inventory = new Inventory(Inventory.HotbarSize + 2, _ => 1) { Order = FillOrder.SlotOrder };
+        inventory.SetSlot(Inventory.HotbarSize, S(A, 1));
+        Assert.Equal(0, inventory.Add(A, Inventory.HotbarSize));
+        Assert.All(inventory.Slots.Take(Inventory.HotbarSize), s => Assert.Equal(S(A, 1), s));
+        Assert.Null(inventory.Slots[Inventory.HotbarSize + 1]);
+
+        Assert.Equal(1, inventory.AddFrom(B, 2, Inventory.HotbarSize));   // the main inventory only: one free slot
+        Assert.Equal(S(B, 1), inventory.Slots[Inventory.HotbarSize + 1]);
+    }
+
+    [Fact]
+    public void Both_fill_orders_fit_the_same_number_of_items_in_one_addition()
+    {
+        var random = new Random(38);
+        for (int round = 0; round < 500; round++)
+        {
+            var contents = new ItemStack?[6];
+            for (int i = 0; i < contents.Length; i++)
+                contents[i] = random.Next(3) switch { 0 => null, 1 => S(A, random.Next(1, 6)), _ => S(B, random.Next(1, 11)) };
+            int item = random.Next(2) == 0 ? A : B, count = random.Next(1, 60);
+            var slotOrder = InSlotOrder(contents);
+            var topUp = With(contents);
+
+            int leftSlotOrder = slotOrder.Add(item, count), leftTopUp = topUp.Add(item, count);
+
+            Assert.Equal(leftTopUp, leftSlotOrder);
+            Assert.Equal(topUp.Count(item), slotOrder.Count(item));
+            Assert.Equal(With(contents).Count(item) + count - leftSlotOrder, slotOrder.Count(item));
+        }
+    }
+
+    [Fact]
+    public void Over_several_additions_the_fill_orders_can_fit_different_amounts()
+    {
+        // Slot order spends the empty slot 0 on A, which topping up would have put onto slot 1, leaving no room for B.
+        var slotOrder = InSlotOrder(null, S(A, 1));
+        var topUp = With(null, S(A, 1));
+
+        Assert.Equal(0, slotOrder.Add(A, 4));
+        Assert.Equal(1, slotOrder.Add(B, 1));
+        Assert.Equal(0, topUp.Add(A, 4));
+        Assert.Equal(0, topUp.Add(B, 1));
+    }
+
+    // --- picking up from space ---
+
+    /// <summary>A full hotbar except slot 0 (A×3) and a main inventory of two slots, slot 9 holding a full B.</summary>
+    static Inventory HotbarNearlyFull()
+    {
+        var inventory = new Inventory(Inventory.HotbarSize + 2, id => id == A ? 5 : 10) { Order = FillOrder.SlotOrder };
+        inventory.SetSlot(0, S(A, 3));
+        for (int i = 1; i < Inventory.HotbarSize; i++) inventory.SetSlot(i, S(B, 10));
+        inventory.SetSlot(Inventory.HotbarSize + 1, S(B, 10));
+        return inventory;
+    }
+
+    [Fact]
+    public void A_pickup_puts_the_rest_in_the_main_inventory_only_if_all_of_it_fits_as_in_the_original()
+    {
+        var inventory = HotbarNearlyFull();
+
+        Assert.Equal(6, inventory.PickUp(A, 8, wholeRest: true));   // the hotbar takes 2; 6 do not fit one free slot of 5
+        Assert.Equal(S(A, 5), inventory.Slots[0]);
+        Assert.Null(inventory.Slots[Inventory.HotbarSize]);
+
+        Assert.Equal(0, inventory.PickUp(A, 5, wholeRest: true));   // all of it fits the main inventory
+        Assert.Equal(S(A, 5), inventory.Slots[Inventory.HotbarSize]);
+    }
+
+    [Fact]
+    public void Without_the_whole_rest_rule_a_pickup_keeps_what_fits()
+    {
+        var inventory = HotbarNearlyFull();
+        Assert.Equal(1, inventory.PickUp(A, 8, wholeRest: false));   // 2 in the hotbar, 5 in the free main slot
+        Assert.Equal(10, inventory.Count(A));
+
+        var topUp = HotbarNearlyFull();
+        topUp.Order = FillOrder.TopUpFirst;   // the rule belongs to the original's slot order only
+        Assert.Equal(1, topUp.PickUp(A, 8, wholeRest: true));
+    }
+
+    [Fact]
+    public void Can_pick_up_says_whether_a_pickup_would_take_anything()
+    {
+        var inventory = HotbarNearlyFull();
+        inventory.SetSlot(0, S(A, 5));   // the hotbar is full now
+
+        Assert.False(inventory.CanPickUp(A, 6, wholeRest: true));
+        Assert.True(inventory.CanPickUp(A, 6, wholeRest: false));
+        Assert.True(inventory.CanPickUp(A, 5, wholeRest: true));
+        Assert.False(inventory.CanPickUp(A, 0, wholeRest: true));
+        Assert.Equal(S(A, 5), inventory.Slots[0]);
+        Assert.Null(inventory.Slots[Inventory.HotbarSize]);   // nothing changed
+    }
+
+    [Fact]
     public void Zero_slots_is_allowed_and_holds_nothing()
     {
         var inventory = Small(0);
@@ -600,5 +742,64 @@ public class InventoryTests
 
         Assert.Null(inventory.Trash);
         Assert.Equal(1, changes);
+    }
+
+    // --- single-slot moves for the cursor stack ---
+
+    [Fact]
+    public void TakeFromSlot_returns_what_it_took_and_leaves_the_rest()
+    {
+        var inventory = With(S(B, 7));
+        var changes = new ChangeCounter(inventory);
+
+        Assert.Equal(S(B, 3), inventory.TakeFromSlot(0, 3));
+        Assert.Equal(S(B, 4), inventory.Slots[0]);
+        Assert.Equal(S(B, 4), inventory.TakeFromSlot(0, 99));
+        Assert.Null(inventory.Slots[0]);
+        Assert.Null(inventory.TakeFromSlot(0, 1));
+        Assert.Equal(2, changes.Count);
+    }
+
+    [Fact]
+    public void PutIntoSlot_fills_an_empty_or_matching_slot_up_to_the_limit_only()
+    {
+        var inventory = With(null, S(A, 3), S(B, 1));
+        var changes = new ChangeCounter(inventory);
+
+        Assert.Equal(5, inventory.PutIntoSlot(0, A, 9));
+        Assert.Equal(2, inventory.PutIntoSlot(1, A, 9));
+        Assert.Equal(0, inventory.PutIntoSlot(2, A, 1));
+        Assert.Equal(0, inventory.PutIntoSlot(1, A, 1));
+        Assert.Equal([S(A, 5), S(A, 5), S(B, 1)], inventory.Slots);
+        Assert.Equal(2, changes.Count);
+    }
+
+    [Fact]
+    public void ExchangeSlot_returns_the_old_stack_and_refuses_an_oversized_one()
+    {
+        var inventory = With(S(B, 2));
+        var changes = new ChangeCounter(inventory);
+
+        Assert.Equal(S(B, 2), inventory.ExchangeSlot(0, S(A, 4)));
+        Assert.Equal(S(A, 4), inventory.Slots[0]);
+        Assert.Throws<ArgumentException>(() => inventory.ExchangeSlot(0, S(A, 6)));
+        Assert.Equal(S(A, 4), inventory.Slots[0]);
+        Assert.Equal(S(A, 4), inventory.ExchangeSlot(0, null));
+        Assert.Null(inventory.Slots[0]);
+        Assert.Equal(2, changes.Count);
+    }
+
+    [Fact]
+    public void A_stack_off_the_slots_can_be_trashed_and_taken_back_whole()
+    {
+        var inventory = With((ItemStack?)null);
+        var changes = new ChangeCounter(inventory);
+
+        inventory.Discard(S(B, 30));
+        Assert.Equal(S(B, 30), inventory.Trash);
+        Assert.Equal(S(B, 30), inventory.TakeTrash());
+        Assert.Null(inventory.Trash);
+        Assert.Null(inventory.TakeTrash());
+        Assert.Equal(2, changes.Count);
     }
 }

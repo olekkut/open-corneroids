@@ -7,7 +7,8 @@ namespace OpenCorneroids.Game.Ui;
 
 /// <summary>
 /// The character equipment window beside the inventory: the seven equipment slots laid out roughly like a body, and the
-/// suit's Health, Armor and Power recharge.
+/// suit's Health, Armor and Power recharge. Clicks go through the cursor stack shared with the inventory
+/// (<see cref="ItemHand.ClickWorn"/>): an empty hand takes off what is worn, a held piece goes on.
 /// </summary>
 public partial class CharacterPanel : ClassicWindow
 {
@@ -34,15 +35,15 @@ public partial class CharacterPanel : ClassicWindow
 
     Suit _suit = null!;
     Inventory _inventory = null!;
-    InventoryPanel _inventoryPanel = null!;
+    ItemHand _hand = null!;
     ItemsetDef _itemset = null!;
     ItemIcons _icons = null!;
     readonly Dictionary<WearableSlot, ItemSlot> _slots = new();
     Label _stats = null!, _status = null!;
 
-    public void Setup(Suit suit, Inventory inventory, InventoryPanel inventoryPanel, ItemsetDef itemset, ItemIcons icons)
+    public void Setup(Suit suit, Inventory inventory, ItemHand hand, ItemsetDef itemset, ItemIcons icons)
     {
-        (_suit, _inventory, _inventoryPanel, _itemset, _icons) = (suit, inventory, inventoryPanel, itemset, icons);
+        (_suit, _inventory, _hand, _itemset, _icons) = (suit, inventory, hand, itemset, icons);
         Configure("Character", bevel: 5, padLeft: 18, padTop: 32, padRight: 18, padBottom: 16);
 
         var column = new VBoxContainer();
@@ -79,19 +80,15 @@ public partial class CharacterPanel : ClassicWindow
 
     void OnClicked(WearableSlot slot)
     {
-        _status.Text = "";
-        if (_inventoryPanel.PickedSlot is { } picked)
+        var held = _hand.Held;
+        _status.Text = _hand.ClickWorn(_suit, slot, _inventory) switch
         {
-            var stack = _inventory.Slots[picked];
-            var wearable = stack is null ? null : _suit.WearableOf(stack.ItemId);
-            _inventoryPanel.CancelPick();
-            if (wearable is null) _status.Text = "That can't be worn.";
-            else if (wearable.Slot != slot) _status.Text = $"That is worn as {Names[wearable.Slot].Name.ToLowerInvariant()}.";
-            else if (!_suit.TryEquip(_inventory, picked)) _status.Text = "No room for what you wear there now.";
-            return;
-        }
-        if (_suit.Equipment[(int)slot] is not null && !_suit.TryUnequip(slot, _inventory))
-            _status.Text = "The inventory is full.";
+            WornClick.NotWearable => "That can't be worn.",
+            WornClick.WrongSlot when held is not null && _suit.WearableOf(held.ItemId) is { } wearable =>
+                $"That is worn as {Names[wearable.Slot].Name.ToLowerInvariant()}.",
+            WornClick.NoRoom => "No room for what you wear there now.",
+            _ => "",
+        };
     }
 
     void Refresh()

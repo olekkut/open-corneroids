@@ -116,6 +116,13 @@ public class DebugConsoleTests
             return $"Exported {ShipList[0].Name} to {path}.";
         }
 
+        public StressRequest? Stressed { get; private set; }
+        public string Stress(StressRequest request)
+        {
+            Stressed = request;
+            return $"Built {request.Kind} x{request.Count}.";
+        }
+
         public string? SaveError { get; set; }
         public int SaveCount { get; private set; }
         public string? SaveWorld()
@@ -262,6 +269,29 @@ public class DebugConsoleTests
         Assert.False(console.Execute("spawn egg", host).IsError);
         Assert.Equal(Simulation.Creatures.CreatureKind.SwarmEgg, host.Spawned);
         Assert.True(console.Execute("spawn dragon", host).IsError);
+    }
+
+    [Fact]
+    public void Stress_is_a_cheat_that_passes_the_parsed_request_to_the_host()
+    {
+        var console = new DebugConsole();
+        var host = new FakeConsoleHost();
+
+        Assert.True(console.Execute("stress ship 6000", host).IsError);   // a cheat
+        Assert.Null(host.Stressed);
+        console.Execute("sv_cheats 1", host);
+
+        var built = console.Execute("stress ship 6000", host);
+        Assert.False(built.IsError);
+        Assert.Equal(new StressRequest(StressKind.Ship, 6000), host.Stressed);
+        Assert.Equal("Built Ship x6000.", built.Lines[0]);
+
+        Assert.False(console.Execute("stress creatures scavenger 60", host).IsError);
+        Assert.Equal(new StressRequest(StressKind.Creatures, 60, Simulation.Creatures.CreatureKind.Scavenger), host.Stressed);
+
+        var wrong = console.Execute("stress guns lots", host);
+        Assert.True(wrong.IsError);
+        Assert.Contains("Usage", wrong.Lines[0]);
     }
 
     [Fact]

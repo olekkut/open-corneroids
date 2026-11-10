@@ -17,12 +17,13 @@ public sealed class SurvivalMode : PlayMode
 {
     public override string Controls =>
         "WASD move · Space/Ctrl up/down · Z/X roll · Shift boost · LMB use what you hold · RMB empty hand · 1-8/wheel select\n" +
-        "R/middle turn block · E use · F edit · C inventory · T light · L level · K fixed cam · N noclip · Esc game menu · F1 welcome";
+        "R/middle turn block · E use · F edit · C inventory · B beacon · T light · L level · K fixed cam · N noclip · Esc game menu · F1 welcome";
 
     readonly Inventory _inventory;
     readonly ItemsetDef _itemset;
     readonly Suit _suit;
     readonly Dictionary<int, Trigger> _triggers = new();   // one reload per weapon
+    readonly SpreadSequence _spread = new();                 // one spread index per weapon, as in the original
     int _selected;   // hotbar slot in hand, or -1 for an empty hand
     BlockTarget? _drillTarget;
     double _drillTime;
@@ -111,17 +112,43 @@ public sealed class SurvivalMode : PlayMode
 
     public override void OnRespawn() => _suit.Respawn();
 
-    /// <summary>Releasing the left button: a block in hand is placed (against an aimed face, or in empty space to attach
-    /// within 16 units / start a new ship), or a consumable is used, as in the original.</summary>
+    /// <summary>Releasing the left button: a torch in hand is thrown, whatever is aimed at; a block in hand is placed
+    /// (against an aimed face, or in empty space to attach within 16 units / start a new ship), or a consumable is used,
+    /// as in the original.</summary>
     public override void PrimaryReleased(Vector3 eye, Aim? aim)
     {
         if (InHand is not { } stack || !_itemset.ItemsById.TryGetValue(stack.ItemId, out var item)) return;
+        if (Torches.IsTorch(item))
+        {
+            ThrowTorch(item);
+            return;
+        }
         if (item.Block is not null)
         {
             if (aim is { } a) Place(eye, a);
             else PlaceInSpace(eye);
         }
         else UseSelected();
+    }
+
+    /// <summary>
+    /// One torch thrown from the eye along the view, as in the original: it needs the torch's <c>powerUsage</c> in suit
+    /// power (25), takes one torch from the stack and spends the power (<see cref="Torches.TryTake"/>). Ours: without the
+    /// power the HUD says so; the original does nothing.
+    /// </summary>
+    void ThrowTorch(ItemDef torch)
+    {
+        if (Torchlight is not { } torches || _suit.IsDead) return;
+        switch (Torches.TryTake(torch, _inventory, _selected, _suit, Cvars.Bool(Simulation.Settings.Cvars.WeaponNegativePower)))
+        {
+            case Torches.Refusal.None:
+                var (eye, forward, velocity) = View;
+                torches.Throw(torch, eye, forward, velocity);
+                break;
+            case Torches.Refusal.NoPower:
+                Hud.Flash($"Not enough power to throw the {torch.Name}", warning: true);
+                break;
+        }
     }
 
     /// <summary>The right button does nothing on its way down; see <see cref="SecondaryReleased"/>.</summary>
@@ -271,8 +298,10 @@ public sealed class SurvivalMode : PlayMode
     }
 
     /// <summary>
-    /// One shot if the weapon has reloaded and the suit has the power for it (the weapon's <c>powerUsage</c>), along the
-    /// view with the weapon's spread. The held weapon kicks on screen; as in the original the player is not moved,
+    /// One shot if the weapon has reloaded and the suit has the power for it (the weapon's <c>powerUsage</c>; a negative
+    /// one gives power, as in the original, <c>sv_weapon_negative_power</c>), along the view with the weapon's spread
+    /// (<c>sv_weapon_spread_mode</c>), from the gun 0.3 m right of and 0.2 m below the eye
+    /// (<see cref="Weapons.ShotOrigin"/>). The held weapon kicks on screen; as in the original the player is not moved,
     /// unless <c>sv_recoil_push</c> is on (<see cref="Weapons.Recoil"/>).
     /// </summary>
     void Shoot(ItemDef held, WeaponComponent weapon)
@@ -281,17 +310,24 @@ public sealed class SurvivalMode : PlayMode
         double now = Time.GetTicksMsec() / 1000.0;
         if (!_triggers.TryGetValue(held.ItemId, out var trigger)) _triggers[held.ItemId] = trigger = new Trigger();
         if (trigger.Wait(now) > 0) return;
-        if (!_suit.TrySpend(Weapons.ShotCost(held)))
+        if (!_suit.TryUse(Weapons.ShotCost(held, Cvars.Bool(Simulation.Settings.Cvars.WeaponNegativePower))))
         {
             Hud.Flash($"Not enough power to fire the {held.Name}", warning: true);
             return;
         }
         trigger.TryFire(now, weapon.ReloadMs);
         var (eye, forward, velocity) = View;
-        var direction = Weapons.Spread(forward.ToNumerics(), weapon.Spread, Random.Shared.NextDouble(), Random.Shared.NextDouble()).ToGodot();
-        Shots.Fire(projectile, eye + forward * 0.4f, direction, velocity, fromPlayer: true);
+        var aim = forward.ToNumerics();
+        var direction = Cvars.Int(Simulation.Settings.Cvars.WeaponSpreadMode) == 0
+            ? _spread.Next(held.ItemId, aim, weapon.Spread)
+            : Weapons.Spread(aim, weapon.Spread, Random.Shared.NextDouble(), Random.Shared.NextDouble());
+        var up = ViewUp.Normalized();
+        var right = forward.Cross(up).Normalized();
+        var from = Weapons.ShotOrigin(eye.ToNumerics(), aim, right.ToNumerics(), up.ToNumerics(),
+            Cvars.Float(Simulation.Settings.Cvars.ShotForwardOffset)).ToGodot();
+        Shots.Fire(projectile, from, direction.ToGodot(), velocity, fromPlayer: true, speedScale: direction.Length());
         if (Cvars.Bool(Simulation.Settings.Cvars.RecoilPush))
-            Push?.Invoke(Weapons.Recoil(direction.ToNumerics(), weapon.Pushback, projectile,
+            Push?.Invoke(Weapons.Recoil(direction, weapon.Pushback, projectile,
                 Cvars.Float(Simulation.Settings.Cvars.RecoilScale)).ToGodot());
         Fired?.Invoke(weapon.Pushback);
     }

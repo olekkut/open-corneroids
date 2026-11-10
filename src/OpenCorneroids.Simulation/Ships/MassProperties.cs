@@ -64,8 +64,7 @@ public sealed class MassProperties
         double total = 0, cx = 0, cy = 0, cz = 0;
         foreach (var (center, size, mass) in boxes)
         {
-            if (!float.IsFinite(mass) || mass <= 0) continue;
-            if (!float.IsFinite(center.X) || !float.IsFinite(center.Y) || !float.IsFinite(center.Z)) continue;
+            if (!Counts(center, mass)) continue;
             list.Add((center.X, center.Y, center.Z, Edge(size.X), Edge(size.Y), Edge(size.Z), mass));
             total += mass;
             cx += mass * center.X;
@@ -90,11 +89,24 @@ public sealed class MassProperties
             ixz -= b.M * dx * dz;
             iyz -= b.M * dy * dz;
         }
+        return FromTensor(total, cx, cy, cz, ixx, iyy, izz, ixy, ixz, iyz);
+    }
+
+    /// <summary>The edge length a box size counts with: a negative or non-finite edge is zero (a point mass).</summary>
+    internal static double Edge(float e) => float.IsFinite(e) && e > 0 ? e : 0;
+
+    /// <summary>Whether <see cref="From"/> counts a box at all: a positive finite mass at a finite centre.</summary>
+    internal static bool Counts(Vector3 center, float mass) =>
+        float.IsFinite(mass) && mass > 0 && float.IsFinite(center.X) && float.IsFinite(center.Y) && float.IsFinite(center.Z);
+
+    /// <summary>The body for a total mass, centre of mass and inertia tensor about that centre (summed in double).</summary>
+    internal static MassProperties FromTensor(double total, double cx, double cy, double cz,
+        double ixx, double iyy, double izz, double ixy, double ixz, double iyz)
+    {
+        if (total < MinMass) return Empty;
         double[,] inertia = { { ixx, ixy, ixz }, { ixy, iyy, iyz }, { ixz, iyz, izz } };
         return new MassProperties((float)total, new Vector3((float)cx, (float)cy, (float)cz), ToMatrix(inertia),
             ToMatrix(PseudoInverse(inertia)));
-
-        static double Edge(float e) => float.IsFinite(e) && e > 0 ? e : 0;
     }
 
     /// <summary>Applies a 3×3 tensor stored as described in the remarks to <paramref name="v"/>.</summary>

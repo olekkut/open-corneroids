@@ -20,6 +20,12 @@ public sealed class ShipPhysics
     /// <summary>An unpiloted ship slower than this (m/s, rad/s) is stopped and left alone until something moves it.</summary>
     const float SleepSpeed = 0.02f, SleepSpin = 0.002f;
 
+    /// <summary>Bounce after a hit (<c>sv_ship_restitution</c>, 0 as in the original).</summary>
+    static float Restitution => Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.ShipRestitution);
+
+    /// <summary>Spin kept through a contact (<c>sv_ship_contact_spin_damping</c>, ours).</summary>
+    static float SpinDamping => Settings.GameSettings.Cvars.Float(Simulation.Settings.Cvars.ShipContactSpinDamping);
+
     double _accumulator;
     readonly List<Transform3D> _previous = [];
     readonly List<bool> _moved = [];
@@ -153,8 +159,8 @@ public sealed class ShipPhysics
         float t = ShipContact.LastFree(f => Overlaps(points, ship.Interpolate(previous, current, f), world, worldPose, null));
         ship.Transform = ship.Interpolate(previous, current, t);
         LogHit(ship, "the asteroids", -ship.LinearVelocity.Dot(normal), normal);
-        ship.LinearVelocity = ShipContact.Bounce(ship.LinearVelocity.ToNumerics(), normal.ToNumerics()).ToGodot();
-        ship.AngularVelocity *= ShipContact.ContactSpinDamping;
+        ship.LinearVelocity = ShipContact.Bounce(ship.LinearVelocity.ToNumerics(), normal.ToNumerics(), Restitution).ToGodot();
+        ship.AngularVelocity *= SpinDamping;
     }
 
     /// <summary>
@@ -211,12 +217,12 @@ public sealed class ShipPhysics
             if (!a.IsAsteroid)
             {
                 a.Transform = a.Interpolate(previousA, currentA, t);
-                a.AngularVelocity *= ShipContact.ContactSpinDamping;
+                a.AngularVelocity *= SpinDamping;
             }
             if (!b.IsAsteroid)
             {
                 b.Transform = b.Interpolate(previousB, currentB, t);
-                b.AngularVelocity *= ShipContact.ContactSpinDamping;
+                b.AngularVelocity *= SpinDamping;
             }
         }
         string targetName = a.IsAsteroid ? "the asteroids" : (b.IsAsteroid ? "the asteroids" : b.Name);
@@ -224,7 +230,7 @@ public sealed class ShipPhysics
         float invMassA = a.IsAsteroid ? 0f : a.Mass.InverseMass;
         float invMassB = b.IsAsteroid ? 0f : b.Mass.InverseMass;
         var (va, vb) = ShipContact.Bounce(a.LinearVelocity.ToNumerics(), invMassA, b.LinearVelocity.ToNumerics(), invMassB,
-            normal.ToNumerics(), stuck ? 0 : ShipContact.Restitution);
+            normal.ToNumerics(), stuck ? 0 : Restitution);
         if (!a.IsAsteroid) a.LinearVelocity = va.ToGodot();
         if (!b.IsAsteroid) b.LinearVelocity = vb.ToGodot();
     }

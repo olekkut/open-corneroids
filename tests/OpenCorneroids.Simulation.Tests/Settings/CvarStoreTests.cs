@@ -42,6 +42,31 @@ public class CvarStoreTests
         Assert.False(store.Bool(Cvars.RecoilPush));
         Assert.False(store.Bool(Cvars.ProjectileInheritVelocity));
         Assert.Equal(512, store.Int(Cvars.ProjectileLimit));
+        // The original's spread list, shots 1 m ahead of the gun, power from a negative powerUsage, no ship bounce.
+        Assert.Equal(0, store.Int(Cvars.WeaponSpreadMode));
+        Assert.Equal(1f, store.Float(Cvars.ShotForwardOffset));
+        Assert.True(store.Bool(Cvars.WeaponNegativePower));
+        Assert.Equal(ShipContact.Restitution, store.Float(Cvars.ShipRestitution));
+        Assert.Equal(0f, store.Float(Cvars.ShipRestitution));
+        Assert.Equal(ShipContact.ContactSpinDamping, store.Float(Cvars.ShipContactSpinDamping));
+        // The original's 8 + 6 × 5 inventory, filled slot by slot from the hotbar; the main inventory takes the rest of
+        // a pickup only when all of it fits.
+        Assert.Equal(Inventory.DefaultSlotCount, Inventory.HotbarSize + store.Int(Cvars.InventorySlots));
+        Assert.True(store.Bool(Cvars.InventoryFillHotbarFirst));
+        Assert.True(store.Bool(Cvars.InventoryPickupWhole));
+        // Stacks thrown out of item windows: 3 m/s on a click outside, 2 m/s on closing, 2 s before pickup, ×0.98 drag.
+        Assert.Equal((3f, 2f, 2f, 0.98f), (store.Float(Cvars.ItemTossSpeed), store.Float(Cvars.ItemCloseTossSpeed),
+            store.Float(Cvars.ItemTossPickupDelay), store.Float(Cvars.ItemDrag)));
+        // As in the original, a click on an item window off its slots throws the held stack, and a press counts only
+        // while the other mouse button is up.
+        Assert.True(store.Bool(Cvars.ItemTossOnWindow) && store.Bool(Cvars.ItemClickNeedsRelease));
+        // E and F reach 1.7 m; a broken chest throws its stacks out at 1–4 m/s, out of reach of pickup for 1 s.
+        Assert.Equal(1.7f, store.Float(Cvars.UseReach));
+        Assert.True(store.Bool(Cvars.ContainerSpill));
+        Assert.Equal((1f, 4f, 1f), (store.Float(Cvars.ContainerSpillSpeedMin), store.Float(Cvars.ContainerSpillSpeedMax),
+            store.Float(Cvars.ContainerSpillPickupDelay)));
+        Assert.All([Cvars.UseReach, Cvars.ContainerSpill, Cvars.ContainerSpillSpeedMin, Cvars.ContainerSpillSpeedMax,
+            Cvars.ContainerSpillPickupDelay], c => Assert.True(c.Flags.HasFlag(CvarFlags.World) && c.Name.StartsWith("sv_", StringComparison.Ordinal)));
         // The original's options: field of view 90 (45–135), mouse sensitivity 0.5 (0–3), gamma 50 (0–50),
         // target squares, view bobbing and hints on, SSAO high, medium view distance, V-Sync on.
         Assert.Equal((90.0, 45.0, 135.0), (store.Get(Cvars.Fov), Cvars.Fov.Min, Cvars.Fov.Max));

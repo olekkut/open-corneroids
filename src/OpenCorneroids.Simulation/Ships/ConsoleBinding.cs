@@ -154,6 +154,10 @@ public sealed class ShipConsoleBindings
 
     public IReadOnlyDictionary<Int3, ConsoleBindingState> Consoles => _consoles;
 
+    /// <summary>Where each camera block on the grid is looking (session only, never in <see cref="ToSnapshot"/>, as in
+    /// the original).</summary>
+    public CameraLooks CameraLooks { get; } = new();
+
     public ConsoleBindingState? TryGet(Int3 consoleCell) =>
         _consoles.TryGetValue(consoleCell, out var state) ? state : null;
 
@@ -274,6 +278,7 @@ public sealed class ShipConsoleBindings
     public void RemoveBlock(Int3 cell)
     {
         _consoles.Remove(cell);
+        CameraLooks.Remove(cell);
         foreach (var console in _consoles.Values)
         {
             if (console.Camera == cell)
@@ -284,12 +289,14 @@ public sealed class ShipConsoleBindings
     }
 
     /// <summary>
-    /// Moves console bindings belonging to <paramref name="cells"/> into a new <see cref="ShipConsoleBindings"/> shifted
-    /// by <c>-shift</c> (used when launching a structure from the static world into a ship).
+    /// Moves console bindings and camera looks belonging to <paramref name="cells"/> into a new
+    /// <see cref="ShipConsoleBindings"/> shifted by <c>-shift</c> (used when launching a structure from the static world
+    /// into a ship).
     /// </summary>
     public ShipConsoleBindings ExtractAndShift(IReadOnlySet<Int3> cells, Int3 shift)
     {
         var extracted = new ShipConsoleBindings();
+        extracted.CameraLooks.CopyFrom(CameraLooks.ExtractAndShift(cells, shift));
         var toRemove = new List<Int3>();
         foreach (var (cell, console) in _consoles)
         {
@@ -329,23 +336,72 @@ public sealed class ShipConsoleBindings
         return list;
     }
 
-    public void LoadSnapshot(IEnumerable<SavedConsole>? saved, Func<Int3, (int Buttons, bool GunsOnly)?> resolveConsole)
+    /// <summary>
+    /// Restores saved bindings onto the blocks a grid has now, every camera back at its rest look (looks are not saved,
+    /// as in the original), keeping only what is still valid: the console's cell must
+    /// hold a console; a target must be a thruster or a gun (only a gun for a gun console), not the console itself, and
+    /// bound to one console only (the first one in the save keeps it, as the original allows one console per block); a
+    /// camera must be a camera block; a colour group must exist on the console. An edited itemset or a damaged save
+    /// can break any of these, and a stale binding would otherwise be saved forever and silently pick up a block placed
+    /// there later.
+    /// </summary>
+    /// <param name="resolveConsole">The console block at a cell (its buttons and whether it is a gun console), or null.</param>
+    /// <param name="resolveTarget">What the block whose origin is at a cell can be bound as.</param>
+    /// <returns>How many bindings (bound targets and cameras) were dropped.</returns>
+    public int LoadSnapshot(IEnumerable<SavedConsole>? saved, Func<Int3, (int Buttons, bool GunsOnly)?> resolveConsole,
+        Func<Int3, ConsoleTargetKind> resolveTarget)
     {
+        ArgumentNullException.ThrowIfNull(resolveConsole);
+        ArgumentNullException.ThrowIfNull(resolveTarget);
         _consoles.Clear();
-        if (saved is null) return;
+        CameraLooks.Clear();
+        if (saved is null) return 0;
+        int dropped = 0;
+        var bound = new HashSet<Int3>();
         foreach (var entry in saved)
         {
-            var spec = resolveConsole(entry.Cell);
-            if (spec is null) continue;
-            var console = GetOrCreate(entry.Cell, spec.Value.Buttons, spec.Value.GunsOnly);
-            console.Camera = entry.Camera;
+            int bindings = entry.Groups.Sum(g => g.Targets.Count) + (entry.Camera is null ? 0 : 1);
+            if (_consoles.ContainsKey(entry.Cell) || resolveConsole(entry.Cell) is not { } spec)
+            {
+                dropped += bindings;
+                continue;
+            }
+            var console = GetOrCreate(entry.Cell, spec.Buttons, spec.GunsOnly);
+            if (entry.Camera is { } camera)
+            {
+                if (camera != entry.Cell && resolveTarget(camera).HasFlag(ConsoleTargetKind.Camera)) console.Camera = camera;
+                else dropped++;
+            }
             foreach (var g in entry.Groups)
             {
-                if ((uint)g.Index >= (uint)console.GroupCount) continue;
-                console.GroupAt(g.Index).Key = string.IsNullOrWhiteSpace(g.Key) ? ConsoleBinding.DefaultKey : g.Key;
+                if ((uint)g.Index >= (uint)console.GroupCount)
+                {
+                    dropped += g.Targets.Count;
+                    continue;
+                }
+                var group = console.GroupAt(g.Index);
+                group.Key = string.IsNullOrWhiteSpace(g.Key) ? ConsoleBinding.DefaultKey : g.Key;
                 foreach (var target in g.Targets)
-                    console.GroupAt(g.Index).Add(target);
+                {
+                    if (target != entry.Cell && CanBind(resolveTarget(target), console.GunsOnly) && bound.Add(target)) group.Add(target);
+                    else dropped++;
+                }
             }
         }
+        return dropped;
     }
+
+    /// <summary>A console binds thrusters and guns; a gun console only guns.</summary>
+    static bool CanBind(ConsoleTargetKind kind, bool gunsOnly) =>
+        kind.HasFlag(ConsoleTargetKind.Gun) || (!gunsOnly && kind.HasFlag(ConsoleTargetKind.Thruster));
+}
+
+/// <summary>What a block can be bound to a console as.</summary>
+[Flags]
+public enum ConsoleTargetKind
+{
+    None = 0,
+    Thruster = 1,
+    Gun = 2,
+    Camera = 4,
 }

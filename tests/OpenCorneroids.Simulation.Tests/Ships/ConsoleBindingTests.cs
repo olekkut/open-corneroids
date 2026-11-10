@@ -180,4 +180,128 @@ public class ConsoleBindingTests
         Assert.Single(loaded.Ships[0].Consoles);
         Assert.Equal(console.Camera, loaded.Ships[0].Consoles[0].Camera);
     }
+
+    // ---- loading saved bindings onto the blocks there now ----
+
+    static readonly Int3 GunConsole = new(5, 1, 2);
+
+    /// <summary>ConsoleA and ConsoleB have 3 buttons; GunConsole has 2 and binds guns only; nothing else is a console.</summary>
+    static (int Buttons, bool GunsOnly)? Consoles(Int3 cell) =>
+        cell == ConsoleA || cell == ConsoleB ? (3, false) : cell == GunConsole ? (2, true) : null;
+
+    static ConsoleTargetKind Kinds(Int3 cell) =>
+        cell == Thruster1 || cell == Thruster2 ? ConsoleTargetKind.Thruster
+        : cell == Cannon1 ? ConsoleTargetKind.Gun
+        : cell == Camera1 ? ConsoleTargetKind.Camera
+        : ConsoleTargetKind.None;
+
+    [Fact]
+    public void Valid_saved_bindings_load_unchanged()
+    {
+        var bindings = new ShipConsoleBindings();
+        SavedConsole[] saved =
+        [
+            new(ConsoleA, [new SavedConsoleGroup(0, "W", [Thruster1, Cannon1]), new SavedConsoleGroup(2, "S", [Thruster2])], Camera1),
+        ];
+
+        int dropped = bindings.LoadSnapshot(saved, Consoles, Kinds);
+
+        Assert.Equal(0, dropped);
+        var console = bindings.TryGet(ConsoleA)!;
+        Assert.Equal([Thruster1, Cannon1], console.Groups[0].Targets);
+        Assert.Equal([Thruster2], console.Groups[2].Targets);
+        Assert.Equal(Camera1, console.Camera);
+        Assert.Equal(saved, bindings.ToSnapshot(), new SavedConsoleComparer());
+    }
+
+    [Fact]
+    public void A_stale_target_on_an_empty_cell_is_dropped()
+    {
+        var bindings = new ShipConsoleBindings();
+        var empty = new Int3(7, 7, 7);
+
+        int dropped = bindings.LoadSnapshot([new SavedConsole(ConsoleA, [new SavedConsoleGroup(0, "W", [empty, Thruster1])])], Consoles, Kinds);
+
+        Assert.Equal(1, dropped);
+        Assert.Equal([Thruster1], bindings.TryGet(ConsoleA)!.Groups[0].Targets);
+    }
+
+    [Fact]
+    public void A_target_of_the_wrong_kind_is_dropped()
+    {
+        var bindings = new ShipConsoleBindings();
+        SavedConsole[] saved =
+        [
+            // A camera is no target; the console itself neither.
+            new(ConsoleA, [new SavedConsoleGroup(0, "W", [Camera1, ConsoleA, Thruster1])]),
+            // A gun console binds guns only.
+            new(GunConsole, [new SavedConsoleGroup(0, "Space", [Thruster2, Cannon1])]),
+        ];
+
+        int dropped = bindings.LoadSnapshot(saved, Consoles, Kinds);
+
+        Assert.Equal(3, dropped);
+        Assert.Equal([Thruster1], bindings.TryGet(ConsoleA)!.Groups[0].Targets);
+        Assert.Equal([Cannon1], bindings.TryGet(GunConsole)!.Groups[0].Targets);
+    }
+
+    [Fact]
+    public void A_target_bound_to_two_consoles_stays_with_the_first()
+    {
+        var bindings = new ShipConsoleBindings();
+        SavedConsole[] saved =
+        [
+            new(ConsoleA, [new SavedConsoleGroup(0, "W", [Thruster1])]),
+            new(ConsoleB, [new SavedConsoleGroup(1, "S", [Thruster1, Thruster2]), new SavedConsoleGroup(2, "D", [Thruster2])]),
+        ];
+
+        int dropped = bindings.LoadSnapshot(saved, Consoles, Kinds);
+
+        Assert.Equal(2, dropped);
+        Assert.Equal(0, bindings.TryGet(ConsoleA)!.GroupOf(Thruster1));
+        Assert.Equal(-1, bindings.TryGet(ConsoleB)!.GroupOf(Thruster1));
+        Assert.Equal(1, bindings.TryGet(ConsoleB)!.GroupOf(Thruster2));
+        Assert.Empty(bindings.TryGet(ConsoleB)!.Groups[2].Targets);
+    }
+
+    [Fact]
+    public void A_camera_that_is_no_camera_block_is_dropped()
+    {
+        var bindings = new ShipConsoleBindings();
+
+        int dropped = bindings.LoadSnapshot([new SavedConsole(ConsoleA, [], Thruster1), new SavedConsole(ConsoleB, [], Camera1)], Consoles, Kinds);
+
+        Assert.Equal(1, dropped);
+        Assert.Null(bindings.TryGet(ConsoleA)!.Camera);
+        Assert.Equal(Camera1, bindings.TryGet(ConsoleB)!.Camera);
+    }
+
+    [Fact]
+    public void Bindings_of_a_console_that_is_gone_or_of_groups_it_no_longer_has_are_counted_as_dropped()
+    {
+        var bindings = new ShipConsoleBindings();
+        var notAConsole = new Int3(9, 9, 9);
+        SavedConsole[] saved =
+        [
+            new(notAConsole, [new SavedConsoleGroup(0, "W", [Thruster1])], Camera1),
+            // Group 5 on a 2-button console.
+            new(GunConsole, [new SavedConsoleGroup(5, "F", [Cannon1])]),
+        ];
+
+        int dropped = bindings.LoadSnapshot(saved, Consoles, Kinds);
+
+        Assert.Equal(3, dropped);
+        Assert.Null(bindings.TryGet(notAConsole));
+        Assert.Equal(-1, bindings.TryGet(GunConsole)!.GroupOf(Cannon1));
+    }
+
+    sealed class SavedConsoleComparer : IEqualityComparer<SavedConsole>
+    {
+        public bool Equals(SavedConsole? a, SavedConsole? b) =>
+            a is not null && b is not null && a.Cell == b.Cell && a.Camera == b.Camera && a.Groups.Count == b.Groups.Count &&
+            a.Groups.Zip(b.Groups).All(p => p.First.Index == p.Second.Index && p.First.Key == p.Second.Key &&
+                                            p.First.Targets.SequenceEqual(p.Second.Targets));
+
+        public int GetHashCode(SavedConsole obj) => obj.Cell.GetHashCode();
+    }
 }

@@ -90,6 +90,22 @@ public class SuitTests
     }
 
     [Fact]
+    public void A_negative_power_use_always_succeeds_and_gives_power_as_in_the_original()
+    {
+        var (suit, _) = New();
+        suit.SetPowerLevel(10);
+        Assert.False(suit.TryUse(25));
+        Assert.Equal(10.0, suit.Power);
+
+        Assert.True(suit.TryUse(-25));
+        Assert.Equal(35.0, suit.Power);
+        Assert.True(suit.TryUse(-90));
+        Assert.Equal(100.0, suit.Power);   // never above the maximum
+        Assert.True(suit.TryUse(30));
+        Assert.Equal(70.0, suit.Power);
+    }
+
+    [Fact]
     public void A_potion_heals_but_is_kept_at_full_health()
     {
         var (suit, inventory) = New(S(Potion, 2));
@@ -132,6 +148,50 @@ public class SuitTests
         Assert.Equal(S(Battery, 1), suit.Equipment[(int)WearableSlot.PowerSource]);
         Assert.Equal((100.0, 0.0), (suit.Health, suit.Power));
         Assert.Empty(suit.Buffs);   // an expired buff is not restored
+    }
+
+    [Fact]
+    public void Restore_keeps_one_of_a_worn_stack_and_returns_the_rest()
+    {
+        var (suit, _) = New();
+        ItemStack?[] equipment = [S(Helmet, 3), null, null, null, null, null, S(Battery, 1)];
+
+        var returned = suit.Restore(new SuitState(80, 50, equipment, []), out var extras);
+
+        Assert.Empty(returned);
+        Assert.Equal([S(Helmet, 2)], extras);
+        Assert.Equal(S(Helmet, 1), suit.Equipment[(int)WearableSlot.Helmet]);
+        // The one-argument form hands back both kinds together.
+        Assert.Equal([S(Helmet, 2)], new Suit(Set()).Restore(new SuitState(80, 50, equipment, [])));
+    }
+
+    [Fact]
+    public void Restore_clamps_buffs_from_a_damaged_save()
+    {
+        var (suit, _) = New();
+        SuitBuff[] buffs =
+        [
+            new(ArmorBoost, 5, -50, -1_000_000) { Health = 1_000_000 },
+            new(Overcharge, 5, 1_000_000, 1_000_000) { Health = -7 },
+        ];
+
+        suit.Restore(new SuitState(80, 50, new ItemStack?[7], buffs));
+
+        Assert.Equal(new SuitBuff(ArmorBoost, 5, 0, -Suit.BaseMaxPower) { Health = Suit.MaxBuffBonus }, suit.Buffs[0]);
+        Assert.Equal(new SuitBuff(Overcharge, 5, Suit.MaxBuffBonus, Suit.BaseMaxPower) { Health = 0 }, suit.Buffs[1]);
+        Assert.Equal(Suit.MaxBuffBonus, suit.Armor);
+        Assert.Equal(Suit.BaseMaxHealth + Suit.MaxBuffBonus, suit.MaxHealth);
+    }
+
+    [Fact]
+    public void Restore_keeps_buffs_within_bounds_unchanged()
+    {
+        var (suit, _) = New();
+        var buff = new SuitBuff(Overcharge, 12.5, 4, -3) { Health = 20 };
+
+        suit.Restore(new SuitState(80, 50, new ItemStack?[7], [buff]));
+
+        Assert.Equal([buff], suit.Buffs);
     }
 
     [Fact]

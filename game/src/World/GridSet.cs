@@ -1,4 +1,5 @@
 using Godot;
+using OpenCorneroids.Content.Itemsets;
 using OpenCorneroids.Simulation.Ships;
 using ShipLaunch = OpenCorneroids.Simulation.Ships.Launch;
 using Orientation = OpenCorneroids.Simulation.Shapes.Orientation;
@@ -14,11 +15,17 @@ public readonly record struct Aim(BlockGrid Grid, Vector3I Hit, Vector3I Before)
 /// does a ray hit first) and owns ship creation, launch and removal; everything inside one grid stays with
 /// <see cref="BlockGrid"/>.
 /// </summary>
-public sealed class GridSet
+public sealed partial class GridSet
 {
     readonly Node3D _shipParent;
     readonly List<ShipGrid> _ships = [];
     int _nextShip = 1;
+
+    /// <summary>A grid's placement, read once for a run of ray casts (<see cref="BeginFrame"/>).</summary>
+    readonly record struct Placement(Transform3D ToLocal, Basis DirectionToLocal, Vector3 Center, float Radius);
+
+    readonly Dictionary<BlockGrid, Placement> _placements = new();
+    bool _framed;
 
     /// <param name="shipParent">The node ships are added to; it should sit at the world origin, unturned.</param>
     public GridSet(VoxelWorld world, Node3D shipParent)
@@ -74,11 +81,32 @@ public sealed class GridSet
         ship.QueueFree();
     }
 
-    /// <summary>Breaks a target in whichever grid it is; a ship left with no blocks at all goes away.</summary>
+    /// <summary>
+    /// Raised when a broken chest held something: the world position of the block's centre and its stacks in slot
+    /// order. As in the original, every way a block goes (mining, shots, creatures) comes through <see cref="Break"/>.
+    /// </summary>
+    public event Action<Vector3, IReadOnlyList<ItemStack>>? ContentsSpilled;
+
+    /// <summary>
+    /// Breaks a target in whichever grid it is; a ship left with no blocks at all goes away. A chest's contents come out
+    /// first (<see cref="ContentsSpilled"/>).
+    /// </summary>
     public void Break(BlockTarget target)
     {
+        var contents = target.Grid.Containers.Remove(target.Object?.Origin ?? target.Cell.ToInt3());
+        var centre = contents.Count > 0 ? CentreOf(target) : Vector3.Zero;
         target.Grid.Break(target);
+        if (contents.Count > 0) ContentsSpilled?.Invoke(centre, contents);
         if (target.Grid is ShipGrid ship && ship.IsEmpty) RemoveShip(ship);
+    }
+
+    /// <summary>The world position of a target's centre: its cell's, or the middle of a multi-cell block.</summary>
+    static Vector3 CentreOf(BlockTarget target)
+    {
+        var local = target.Object is { } obj
+            ? (Vector3)obj.Origin.ToGodot() + (Vector3)obj.RotatedSize.ToGodot() / 2
+            : (Vector3)target.Cell + new Vector3(0.5f, 0.5f, 0.5f);
+        return target.Grid.ToGlobal(local);
     }
 
     /// <summary>
@@ -103,15 +131,50 @@ public sealed class GridSet
         return best < float.PositiveInfinity;
     }
 
-    static void CastInto(BlockGrid grid, Vector3 origin, Vector3 dir, float maxDistance, ref float best, ref Aim aim)
+    void CastInto(BlockGrid grid, Vector3 origin, Vector3 dir, float maxDistance, ref float best, ref Aim aim)
     {
-        var localOrigin = grid.ToLocal(origin);
-        var localDir = grid.DirectionToLocal(dir);
+        Vector3 localOrigin, localDir;
+        if (_framed && _placements.TryGetValue(grid, out var placed))
+            (localOrigin, localDir) = (placed.ToLocal * origin, placed.DirectionToLocal * dir);
+        else
+            (localOrigin, localDir) = (grid.ToLocal(origin), grid.DirectionToLocal(dir));
         if (!VoxelRaycast.Cast(grid, localOrigin, localDir, Math.Min(maxDistance, best), out var hit, out var before, out var distance) ||
             distance >= best)
             return;
         best = distance;
         aim = new Aim(grid, hit, before);
+    }
+
+    /// <summary>
+    /// Ours, for speed: reads where every grid is once, so the many ray casts of one pass (every shot in flight) skip
+    /// asking the engine for each grid's transform per cast. Until the returned scope is disposed <see cref="Raycast"/>
+    /// uses these placements; a grid added meanwhile is read live. Only for a pass that moves no grid: shots break
+    /// blocks and remove emptied ships, but never move one.
+    /// </summary>
+    public FrameScope BeginFrame()
+    {
+        _placements.Clear();
+        Read(World);
+        foreach (var ship in _ships) Read(ship);
+        _framed = true;
+        return new FrameScope(this);
+
+        void Read(BlockGrid grid)
+        {
+            var transform = grid.GlobalTransform;
+            var (center, radius) = (transform * (Vector3.One * (grid.GridSize * 0.5f)), grid.GridSize * 0.8661f);
+            _placements[grid] = new Placement(transform.AffineInverse(), transform.Basis.Inverse(), center, radius);
+        }
+    }
+
+    /// <summary>Ends <see cref="BeginFrame"/>: ray casts read each grid's transform live again.</summary>
+    public readonly struct FrameScope(GridSet set) : IDisposable
+    {
+        public void Dispose()
+        {
+            set._framed = false;
+            set._placements.Clear();
+        }
     }
 
     /// <summary>
@@ -162,9 +225,9 @@ public sealed class GridSet
     }
 
     /// <summary>Whether a ray of this length can touch the grid's bounding sphere.</summary>
-    static bool Reaches(BlockGrid grid, Vector3 origin, Vector3 dir, float maxDistance)
+    bool Reaches(BlockGrid grid, Vector3 origin, Vector3 dir, float maxDistance)
     {
-        var (center, radius) = grid.Bounds;
+        var (center, radius) = _framed && _placements.TryGetValue(grid, out var placed) ? (placed.Center, placed.Radius) : grid.Bounds;
         var toCenter = center - origin;
         float along = Mathf.Clamp(toCenter.Dot(dir), 0, maxDistance);
         return (origin + dir * along).DistanceSquaredTo(center) <= radius * radius;
@@ -227,6 +290,8 @@ public sealed class GridSet
         foreach (var (cell, _) in cells) movingCells.Add(cell.ToInt3());
         foreach (var obj in objects) movingCells.Add(obj.Origin);
         var consoles = world.Consoles.ExtractAndShift(movingCells, -shift.ToInt3());
+        // Chests go along with what they hold, before clearing the cells forgets them.
+        var containers = world.Containers.ExtractAndShift(movingCells, -shift.ToInt3());
         world.ClearCells(cells.Select(c => c.Cell).ToList());
         foreach (var obj in objects) world.RemoveObject(obj);
 
@@ -241,11 +306,27 @@ public sealed class GridSet
             else if (added.Door is not null) added.DoorState = door;
         }
         ship.ImportConsoles(consoles.ToSnapshot());
+        // Cameras keep looking where they were turned (looks are not in the snapshot).
+        ship.Consoles.CameraLooks.CopyFrom(consoles.CameraLooks);
+        SpillLaunchLeftovers(ship, ship.ImportContainers(containers.ToSnapshot()));
 
         int blocks = cells.Count + objects.Count;
         var message = FormattableString.Invariant($"Ship launched: {blocks} blocks, {ship.Mass.Mass:0.#} mass");
         GD.Print($"{message} ({ship.Name} at {ship.Position}, grid {ship.GridSize}³)");
         return (ship, message);
+    }
+
+    /// <summary>
+    /// A chest that did not come along onto the launched ship (a multi-cell block that did not fit the new grid) throws
+    /// its contents out at its cell like a broken chest (<see cref="ContentsSpilled"/>), so they are not lost.
+    /// </summary>
+    void SpillLaunchLeftovers(ShipGrid ship, Simulation.Items.ContainerLoad load)
+    {
+        foreach (var group in load.Leftovers.GroupBy(l => l.Cell))
+        {
+            var centre = ship.ToGlobal((Vector3)group.Key.ToGodot() + new Vector3(0.5f, 0.5f, 0.5f));
+            ContentsSpilled?.Invoke(centre, group.Select(l => l.Stack).ToList());
+        }
     }
 
     /// <summary>

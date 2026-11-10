@@ -24,6 +24,35 @@ internal sealed class FieldReader(string file, DiagnosticBag diagnostics)
     public float Float(XElement parent, string name, float fallback = 0) =>
         parent.Element(name) is { } e ? ParseFloat(e.Value, e, fallback) : fallback;
 
+    /// <summary>
+    /// <see cref="Int"/>, then held within <paramref name="min"/>..<paramref name="max"/>; a value outside is noted
+    /// (info) and clamped. A missing field gives <paramref name="fallback"/> as it is.
+    /// </summary>
+    public int IntIn(XElement parent, string name, int fallback, int min, int max = int.MaxValue)
+    {
+        int value = Int(parent, name, fallback);
+        int clamped = Math.Clamp(value, min, max);
+        if (clamped != value) ReportClamped(parent, name, value.ToString(CultureInfo.InvariantCulture), clamped.ToString(CultureInfo.InvariantCulture),
+            min.ToString(CultureInfo.InvariantCulture), max == int.MaxValue ? null : max.ToString(CultureInfo.InvariantCulture));
+        return clamped;
+    }
+
+    /// <summary><see cref="Float"/>, then held within <paramref name="min"/>..<paramref name="max"/> like
+    /// <see cref="IntIn"/>.</summary>
+    public float FloatIn(XElement parent, string name, float fallback, float min, float max)
+    {
+        float value = Float(parent, name, fallback);
+        float clamped = float.IsNaN(value) ? fallback : Math.Clamp(value, min, max);
+        if (clamped != value) ReportClamped(parent, name, value.ToString(CultureInfo.InvariantCulture), clamped.ToString(CultureInfo.InvariantCulture),
+            min.ToString(CultureInfo.InvariantCulture), max.ToString(CultureInfo.InvariantCulture));
+        return clamped;
+    }
+
+    void ReportClamped(XElement parent, string name, string value, string clamped, string min, string? max) =>
+        Report(Severity.Info, Codes.OutOfRange,
+            $"<{name}> {value} is {(max is null ? $"below {min}" : $"outside {min}..{max}")}; using {clamped}",
+            (XObject?)parent.Element(name) ?? parent);
+
     public int IntAttr(XElement element, string name, int fallback = 0) =>
         element.Attribute(name) is { } a ? ParseInt(a.Value, a, fallback) : fallback;
 

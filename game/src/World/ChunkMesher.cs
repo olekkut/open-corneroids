@@ -1,10 +1,12 @@
 using Godot;
+using OpenCorneroids.Simulation.Grids;
 using Orientation = OpenCorneroids.Simulation.Shapes.Orientation;
 
 namespace OpenCorneroids.Game.World;
 
 /// <summary>
-/// Builds one chunk's mesh: a quad for every block face that touches air or a see-through block. Opaque and
+/// Builds one chunk's mesh: a quad for every block face that touches air or a see-through block (the rule is
+/// <see cref="FaceVisibility.Drawn"/>; camera blocks are see-through as in the original). Opaque and
 /// cutout (window) faces go into separate surfaces so they can use different materials. Blocks the grid marks inactive
 /// (<see cref="BlockGrid.IsInactive"/>, unpowered on a ship) get their unpowered textures.
 /// </summary>
@@ -113,6 +115,7 @@ public static class ChunkMesher
             var block = world.Get(p);
             if (block == BlockPalette.Air) continue;
             bool isCutout = palette.IsCutout(block);
+            var self = palette.FaceBlockOf(block);
             bool active = !world.IsInactive(p);
             var center = new Vector3(p.X + 0.5f, p.Y + 0.5f, p.Z + 0.5f);
             var turn = world.TurnOf(p);
@@ -122,8 +125,8 @@ public static class ChunkMesher
                 var next = p + face.Normal;
                 var neighbour = world.Get(next);
                 // Hidden behind an opaque block, between two panes of the same glass, or inside an opaque object model
-                // that fills the neighbouring cell.
-                if (neighbour != BlockPalette.Air ? !palette.IsCutout(neighbour) || neighbour == block : world.HidesFaces(next)) continue;
+                // that fills the neighbouring cell; never against a camera block, nor a camera's own faces.
+                if (!FaceVisibility.Drawn(self, palette.FaceBlockOf(neighbour), neighbour == BlockPalette.Air && world.HidesFaces(next))) continue;
                 (isCutout ? glass : solid).AddQuad(center + (Vector3)face.Normal * 0.5f, face, palette.Uv(block, face.Uv, active));
             }
         }

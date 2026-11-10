@@ -135,7 +135,11 @@ public partial class Main : Node
         int target = _args.Frames ?? DefaultScreenshotFrame;
         // Skip the loading hitch: measure from frame 60, or from a quarter of the way for a short run.
         int measureFrom = _args.Seconds is null ? Math.Min(60, target / 4) : 60;
-        if (++_worldFrames == measureFrom) _measureStartMs = Time.GetTicksMsec();
+        if (++_worldFrames == measureFrom)
+        {
+            _measureStartMs = Time.GetTicksMsec();
+            PerfMonitor.Timers.ResetRun();
+        }
         _worldSeconds += Math.Min(Math.Max(0, delta), ShipPhysics.MaxFrame);
         if (_args.RecordDir is { } record && _worldSeconds >= _nextRecord)
         {
@@ -146,7 +150,11 @@ public partial class Main : Node
         if (_args.Seconds is { } due ? _worldSeconds < due : _worldFrames != target) return;
         var seconds = (Time.GetTicksMsec() - _measureStartMs) / 1000.0;
         int measured = _worldFrames - measureFrom;
-        if (seconds > 0 && measured > 0) GD.Print($"Measured {measured / seconds:0} FPS over {measured} frames");
+        if (seconds > 0 && measured > 0)
+        {
+            GD.Print($"Measured {measured / seconds:0} FPS over {measured} frames");
+            GD.Print($"Frame timers (ms per frame, average/worst): {PerfMonitor.RunSummary()}");
+        }
         var moment = FormattableString.Invariant($"frame {_worldFrames}, {_worldSeconds:0.###} s");
         _timedDone = true;
         if (deferredSave)
@@ -242,7 +250,7 @@ public partial class Main : Node
     }
 
     /// <summary>--open, --orientation, --launch, --turn-ship, --flight-assist, --fixed-camera, --dampeners, --pilot, --hold,
-    /// --open-doors, --preview, --preview-space, --place, --place-on-ship, --preview-ship and --focus apply to the first
+    /// --open-doors, --preview, --preview-space, --place, --place-on-ship, --preview-ship, --focus and --beacon apply to the first
     /// world, new or loaded, so a loaded world can be screenshotted the same way.</summary>
     void ApplyHooks(WorldView world)
     {
@@ -267,16 +275,30 @@ public partial class Main : Node
         if (_args.PreviewShip is { } shipItem) world.AimAtShip(shipItem, place: false);
         if (_args.Focus is { } focus) world.Focus(focus);
         if (_args.Select is { } selected) world.SelectItem(selected);
+        if (_args.Beacon is { } beacon)
+        {
+            world.Player.EquipBeaconTool();
+            if (beacon.Length > 0 && !world.Player.PlaceBeacon(beacon)) GD.PushWarning($"--beacon: '{beacon}' is not a beacon name");
+        }
         // Piloting last: the hooks above aim and place from where the player stands.
         if (_args.FlightAssist is { } flightAssist) world.Player.FlightAssist = flightAssist;
         if (_args.FixedCamera is { } fixedCam) world.Player.FixedCamera = fixedCam;
         if (_args.Dampeners is { } dampeners) world.Player.Dampeners = dampeners;
-        if (_args.Pilot is { } view)
-            world.PilotFirstShip(view switch { "chase" => FlyCamera.PilotView.Chase, "fixed" => FlyCamera.PilotView.Fixed, _ => FlyCamera.PilotView.Seat });
+        // With no ship yet, piloting waits for the --console commands, which may build one ("stress ship 6000").
+        var pilotView = _args.Pilot switch
+        {
+            null => (FlyCamera.PilotView?)null,
+            "chase" => FlyCamera.PilotView.Chase,
+            "fixed" => FlyCamera.PilotView.Fixed,
+            _ => FlyCamera.PilotView.Seat,
+        };
+        bool pilotAfterCommands = pilotView is not null && world.Grids.Ships.Count == 0 && _args.ConsoleCommands.Count > 0;
+        if (pilotView is { } view && !pilotAfterCommands) world.PilotFirstShip(view);
         if (_args.Holds.Count > 0) world.Player.Hold(_args.Holds);
         world.RunAutoexec();
         foreach (var cmd in _args.ConsoleCommands)
             world.DebugConsole.RunCommand(cmd);
+        if (pilotAfterCommands) world.PilotFirstShip(pilotView!.Value);
         if (_args.Open is { } window) world.OpenWindow(window);
     }
 
@@ -347,6 +369,8 @@ public partial class Main : Node
         {
             if (!IsInstanceValid(world)) return;
             world.ProcessMode = ProcessModeEnum.Inherit;
+            // The F3 frame timer would otherwise count the whole pause as one frame.
+            PerfMonitor.Timers.SkipFrame();
             onCancel?.Invoke();
         });
     }
@@ -383,43 +407,20 @@ public partial class Main : Node
         }
         var check = match.Check;
 
-        int cells = 0;
-        var question = new List<string>();
-        if (match.OtherPack)
-        {
-            question.Add($"'{saved.Name}' was made with {saved.Itemset.Name} from '{saved.Itemset.PackId}', which is not installed. " +
-                         $"{entry.Header.Name} from '{entry.Pack.Id}' uses the same itemset key ({entry.Header.Key}) but is another " +
-                         "pack: blocks and items keep their ids, but may behave differently or be different things.");
-        }
-        else if (check.Status != BindingStatus.Exact)
-            question.Add($"'{saved.Name}' was saved with a different version of {saved.Itemset.Name} from '{saved.Itemset.PackId}'.");
-        if (check.Status == BindingStatus.Incompatible)
-        {
-            var missing = check.MissingBlockIds.ToHashSet();
-            cells = saved.Cells.Count(c => c != WorldSnapshot.Air && missing.Contains(saved.Palette[c])) +
-                    saved.Objects.Count(o => missing.Contains(o.BlockId)) +
-                    saved.Ships.Sum(ship => ship.Cells.Count(c => c != WorldSnapshot.Air && missing.Contains(ship.Palette[c])) +
-                                            ship.Objects.Count(o => missing.Contains(o.BlockId)));
-            question.Add($"{check.MissingBlockIds.Count} block type(s) the world uses do not exist in {entry.Header.Name} from " +
-                         $"'{entry.Pack.Id}' (blockIds {string.Join(", ", check.MissingBlockIds)}). At least {cells} placed block(s) " +
-                         "of those types will become empty space.");
-        }
-        if (!match.OtherPack && check.Status != BindingStatus.Incompatible) return await OpenSavedAsync(saved, path, entry, check, acceptedLoss: 0, loading);
-
-        if (!saved.Creative && saved.Inventory.Any(s => s is not null))
-            question.Add("Inventory items are matched by item id, so some may now be different items.");
-        question.Add("The world is bound to this itemset from its next save on. Load anyway?");
+        if (AskBeforeLoading(saved, entry, match) is not { } ask)
+            return await OpenSavedAsync(saved, path, entry, check, acceptedCells: 0, acceptedItems: 0, loading);
         var menu = ShowMenu(null);
-        menu.Confirm(match.OtherPack ? "Different pack" : "Itemset changed", string.Join("\n\n", question),
-            () => _ = OpenSavedAsync(saved, path, entry, check, acceptedLoss: cells, null), okText: "Load anyway");
+        menu.Confirm(ask.Title, ask.Text,
+            () => _ = OpenSavedAsync(saved, path, entry, check, ask.Cells, ask.Items, null), okText: "Load anyway");
         return null;
     }
 
     /// <summary>
     /// Reads a save and finds the itemset it needs. An exact fingerprint match loads silently; the same itemset from
     /// the same pack with edited content loads with a warning, or after a confirmation when blocks the world uses are
-    /// gone; a same-key itemset from another pack always asks first; anything else is refused with the name of the
-    /// itemset to install. Never throws for a bad file.
+    /// gone or the player's items no longer match; a same-key itemset from another pack always asks first; anything
+    /// else is refused with the name of the itemset to install (see <see cref="AskBeforeLoading"/>). Never throws for
+    /// a bad file.
     /// </summary>
     WorldView? LoadWorld(string path)
     {
@@ -442,6 +443,28 @@ public partial class Main : Node
         }
         var check = match.Check;
 
+        if (AskBeforeLoading(saved, entry, match) is not { } ask)
+            return OpenSaved(saved, path, entry, check, acceptedCells: 0, acceptedItems: 0);
+        var menu = _screen as MainMenu ?? ShowMenu(null);
+        menu.Confirm(ask.Title, ask.Text, () => OpenSaved(saved, path, entry, check, ask.Cells, ask.Items), okText: "Load anyway");
+        return null;
+    }
+
+    /// <summary>A question to ask before loading a save, and the losses the player accepts by answering yes.</summary>
+    /// <param name="Cells">Placed blocks that will become empty space.</param>
+    /// <param name="Items">Inventory and suit items that will find no room.</param>
+    sealed record LoadQuestion(string Title, string Text, int Cells, long Items);
+
+    /// <summary>
+    /// Whether loading needs a yes first, and the question: always for a same-key itemset from another pack, when blocks
+    /// the world uses are gone, and when the player's items no longer match (<see cref="BindingResult.AsksAboutItems"/>),
+    /// with the real counts. Null loads straight away.
+    /// </summary>
+    static LoadQuestion? AskBeforeLoading(WorldSnapshot saved, ItemsetEntry entry, ItemsetMatch match)
+    {
+        var check = match.Check;
+        if (!match.OtherPack && check.Status != BindingStatus.Incompatible && !check.AsksAboutItems) return null;
+
         int cells = 0;
         var question = new List<string>();
         if (match.OtherPack)
@@ -463,18 +486,24 @@ public partial class Main : Node
                          $"'{entry.Pack.Id}' (blockIds {string.Join(", ", check.MissingBlockIds)}). At least {cells} placed block(s) " +
                          "of those types will become empty space.");
         }
-        if (!match.OtherPack && check.Status != BindingStatus.Incompatible) return OpenSaved(saved, path, entry, check, acceptedLoss: 0);
-
-        if (!saved.Creative && saved.Inventory.Any(s => s is not null))
+        long items = 0;
+        if (check.AsksAboutItems && check.ItemProblems.Describe(entry.Header.Name) is { } itemNotes)
+        {
+            question.Add("Inventory and suit: " + itemNotes);
+            items = check.ItemProblems.LostItems;
+        }
+        else if (match.OtherPack && saved.Inventory.Any(s => s is not null))
             question.Add("Inventory items are matched by item id, so some may now be different items.");
-        question.Add("The world is bound to this itemset from its next save on. Load anyway?");
-        var menu = _screen as MainMenu ?? ShowMenu(null);
-        menu.Confirm(match.OtherPack ? "Different pack" : "Itemset changed", string.Join("\n\n", question),
-            () => OpenSaved(saved, path, entry, check, acceptedLoss: cells), okText: "Load anyway");
-        return null;
+
+        bool rebinds = match.OtherPack || check.Status != BindingStatus.Exact;
+        question.Add(rebinds ? "The world is bound to this itemset from its next save on. Load anyway?" : "Load anyway?");
+        var title = match.OtherPack ? "Different pack"
+            : check.Status == BindingStatus.Exact ? "Items can't all be restored"
+            : "Itemset changed";
+        return new LoadQuestion(title, string.Join("\n\n", question), cells, items);
     }
 
-    async Task<WorldView?> OpenSavedAsync(WorldSnapshot saved, string path, ItemsetEntry entry, BindingResult check, int acceptedLoss, LoadingScreen? loading)
+    async Task<WorldView?> OpenSavedAsync(WorldSnapshot saved, string path, ItemsetEntry entry, BindingResult check, int acceptedCells, long acceptedItems, LoadingScreen? loading)
     {
         if (loading is null)
         {
@@ -532,7 +561,7 @@ public partial class Main : Node
 
         var notes = new List<string>();
         if (check.Status != BindingStatus.Exact) notes.Add(check.Message);
-        if (world.InventoryNote is { } inventory) notes.Add(inventory);
+        notes.AddRange(world.LoadNotes);
         if (packs.Count < saved.TexturePacks.Count) notes.Add("Some of this world's texture packs are not installed.");
         if (notes.Count > 0)
         {
@@ -542,24 +571,13 @@ public partial class Main : Node
         }
         ApplyHooks(world);
 
-        if (world.LostCells > acceptedLoss)
-        {
-            GD.PushWarning($"{world.LostCells} placed block(s) of '{saved.Name}' could not be restored");
-            world.HoldSaves = true;
-            AskInWorld(world, "Blocks could not be restored",
-                $"{world.LostCells} placed block(s) of '{saved.Name}' could not be restored and are empty space now: this itemset " +
-                "and its textures can't show their block type, or they lie outside the world.\n\n" +
-                "The save file still has them. Keep playing, and the next save (F5, leaving or closing) drops them for good; " +
-                "or go back to the menu without saving and restore the missing content first.",
-                "Back to menu", "Keep playing",
-                onOk: () => ShowMenu($"'{saved.Name}' was not changed."),
-                onCancel: () => world.HoldSaves = false);
-        }
+        GuardLosses(world, saved, acceptedCells, acceptedItems);
         return world;
     }
 
-    /// <param name="acceptedLoss">Lost cells the player already agreed to; any loss beyond it asks again.</param>
-    WorldView? OpenSaved(WorldSnapshot saved, string path, ItemsetEntry entry, BindingResult check, int acceptedLoss)
+    /// <param name="acceptedCells">Lost cells the player already agreed to; any loss beyond it asks again.</param>
+    /// <param name="acceptedItems">Lost items the player already agreed to; likewise.</param>
+    WorldView? OpenSaved(WorldSnapshot saved, string path, ItemsetEntry entry, BindingResult check, int acceptedCells, long acceptedItems)
     {
         var packs = new List<PackInfo>();
         foreach (var id in saved.TexturePacks)
@@ -578,7 +596,7 @@ public partial class Main : Node
 
         var notes = new List<string>();
         if (check.Status != BindingStatus.Exact) notes.Add(check.Message);
-        if (world.InventoryNote is { } inventory) notes.Add(inventory);
+        notes.AddRange(world.LoadNotes);
         if (packs.Count < saved.TexturePacks.Count) notes.Add("Some of this world's texture packs are not installed.");
         if (notes.Count > 0)
         {
@@ -588,23 +606,41 @@ public partial class Main : Node
         }
         ApplyHooks(world);
 
-        // The palette also drops blocks without a usable texture (e.g. a texture pack that supplied it is gone), and a
-        // bigger save loses what lies outside this world. None of that shows in the binding check, so it is asked here,
-        // before anything can save over the file that still has those blocks.
-        if (world.LostCells > acceptedLoss)
+        GuardLosses(world, saved, acceptedCells, acceptedItems);
+        return world;
+    }
+
+    /// <summary>
+    /// Holds saves and asks when a load lost more than the player already agreed to: placed blocks (the palette also
+    /// drops blocks without a usable texture, e.g. a texture pack that supplied it is gone, and a bigger save loses what
+    /// lies outside this world; none of that shows in the binding check) or inventory and suit items that found no room.
+    /// It is asked before anything can save over the file that still has them.
+    /// </summary>
+    void GuardLosses(WorldView world, WorldSnapshot saved, int acceptedCells, long acceptedItems)
+    {
+        bool cells = world.LostCells > acceptedCells, items = world.LostItems > acceptedItems;
+        if (!cells && !items) return;
+        var lost = new List<string>();
+        if (cells)
         {
             GD.PushWarning($"{world.LostCells} placed block(s) of '{saved.Name}' could not be restored");
-            world.HoldSaves = true;
-            AskInWorld(world, "Blocks could not be restored",
-                $"{world.LostCells} placed block(s) of '{saved.Name}' could not be restored and are empty space now: this itemset " +
-                "and its textures can't show their block type, or they lie outside the world.\n\n" +
-                "The save file still has them. Keep playing, and the next save (F5, leaving or closing) drops them for good; " +
-                "or go back to the menu without saving and restore the missing content first.",
-                "Back to menu", "Keep playing",
-                onOk: () => ShowMenu($"'{saved.Name}' was not changed."),
-                onCancel: () => world.HoldSaves = false);
+            lost.Add($"{world.LostCells} placed block(s) of '{saved.Name}' could not be restored and are empty space now: this itemset " +
+                     "and its textures can't show their block type, or they lie outside the world.");
         }
-        return world;
+        if (items)
+        {
+            GD.PushWarning($"{world.LostItems} item(s) of '{saved.Name}' could not be restored");
+            lost.Add($"{world.LostItems} item(s) of the inventory and suit of '{saved.Name}' found no room in the inventory and are gone now.");
+        }
+        world.HoldSaves = true;
+        var title = !items ? "Blocks could not be restored" : !cells ? "Items could not be restored" : "Blocks and items could not be restored";
+        AskInWorld(world, title,
+            string.Join("\n\n", lost) + "\n\n" +
+            "The save file still has them. Keep playing, and the next save (F5, leaving or closing) drops them for good; " +
+            "or go back to the menu without saving and restore the missing content first.",
+            "Back to menu", "Keep playing",
+            onOk: () => ShowMenu($"'{saved.Name}' was not changed."),
+            onCancel: () => world.HoldSaves = false);
     }
 
     /// <summary>What <see cref="ResolveItemset"/> found.</summary>
@@ -626,7 +662,9 @@ public partial class Main : Node
             .OrderByDescending(IsSavedPack)
             .Select(e => (Entry: e, Def: Parse(e)))
             .Where(c => c.Def is not null)
-            .Select(c => (c.Entry, Check: SaveBinding.Check(saved, c.Def!, c.Entry.Pack.Id)))
+            // The same inventory size and fill order the load will use (WorldView), so the prompt and the load agree.
+            .Select(c => (c.Entry, Check: SaveBinding.Check(saved, c.Def!, c.Entry.Pack.Id, InventorySize.SlotCountFor(saved),
+                InventorySize.FillOrderFor(saved))))
             .ToList();
 
         foreach (var c in candidates)
@@ -636,7 +674,7 @@ public partial class Main : Node
         var pool = own.Count > 0 ? own : candidates;
         if (pool.Count > 0)
         {
-            var best = pool.MinBy(c => ((int)c.Check.Status, c.Check.MissingBlockIds.Count));
+            var best = pool.MinBy(c => ((int)c.Check.Status, c.Check.MissingBlockIds.Count, c.Check.ItemProblems.LostItems));
             return new(best.Entry, best.Check, own.Count == 0);
         }
 

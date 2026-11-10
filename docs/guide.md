@@ -51,6 +51,7 @@ Arguments after `--`:
 | `--place` | With `--preview` or `--preview-space`: place the previewed block there by the normal rules (survival spends the item), attaching within 16 m or starting a new floating ship beyond it |
 | `--focus=<itemId>` | Move the camera close to the first placed multi-block of that item (from the side it already looks at), framing its footprint; for checking a showcase or loaded object by eye |
 | `--select=<itemId>` | Select the hotbar slot holding that item (survival), e.g. a weapon for a firing test |
+| `--beacon` / `=<name>` | Put the beacon tool in hand; with a name, also put a beacon of that name ahead, as its name window would, so the marker, the red box and the help text can be screenshotted |
 | `--drop=<itemId>:<count>[,...]` | Leave those items floating a metre in front of the player at the start (survival), to check picking up |
 | `--record=<folder>` | Save a numbered PNG 15 times a second of game time until the `--screenshot`, to make short clips (the README's flight clip was made this way) |
 | `--open-doors` | Open every door once the world is up, and keep doors from closing by themselves; a door that would open into the player stays shut (warning in the console); for screenshots |
@@ -59,14 +60,14 @@ Arguments after `--`:
 | `--turn-ship=<degrees>` | Turn every ship about the world's up axis through its centre of mass (after `--launch`), to check that aiming, the ghost and building follow a ship's own axes |
 | `--place-on-ship=<itemId>` | Select that block (survival: given one) and place it on the first face of a ship, seen from the camera, where it fits, by the normal rules |
 | `--preview-ship=<itemId>` | As `--place-on-ship`, but only aim there, so the highlight and the ghost show on the ship; for screenshots |
-| `--pilot` / `=seat` / `=chase` / `=fixed` | Sit at the first ship's console (after `--demo-ship --launch`, or in a loaded world) and pilot it, with the camera on the seat (or bound camera block), chasing the ship from behind, or (`fixed`, for before/after screenshots) left where it was. Applied after the hooks above |
+| `--pilot` / `=seat` / `=chase` / `=fixed` | Sit at the first ship's console (after `--demo-ship --launch`, or in a loaded world) and pilot it, with the camera on the seat (or bound camera block), chasing the ship from behind, or (`fixed`, for before/after screenshots) left where it was. Applied after the hooks above. When the world has no ship yet, it waits for the `--console` commands, which may build one (`--console="sv_cheats 1;stress ship 6000"`) |
 | `--flight-assist` / `=on` / `=off` | Toggle the optional automatic flight assistant (default `off`: original console group bindings) |
 | `--fixed-camera` / `=on` / `=off` | Toggle locking camera rotation to a boarded ship's rotation (default `off`) |
 | `--dampeners=on` / `=off` | Inertial dampeners for the flight assistant (default `on`) |
-| `--hold=<action>[+<action>...]:<seconds>` | Hold these input actions down for that many seconds of game time, as if the keys were pressed (the screenshot lock ignores only the real keyboard). Repeat the argument for a sequence. Actions: `move_forward`, `move_back`, `move_left`, `move_right`, `move_boost` (walking and piloting), `move_up`, `move_down` (walking only), `ship_up`, `ship_down`, `ship_pitch_up`, `ship_pitch_down`, `ship_yaw_left`, `ship_yaw_right` (piloting only), `ship_roll_left`, `ship_roll_right` (rolling the ship or the astronaut), and `primary` (the left mouse button: drill, shoot, or fire the ship's guns). Toggles (dampeners, flight assist, view) are not held: use `--flight-assist`, `--dampeners`, `--pilot=`. Game time counts each frame up to 0.25 s, as the ship physics does, so a loading hitch does not use up a hold |
+| `--hold=<action>[+<action>...]:<seconds>` | Hold these input actions down for that many seconds of game time, as if the keys were pressed (the screenshot lock ignores only the real keyboard). Repeat the argument for a sequence. Actions: `move_forward`, `move_back`, `move_left`, `move_right`, `move_boost` (walking and piloting), `move_up`, `move_down` (walking only), `ship_up`, `ship_down`, `ship_pitch_up`, `ship_pitch_down`, `ship_yaw_left`, `ship_yaw_right` (piloting only), `ship_roll_left`, `ship_roll_right` (rolling the ship or the astronaut), and `primary` (the left mouse button: drill, shoot, or fire the ship's guns). On foot, letting go of a held `primary` acts as a real release: a block is placed, a torch thrown, a beacon or binding tool clicked. Toggles (dampeners, flight assist, view) are not held: use `--flight-assist`, `--dampeners`, `--pilot=`. Game time counts each frame up to 0.25 s, as the ship physics does, so a loading hitch does not use up a hold |
 | `--frames=<n>` | Take the `--screenshot` at frame n (default 240), or with `--quit-after-save` run that many frames before saving and quitting (so held controls and flying ships are in the save). The screenshot run's frame rate is uncapped, so the moment n frames is depends on the machine: prefer `--seconds` |
 | `--seconds=<s>` | As `--frames`, but after s seconds of game time (the clock `--hold` counts in), the same moment on any machine. Wins over `--frames`. The log says the frame and time it fired at |
-| `--open=inventory` / `=crafting` / `=console` / `=power` / `=help` / `=debug` / `=welcome` / `=menu` / `=options` | Open that window once the first world (new or loaded) is up. `crafting` shows the first crafting-table station; `console` opens the "Control block" window of the first console; `power` opens the "Power network" popup of the first powered block; `help` opens the controls & mechanics window; `debug` opens the `` ` `` console; `welcome` the welcome window; `menu` the Game menu; `options` its Options |
+| `--open=inventory` / `=crafting` / `=console` / `=power` / `=help` / `=debug` / `=welcome` / `=menu` / `=options` / `=container` | Open that window once the first world (new or loaded) is up. `crafting` shows the first crafting-table station; `container` opens the nearest chest beside the inventory, or an empty demo chest (the itemset's first chest size, else 5 × 4) when the world has none; `console` opens the "Control block" window of the first console; `power` opens the "Power network" popup of the first powered block; `help` opens the controls & mechanics window; `debug` opens the `` ` `` console; `welcome` the welcome window; `menu` the Game menu; `options` its Options |
 | `--menu=choose` / `=create` / `=options` / `=gameplay` / `=graphics` / `=controls` | With no world started: open that main-menu page at once, for screenshots |
 | `--console=<cmd>[;<cmd>...]` | Run one or more console commands after the first world is up (e.g. `--console="sv_ricochet 1;sv_cheats 1;speed 3;tp 64 80 100"`) |
 | `--bind-console` / `=wide` / `=close` | Equip the first console's binding tool and frame either the whole ship (`wide`, default) or a close deck view within 3 m of a thruster (`close`); for screenshots |
@@ -80,16 +81,23 @@ Arguments after `--`:
 
 The game starts in survival with the itemset's starting kit (`defaultItems`), as the original gives it: the first drill,
 the crafting table and the ore furnace are endless (beside the inventory: click one to take another), and the rest
-goes into the main inventory. The inventory has 40 slots, the first eight being the hotbar. Crafting uses only what is
-in the main inventory, not the hotbar: craft one at a time, or half of what you can afford.
+goes into the main inventory. As in the original, the inventory is the 8-slot hotbar plus a 6 × 5 main inventory (30
+slots). Picked-up items go into the first slot that takes them, hotbar first; what the hotbar can't take goes into the
+main inventory only if all of it fits there, otherwise it keeps floating. A world saved before this keeps its old 32
+main slots (40 with the hotbar). Crafting uses only what is in the main inventory, not the hotbar: craft one at a time, or half of what you can
+afford.
 
 Your suit has **Health** and **Power** (the bars above the hotbar). Power recharges by itself (5 per second, more
 with a power source worn); boosting with Shift uses it. Armor and helmets, power sources and the like are worn in the
-**character** window beside the inventory, or put on from the hotbar. Nothing hurts you yet; that comes with combat.
+**character** window beside the inventory, or put on from the hotbar. Creatures, shots and hard impacts hurt you; see
+[Health, damage and death](#health-damage-and-death) below.
 
 With a weapon selected (the starting kit has a pistol), the left button fires instead of drilling. Each shot costs
-suit power and pushes you back a little; shots break blocks once they've done enough damage (shot-apart blocks drop
-nothing).
+suit power; as in the original, recoil kicks the weapon on screen but does not move you (`sv_recoil_push 1` changes
+that). Shots break blocks once they've done enough damage (shot-apart blocks drop
+nothing). As in the original, a shot starts from the gun, a little right of and below your eye, spread scatters it
+the way the original does (so shot speed varies a little too), and a weapon with a negative power cost always fires
+and gives you that much suit power per shot.
 
 Green markers show each asteroid's distance and mass, white ones each ship's. The log at the left keeps the last
 messages for a few seconds.
@@ -108,15 +116,34 @@ Controls (survival) follow the original's defaults:
   left button starts a new floating ship, as in the original. A mined block floats where it was for 30 seconds; come
   within 1.5 m and it flies to you. Letting go of the right button empties your hand. 1–8 or the wheel pick a hotbar
   slot; R or the middle button turns the block you are about to place.
-- **Blocks:** E uses the block you look at (a console's seat, a crafting station, a door); F edits it: on a console it
-  equips that console's binding tool (left-click thrusters or cannons within 3 m to cycle their colour group, right-click
-  to put the tool away, or press F again to open the "Control block" window for key assignment and "Set camera"); on any
-  other powered block F opens the "Power network" popup showing block count and power balance. Contextual `"F to edit"` /
-  `"E to use"` prompts appear beneath the crosshair when aiming at an interactive block within reach. T switches the
-  flashlight.
-- **Windows & HUD:** C (or I) opens the inventory and character window (click a stack, then click where it goes, or onto
-  its equipment slot to wear it; put it on the red trash slot to throw it away, click the trash to take the last
-  thrown stack back; the next throw destroys it and saves don't keep it). `` ` `` opens the in-game **Console** (for
+- **Torches:** with a torch in hand, letting go of the left button throws one along the view, whatever you aim at, if
+  the suit has the torch's power cost (25). It flies at 7 m/s, slows to a stop about 5 m away, slides along what it
+  hits and lights the area around it, flickering, until its burn time runs out. Thrown torches can't be picked up
+  and are not saved. A torch in hand also lights the area around you.
+- **Beacons:** B puts the beacon tool in hand (a hotbar key, the wheel or the right button put it away). Within 6 m of
+  a beacon, the nearest one gets a red box and a click removes it. Otherwise a click asks for a name (up to 20
+  characters) and Ok puts a beacon 2 m ahead. Beacons show as orange markers with their distance and name, are saved
+  with the world, and come over from original `.wrl` worlds.
+- **Blocks:** E uses the block you look at (a console's seat, a crafting station, a door, a chest); F edits it. Both
+  reach 1.7 m from your eye, as in the original. On a console F equips that console's binding tool (left-click
+  thrusters or cannons within 3 m to cycle their colour group, right-click to put the tool away, or press F again to
+  open the "Control block" window for key assignment and "Set camera"); on any other powered block F opens the "Power
+  network" popup showing block count and power balance. Contextual `"F to edit"` / `"E to use"` prompts appear beneath
+  the crosshair when aiming at an interactive block within reach. T switches the flashlight.
+- **Chests:** E on a container block opens your inventory beside the chest's "Container" window (5 × 4 for the default
+  chest); E or Esc closes them. Stacks move between hotbar, inventory and chest by the item clicks below. Anyone can
+  open any chest. A broken chest (mined, shot or eaten) throws everything it held out as floating items, at 1 to 4 m/s,
+  out of reach for a second. Chests are saved with the world and go along when their structure is launched as a ship.
+  Ours: chests can't be opened in creative.
+- **Windows & HUD:** C (or I) opens the inventory and character window. Item windows work as in the original: one stack
+  rides on the cursor. With an empty hand, left click takes a whole stack and right click half of it (rounded down; a single item is taken whole). Holding a
+  stack, left click puts it in an empty slot, tops up the same item or swaps, and right click puts down one. Ours: a
+  right click on a different item does nothing (the original destroys one held item). A press counts
+  only while the other mouse button is up. Click a stack onto its equipment slot to wear it. A click that is not on a
+  slot, outside the windows or on a window's frame, throws the held stack out along the view (it can't be picked up
+  for 2 seconds), and closing the window with a stack still held throws it too. Ours: put a stack on the red trash slot
+  to throw it away, and click the trash to take the last thrown stack back; the next throw destroys it and saves don't
+  keep it. `` ` `` opens the in-game **Console** (for
   changing any game setting, see [Settings](#settings-console-variables) below, switching between `creative` and
   `survival` modes, spawning ships, and, with `sv_cheats 1`, cheats such as `speed`, `tp`, `give`, `noclip` and `god`;
   `Up`/`Down` browse history and `Tab` completes commands and setting names). F1 opens the welcome window (its
@@ -125,7 +152,8 @@ Controls (survival) follow the original's defaults:
   mouse, and again returns to the menu. Movement stops while a window is open.
 - **Ships:** come within about a metre of a ship's blocks and you are aboard (indicated by the magnetic-boot icon to the
   right of the hotbar): you move along with it, and when K ("Fixed camera when aboard") is on your view turns with the
-  ship too, until you are about 2.5 m clear of it again.
+  ship too, until you are about 2.5 m clear of it again. A ship or rock that comes to overlap you pushes you out
+  without a bounce (ours: at most 2.5 m a frame).
 
 Multi-block blocks (doors, thrusters, guns, power blocks, big windows) are placed whole. While any block is selected,
 the preview shows its natural block faces wrapped in white 8-corner selector brackets covering its full footprint
@@ -168,13 +196,23 @@ a ship down to nothing removes it.
   the console's colour groups (up to `min(buttons, 10)`: Red, Green, LightBlue, Yellow, Violet, Orange, Brown,
   Turquoise, Pink, DarkBlue) and unbinds after the last group; gun consoles bind cannons only. Pressing `F` a second
   time on the same console opens the **Control block** window to bind a key to each colour group (Esc cancels) or click
-  **Set camera** to bind a camera block on the same grid.
+  **Set camera** to bind a camera block on the same grid. Set camera puts the camera tool in hand, which shows the
+  bound camera in magenta; `F` on the same console with either tool opens the window again. Ours: only cameras on the
+  console's own ship or structure can be bound.
 
 ### Flying
 
 E on a powered ship console sits the player down at it (Esc or E again stands up, aboard the ship). In `seat` view, if a
 powered camera block is bound to that console the view comes from that camera block; otherwise it sits at the console. V
 switches between seat/camera view and a chase camera behind the ship.
+
+As in the original, the camera block is see-through from inside, so the hull around it does not wall in the view, and
+the mouse turns the camera itself: all the way round sideways, and up to 90° up or down. The seat keeps its own look,
+which the speed cone follows and which you face on standing up. Each camera remembers where it looked while the world
+runs; after a reload every camera looks straight out of its front again.
+
+Ships that hit rock or each other do not bounce, as in the original. Ours: each contact halves a ship's spin, so
+scraping along rock settles it.
 
 Two control schemes are available while seated (`H` toggles between them on flight consoles):
 
@@ -278,13 +316,15 @@ world starts with the original game's. Settings starting with `cl_` are **your p
 
 Some of the things that can be changed:
 
-- **Movement:** `sv_player_accel`, `sv_player_speed`, `sv_player_boost_speed`, `sv_player_max_speed`,
-  `sv_boost_cost` and more (`cvarlist sv_player`).
+- **Movement:** `sv_player_accel`, `sv_player_speed`, `sv_player_boost_accel`, `sv_player_boost_speed`,
+  `sv_player_max_speed`, `sv_player_over_speed_decel`, `sv_player_stop_decel`, `sv_boost_cost`, and
+  `sv_player_speed_scale` (set by the `speed` cheat).
 - **Mining and drops:** `sv_mine_reach`, `sv_mine_time_max`, `sv_mine_time_min`, `sv_mine_time_per_power`,
   `sv_item_lifetime`, `sv_item_pickup_reach`.
 - **Building and ships:** `sv_attach_distance`, `sv_bind_distance`, `sv_ship_max_speed`, `sv_ship_max_spin`,
-  `sv_ship_coast_decel`, `sv_assist_force`.
-- **Weapons:** `sv_ricochet` (off, as in the original), `sv_recoil_push` (off: recoil only kicks the weapon on screen),
+  `sv_ship_coast_decel`, `sv_ship_coast_spin_decel`, `sv_assist_force`.
+- **Weapons:** `sv_ricochet` (off, as in the original) and `sv_ricochet_bounces` (ours, 3), `sv_recoil_push` (off:
+  recoil only kicks the weapon on screen) and `sv_recoil_scale` (ours, how hard it pushes when on),
   `sv_projectile_inherit_velocity` (off: shots fly at their own speed), `sv_projectile_limit` (512),
   `sv_projectile_pass_through` (on), `sv_projectile_hit_radius`.
 - **Health and death:** `sv_player_damage`, `sv_health_regen`, `sv_armor_cap`, `sv_armor_scale`, `sv_impact_speed`,
@@ -295,9 +335,70 @@ Some of the things that can be changed:
   and the Options windows' `cl_draw_targets`, `cl_view_bobbing`, `cl_show_hints`, `cl_gamma`, `cl_fullscreen`,
   `cl_resolution_width`, `cl_resolution_height`, `cl_vsync`, `cl_lighting`, `cl_ssao`, `cl_view_distance`, `cl_welcome`.
 
-**Cheats.** `noclip` (and the `N` key), `god`, `give`, `kit`, `heal`, `health`, `power`, `tp` and `speed` only work after
-`sv_cheats 1`. Setting `sv_cheats 0` again ends noclip and god mode and resets the cheat settings. A world remembers that
-cheats were used in it, and `differences` says so.
+Settings for the inventory, item windows, chests, torches, beacons, cameras, ship contacts, hand weapons and drawing.
+"Ours" marks a setting the original doesn't have, or a value that departs from it:
+
+| Setting | Default | What it does |
+|---|---|---|
+| `sv_player_pushout_max` | 2.5 | Ours: furthest a ship or rock overlapping you pushes you out in one frame, m. 0 turns pushing off |
+| `sv_item_toss_speed` | 3 | Speed of a stack thrown by clicking outside a slot, m/s |
+| `sv_item_close_toss_speed` | 2 | Speed of a stack thrown by closing a window with it still held, m/s |
+| `sv_item_toss_pickup_delay` | 2 | Seconds before a thrown stack can be picked up again |
+| `sv_item_drag` | 0.98 | Speed a moving floating item keeps per 1/60 s; 1 never slows down |
+| `sv_use_reach` | 1.7 | How far E and F reach from the eye to the block, m |
+| `sv_container_spill` | 1 | A broken chest throws out what it held; 0 loses it with the block |
+| `sv_container_spill_speed_min` | 1 | Slowest speed a broken chest's stacks fly out at, m/s |
+| `sv_container_spill_speed_max` | 4 | Fastest speed a broken chest's stacks fly out at, m/s |
+| `sv_container_spill_pickup_delay` | 1 | Seconds before a broken chest's stacks can be picked up |
+| `sv_torch_throw_speed` | 7 | Speed a torch is thrown at, m/s |
+| `sv_torch_decel` | 5 | How fast a thrown torch slows down, m/s² |
+| `sv_torch_radius` | 0.2 | Half the size of a thrown torch's box against blocks, m |
+| `sv_torch_lifetime_scale` | 1 | How long a thrown torch burns, × the item's burn time |
+| `sv_torch_flicker` | 0.1 | Largest share a thrown torch's light drops by each frame |
+| `sv_torch_held_light` | 1 | A torch in hand lights the area around you |
+| `sv_torch_limit` | 0 | Most thrown torches burning at once, the oldest going out first; 0 = no limit (any other value is ours) |
+| `sv_torch_inherit_velocity` | 0 | Ours: a thrown torch keeps your own velocity |
+| `sv_beacon_reach` | 6 | How near a beacon must be for the beacon tool to pick and remove it, m |
+| `sv_beacon_place_distance` | 2 | How far ahead a new beacon goes, m |
+| `sv_beacon_name_max` | 20 | Longest beacon name, characters |
+| `sv_inventory_slots` | 30 | Main inventory slots beside the 8-slot hotbar. Takes effect when the world is loaded again; a world saved with a larger inventory keeps it |
+| `sv_inventory_fill_hotbar_first` | 1 | Pickups go into the first slot that takes them, hotbar first. 0 = ours: matching stacks anywhere are topped up first |
+| `sv_inventory_pickup_whole` | 1 | What the hotbar can't take goes into the main inventory only if all of it fits. 0 = ours: the main inventory takes what fits |
+| `sv_ship_restitution` | 0 | Share of the closing speed a ship bounces back with after a hit; 0 = no bounce |
+| `sv_ship_contact_spin_damping` | 0.5 | Ours: each contact multiplies a ship's spin by this; 1 keeps the spin |
+| `sv_weapon_spread_mode` | 0 | Hand weapon spread: 0 as in the original, 1 = ours: an even cone at full speed |
+| `sv_shot_forward_offset` | 1 | How far along the aim a hand weapon's shot starts from the gun, m |
+| `sv_weapon_negative_power` | 1 | A weapon with a negative power cost always fires and gives power. 0 = ours: it costs that much |
+| `cl_camera_pitch_limit` | 90 | How far the mouse turns a seated camera up or down, degrees |
+| `cl_camera_eye_forward` | 0 | Ours: moves a camera block's view this far out past its front face, m |
+| `cl_speed_cone_follows_view` | 0 | Ours: the speed cone turns with the camera's view instead of the seat's |
+| `cl_item_toss_on_window` | 1 | A click on a window's frame throws the held stack. 0 = ours: only a click outside the windows does |
+| `cl_item_click_needs_release` | 1 | In item windows a press counts only while the other mouse button is up. 0 = ours: every press acts |
+| `cl_remesh_per_frame` | 0 | Ours: chunk meshes rebuilt per frame after blocks change, nearest first; 0 = all at once |
+| `cl_batch_objects` | 1 | Ours: draw each chunk's multi-blocks (but doors) as one mesh; looks the same, far fewer draw calls |
+| `cl_torch_draw_distance` | 32 | How far away a thrown torch's sprite is drawn, m (its light shines at any distance) |
+| `cl_torch_light_limit` | 64 | Ours: only this many thrown torches nearest you cast light |
+| `cl_beacon_markers` | 1 | Beacon markers on screen. 0 = ours: hidden |
+
+A setting read only when the world loads, such as `sv_inventory_slots`, says so when it is changed or reset.
+
+**Performance.** F3 shows the frame rate, draw calls, objects drawn and nodes, and how long ship physics, shots,
+creatures and chunk remeshing take each frame (average and worst, in milliseconds). Ours: the `stress` console command
+builds a big scene to measure: `stress ship <blocks>` (a launched hull with fittings), `stress guns <n>` (a gun
+platform), `stress creatures [parasite|egg|needle|scavenger] <n>` and `stress objects <n>` (multi-blocks). It is a
+cheat.
+
+**Cheats.** `noclip` (and the `N` key), `god`, `give`, `kit`, `heal`, `health`, `power`, `tp`, `speed`, `spawn` and
+`stress` only work after `sv_cheats 1`. Setting `sv_cheats 0` again ends noclip and god mode and resets the cheat settings. A world remembers that
+cheats were used in it, and `differences` says so. `kit` adds the starting kit to the inventory, `heal` fills suit
+health and power, and `health <n>` and `power <n>` set them.
+
+**Other commands.** `help` lists every command, and `help <command>` shows its usage. Among them: `pos` (position,
+velocity and mode), `items [filter]` (item ids and names), `clearinv` (empty the inventory), `fov`, `assist` and
+`fixedcam` (shortcuts for `cl_fov`, `cl_flight_assist` and `cl_fixed_camera`), `ships` (list the ships), `spawnship`
+(build and launch a demo ship nearby), `launch` (launch the aimed structure, or the nearest console's, as a ship),
+`clearships` (remove all floating ships), `save` (save the world now), `bind` (list or change key bindings) and
+`clear` (clear the console).
 
 **Your own presets.** Put any commands in a `.cfg` file in the config folder and run it with `exec <name>`; lines may end
 in `// comments`. A file called `autoexec.cfg` runs by itself each time a world starts, which is the place for rules you
@@ -317,11 +418,12 @@ on F5, when returning to the menu, and when the window is closed. If that save f
 game stays open and asks before leaving or quitting without saving. A world always saves back to the file it was loaded
 from, so a copied or renamed `.ocworld` file is a separate world and never overwrites the original.
 
-The **Continue** menu lists both native `.ocworld` saves and legacy 2012 Corneroids `.wrl` SQLite 3 maps.
+The **Choose world** list (Singleplayer) shows both native `.ocworld` saves and legacy 2012 Corneroids `.wrl` SQLite 3 maps.
 When loading a `.wrl` file:
 - Player coordinates, Euler angles and boarded entity status are restored.
 - 16×16×16 voxel chunks with 512-byte MSB-first bitmasks and chiral quarter-turn rotations are loaded into entity grids.
 - Control consoles, 10-color group key mappings and cameras are bound.
+- Beacons are imported with their names.
 - Saving a loaded `.wrl` map writes to `.ocworld`, preserving the native high-performance format.
 
 In addition, mod packs can be placed as raw `.zip` archives directly in BYOA folders (e.g. `%APPDATA%\OpenCorneroids\byoa`
